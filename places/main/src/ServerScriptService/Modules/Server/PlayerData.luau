@@ -121,6 +121,20 @@ local function reconcile(saved: any): Profile
 	if #profile.guns == 0 then
 		profile.guns = defaultProfile().guns
 	end
+	-- Equipped pets must be owned, unique uids; anything else would hold a slot no card can free.
+	local ownedPets: { [string]: boolean } = {}
+	for _, pet in profile.pets do
+		if typeof(pet) == "table" and typeof(pet.uid) == "string" then
+			ownedPets[pet.uid] = true
+		end
+	end
+	local cleanEquipped = {}
+	for _, uid in profile.equippedPets do
+		if typeof(uid) == "string" and ownedPets[uid] and not table.find(cleanEquipped, uid) then
+			table.insert(cleanEquipped, uid)
+		end
+	end
+	profile.equippedPets = cleanEquipped
 	-- Version 2 gave guns Speed, Training Power, and a grade; older guns get them filled in.
 	for index, item in profile.guns do
 		profile.guns[index] = GunStats.migrateGun(item)
@@ -285,6 +299,9 @@ local function onPlayerAdded(player: Player)
 	end)
 end
 
+-- Leave saves still writing; BindToClose waits for these as well as its own.
+local leavingSaves = 0
+
 local function onPlayerRemoving(player: Player)
 	local session = sessions[player]
 	if not session then
@@ -300,7 +317,10 @@ local function onPlayerRemoving(player: Player)
 		end
 	end
 	sessions[player] = nil
+	-- Counted so BindToClose waits for a leave save that started just before shutdown.
+	leavingSaves += 1
 	save(player, session, true)
+	leavingSaves -= 1
 end
 
 ------------------------------------------------------------------------------------------------
@@ -456,11 +476,10 @@ function PlayerData:Start()
 				pending -= 1
 			end)
 		end
-		if RunService:IsStudio() then
-			return
-		end
+		-- Studio waits too, a little less, so stopping a playtest doesn't drop its last save.
+		local limit = if RunService:IsStudio() then 10 else 25
 		local started = os.clock()
-		while pending > 0 and os.clock() - started < 25 do
+		while (pending > 0 or leavingSaves > 0) and os.clock() - started < limit do
 			task.wait(0.2)
 		end
 	end)

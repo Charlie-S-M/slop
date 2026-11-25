@@ -54,6 +54,14 @@ local function owned(uid: string?): PetStats.OwnedPet?
 	return nil
 end
 
+-- How a multiplier reads for its kind. Ore drops show the capped drop chance the server uses.
+local function effect(kind: string, multiplier: number): string
+	if kind == "Ores" then
+		return Format.percent(Balance.oreDropChance(multiplier))
+	end
+	return `×{string.format("%.2f", multiplier)}`
+end
+
 local function refreshDetail()
 	local profile = ClientState.profile
 	local pet = owned(selectedUid)
@@ -74,20 +82,15 @@ local function refreshDetail()
 		table.remove(without, table.find(without, pet.uid) :: number)
 		local after = PetStats.multiplier(profile.pets, without, def.kind)
 		change =
-			`Unequip: {KIND_LABEL[def.kind]} ×{string.format("%.2f", now)} → ×{string.format(
-				"%.2f",
-				after
-			)}`
+			`Unequip: {KIND_LABEL[def.kind]} {effect(def.kind, now)} → {effect(def.kind, after)}`
 	elseif #profile.equippedPets >= Balance.PET_SLOTS then
 		change = `All {Balance.PET_SLOTS} pet slots are full`
 	else
 		local with = table.clone(profile.equippedPets)
 		table.insert(with, pet.uid)
 		local after = PetStats.multiplier(profile.pets, with, def.kind)
-		change = `Equip: {KIND_LABEL[def.kind]} ×{string.format("%.2f", now)} → ×{string.format(
-			"%.2f",
-			after
-		)}`
+		change =
+			`Equip: {KIND_LABEL[def.kind]} {effect(def.kind, now)} → {effect(def.kind, after)}`
 	end
 	detailStats.Text =
 		`{rarity.name} pet\n{KIND_LABEL[def.kind]} +{Format.percent(def.bonus)}\n{change}`
@@ -102,7 +105,7 @@ local function refreshDetail()
 	end
 end
 
-local function refresh()
+local function refreshEggs()
 	local profile = ClientState.profile
 	if not built or not profile then
 		return
@@ -126,6 +129,27 @@ local function refresh()
 	end
 	equippedLabel.Text =
 		`Following you: {#profile.equippedPets}/{Balance.PET_SLOTS}  ·  Owned: {#profile.pets}/{Balance.MAX_PETS}`
+end
+
+-- What the grid shows; it is only rebuilt when this changes.
+local lastGrid = ""
+
+local function refresh()
+	local profile = ClientState.profile
+	if not built or not profile then
+		return
+	end
+	refreshEggs()
+	local parts = { selectedUid or "", table.concat(profile.equippedPets, ",") }
+	for _, pet in profile.pets do
+		table.insert(parts, `{pet.uid}:{pet.id}:{if pet.locked then 1 else 0}`)
+	end
+	local signature = table.concat(parts, "|")
+	if signature == lastGrid then
+		refreshDetail()
+		return
+	end
+	lastGrid = signature
 
 	for _, child in list:GetChildren() do
 		if child:IsA("TextButton") then
@@ -457,7 +481,7 @@ function PetsMenu:Start()
 	end)
 	ClientState.StatsChanged:Connect(function()
 		if built and Menus.isOpen("Pets") then
-			refresh()
+			refreshEggs()
 		end
 	end)
 	Net.event("Hatched").OnClientEvent:Connect(function(data)

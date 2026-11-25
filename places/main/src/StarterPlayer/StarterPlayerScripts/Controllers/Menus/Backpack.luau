@@ -5,6 +5,7 @@
 const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const Format = require("@game/ReplicatedStorage/Shared/Format")
 const Guns = require("@game/ReplicatedStorage/Shared/Guns")
+const PetStats = require("@game/ReplicatedStorage/Shared/PetStats")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
 const Ores = require("@game/ReplicatedStorage/Shared/Ores")
 const Rarity = require("@game/ReplicatedStorage/Shared/Rarity")
@@ -47,7 +48,7 @@ local function gunDamage(item: Types.GunItem, def: Guns.GunDef): number
 		profile.rebirths,
 		profile.level,
 		def.id
-	)
+	) * PetStats.multiplier(profile.pets, profile.equippedPets, "Damage")
 end
 
 local function card(parent: Instance, rarityTier: number, order: number): TextButton

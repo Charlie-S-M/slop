@@ -5,6 +5,7 @@
 
 const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const Guns = require("@game/ReplicatedStorage/Shared/Guns")
+const PetStats = require("@game/ReplicatedStorage/Shared/PetStats")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
 const Signal = require("@game/ReplicatedStorage/Shared/Signal")
 const Types = require("@game/ReplicatedStorage/Shared/Types")
@@ -48,7 +49,7 @@ function ClientState.shotDamage(): number
 		profile.rebirths,
 		profile.level,
 		def.id
-	)
+	) * PetStats.multiplier(profile.pets, profile.equippedPets, "Damage")
 end
 
 function ClientState.bagCount(): number

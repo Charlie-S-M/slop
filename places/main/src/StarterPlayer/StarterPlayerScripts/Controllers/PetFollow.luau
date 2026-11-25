@@ -39,13 +39,20 @@ local function rebuild(player: Player)
 	if typeof(list) ~= "string" or list == "" then
 		return
 	end
+	if not player.Parent then
+		return
+	end
+	-- New pets start at their owner, not the world origin, so they don't streak across the map.
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	local start = if root and root:IsA("BasePart") then root.CFrame else CFrame.new()
 	local made: { Follower } = {}
 	for _, id in string.split(list, ",") do
 		local def = Pets.get(id)
 		if def and #made < #OFFSETS then
 			local model = PetBuilder.build(def)
 			model.Parent = folder
-			table.insert(made, { model = model, slot = #made + 1, at = model:GetPivot() })
+			table.insert(made, { model = model, slot = #made + 1, at = start })
 		end
 	end
 	followers[player] = made
