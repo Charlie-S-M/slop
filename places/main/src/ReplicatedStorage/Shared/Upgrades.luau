@@ -18,6 +18,10 @@ export type UpgradeDef = {
 	icon: string,
 	color: Color3,
 	maxLevel: number,
+	-- The old cap. Past it, each level gives `overflow` of a normal level's effect and costs less
+	-- extra per level, so the raised caps stay reachable without breaking the game.
+	softCap: number,
+	overflow: number,
 	baseCost: number,
 	costGrowth: number,
 	-- The upgrade's effect at a level, as the number the game uses.
@@ -37,7 +41,9 @@ const LIST: { UpgradeDef } = {
 		description = "Carry more ores each run",
 		icon = "Bag",
 		color = Color3.fromRGB(255, 150, 50),
-		maxLevel = 40,
+		maxLevel = 160,
+		softCap = 40,
+		overflow = 0.5,
 		baseCost = 40,
 		costGrowth = 1.3,
 		effect = function(level)
@@ -53,7 +59,9 @@ const LIST: { UpgradeDef } = {
 		description = "Better rarity odds at the forge",
 		icon = "Clover",
 		color = Color3.fromRGB(80, 220, 110),
-		maxLevel = 25,
+		maxLevel = 75,
+		softCap = 25,
+		overflow = 0.35,
 		baseCost = 250,
 		costGrowth = 1.45,
 		effect = function(level)
@@ -69,7 +77,9 @@ const LIST: { UpgradeDef } = {
 		description = "More power from training targets",
 		icon = "Star",
 		color = Color3.fromRGB(70, 160, 255),
-		maxLevel = 40,
+		maxLevel = 160,
+		softCap = 40,
+		overflow = 0.5,
 		baseCost = 150,
 		costGrowth = 1.38,
 		effect = function(level)
@@ -85,14 +95,16 @@ const LIST: { UpgradeDef } = {
 		description = "Run faster through stages",
 		icon = "Boot",
 		color = Color3.fromRGB(80, 230, 230),
-		maxLevel = 12,
+		maxLevel = 36,
+		softCap = 12,
+		overflow = 0.3,
 		baseCost = 100,
 		costGrowth = 1.6,
 		effect = function(level)
 			return 22 + 2.5 * level
 		end,
 		describe = function(level)
-			return `{22 + 2.5 * level} speed`
+			return `{math.floor(22 + 2.5 * level + 0.5)} speed`
 		end,
 	},
 	{
@@ -101,7 +113,9 @@ const LIST: { UpgradeDef } = {
 		description = "More health for deep stages",
 		icon = "Heart",
 		color = Color3.fromRGB(255, 70, 90),
-		maxLevel = 40,
+		maxLevel = 160,
+		softCap = 40,
+		overflow = 0.5,
 		baseCost = 120,
 		costGrowth = 1.36,
 		effect = function(level)
@@ -117,7 +131,9 @@ const LIST: { UpgradeDef } = {
 		description = "More coins from enemies and sales",
 		icon = "Coin",
 		color = Color3.fromRGB(255, 210, 50),
-		maxLevel = 30,
+		maxLevel = 120,
+		softCap = 30,
+		overflow = 0.5,
 		baseCost = 400,
 		costGrowth = 1.45,
 		effect = function(level)
@@ -133,14 +149,16 @@ const LIST: { UpgradeDef } = {
 		description = "Pick up ores from farther away",
 		icon = "Magnet",
 		color = Color3.fromRGB(200, 90, 255),
-		maxLevel = 10,
+		maxLevel = 30,
+		softCap = 10,
+		overflow = 0.4,
 		baseCost = 600,
 		costGrowth = 1.75,
 		effect = function(level)
 			return 9 + 4 * level
 		end,
 		describe = function(level)
-			return `{9 + 4 * level} studs`
+			return `{math.floor(9 + 4 * level + 0.5)} studs`
 		end,
 	},
 	{
@@ -150,6 +168,8 @@ const LIST: { UpgradeDef } = {
 		icon = "Gear",
 		color = Color3.fromRGB(90, 200, 255),
 		maxLevel = 20,
+		softCap = 20,
+		overflow = 1,
 		baseCost = 2000,
 		costGrowth = 1.6,
 		effect = function(level)
@@ -174,14 +194,29 @@ function Upgrades.get(id: string): UpgradeDef?
 	return BY_ID[id]
 end
 
+-- Past the soft cap the price grows by 40% of the usual step, so the extra levels stay in reach.
 function Upgrades.cost(def: UpgradeDef, currentLevel: number): number
-	return math.floor(def.baseCost * def.costGrowth ^ currentLevel)
+	local below = math.min(currentLevel, def.softCap)
+	local above = math.max(0, currentLevel - def.softCap)
+	local taper = 1 + (def.costGrowth - 1) * 0.4
+	return math.floor(def.baseCost * def.costGrowth ^ below * taper ^ above)
+end
+
+-- The level an upgrade's formula sees: full levels up to the soft cap, then `overflow` each.
+local function effectiveLevel(def: UpgradeDef, level: number): number
+	local clamped = math.clamp(level, 0, def.maxLevel)
+	return math.min(clamped, def.softCap) + math.max(0, clamped - def.softCap) * def.overflow
+end
+
+-- How an upgrade reads at a level, as the card shows it.
+function Upgrades.describe(def: UpgradeDef, level: number): string
+	return def.describe(effectiveLevel(def, level))
 end
 
 -- The effect of an upgrade at a level, clamped to its range.
 function Upgrades.value(id: UpgradeId, level: number): number
 	local def = BY_ID[id]
-	return def.effect(math.clamp(level, 0, def.maxLevel))
+	return def.effect(effectiveLevel(def, level))
 end
 
 return Upgrades

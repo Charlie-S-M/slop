@@ -38,11 +38,14 @@ local function refresh()
 		local level = profile.upgrades[card.def.id] or 0
 		card.level.Text = `Lv {level} / {card.def.maxLevel}`
 		if level >= card.def.maxLevel then
-			card.effect.Text = `{card.def.describe(level)}  (MAX)`
+			card.effect.Text = `{Upgrades.describe(card.def, level)}  (MAX)`
 			Kit.setButtonText(card.buy, "MAX")
 			Kit.setButtonColor(card.buy, Kit.Colors.Gold, Kit.Colors.GoldDark)
 		else
-			card.effect.Text = `{card.def.describe(level)}  >>>  {card.def.describe(level + 1)}`
+			card.effect.Text = `{Upgrades.describe(card.def, level)}  >>>  {Upgrades.describe(
+				card.def,
+				level + 1
+			)}`
 			local cost = Upgrades.cost(card.def, level)
 			Kit.setButtonText(card.buy, `💰 {Format.abbreviate(cost)}`)
 			if profile.coins >= cost then
