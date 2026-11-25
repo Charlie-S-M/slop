@@ -49,7 +49,7 @@ conversation. Update the **Status** column and **Now** section whenever an item 
   - Blender scripts (`tools/blender/Armor*.py`, `SmithyInterior.py`) export to `assets/models/`.
   - `ArmorBuilder` and `ForgeSet` use those models from `ReplicatedStorage.ForgeModels` (`ArmorHelmet`, `ArmorChestplate`, `ArmorBoots`, `SmithyInterior`) once the person imports them with the 3D Importer. Until then they fall back to bricks.
   - The lobby's sell counter is removed, in `LobbyBuilder` and in the baked lobby.
-- **Open question:** the person asked to remove an "equip items station", but no such station exists. The lobby's stations are Forge, Upgrades, Rebirth, and Portal. Ask which one they meant.
+- The "equip items station" was the Upgrades stall; it is removed. Upgrades open from the HUD button (U).
 - All branches stack in order: pew-incremental → top-tier → armor → pets → aurora-reach → infinite-tower → attachments → upgrade-caps.
 - The test profile in Studio keeps three hatched pets and a Copperplate Chestplate. Its coins were restored after testing.
 
@@ -68,7 +68,7 @@ The person set this order. Names, drop rates, and growth numbers are proposals t
 | 7 | Attachments and boss chests | Done, `feat/attachments` |
 | 8 | Upgrade caps ×3–×4 | Done, `feat/upgrade-caps` |
 | 9 | Blender armor and an equipment hotbar | Done (models await import) |
-| 10 | Blender forge, and remove the sell and equip stations | Done; "equip station" unclear |
+| 10 | Blender forge, and remove the sell and equip stations | Done |
 
 What each item should let a player do:
 

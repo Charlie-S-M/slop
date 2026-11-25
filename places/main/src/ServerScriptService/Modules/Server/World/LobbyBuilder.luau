@@ -570,70 +570,6 @@ local function forgeWorkshop(parent: Instance)
 	)
 end
 
-local function upgradeStall(parent: Instance)
-	local model = Instance.new("Model")
-	model.Name = "Upgrades"
-	model.Parent = parent
-	local origin = Vector3.new(-92, 0, -14)
-	local counter = Bricks.part(model, {
-		name = "Counter",
-		size = Vector3.new(6, 4, 20),
-		cframe = CFrame.new(origin + Vector3.new(4, 2, 0)),
-		color = rgb(80, 160, 230),
-	})
-	Bricks.part(model, {
-		name = "CounterTop",
-		size = Vector3.new(7, 0.6, 21),
-		cframe = counter.CFrame * CFrame.new(0, 2.3, 0),
-		color = TRIM,
-	})
-	counter:SetAttribute("Station", "Upgrades")
-	for side = -1, 1, 2 do
-		Bricks.part(model, {
-			name = "Post",
-			size = Vector3.new(1.2, 16, 1.2),
-			cframe = CFrame.new(origin + Vector3.new(5, 8, side * 10)),
-			color = rgb(240, 240, 245),
-		})
-		Bricks.part(model, {
-			name = "Post",
-			size = Vector3.new(1.2, 16, 1.2),
-			cframe = CFrame.new(origin + Vector3.new(-6, 8, side * 10)),
-			color = rgb(240, 240, 245),
-		})
-	end
-	-- Striped awning.
-	for stripe = 0, 7 do
-		Bricks.part(model, {
-			name = "Awning",
-			size = Vector3.new(14, 1, 2.75),
-			cframe = CFrame.new(origin + Vector3.new(0, 16.6, -9.6 + stripe * 2.75))
-				* CFrame.Angles(0, 0, math.rad(-12)),
-			color = if stripe % 2 == 0 then rgb(80, 160, 230) else TRIM,
-		})
-	end
-	Props.label(counter, "Upgrades", rgb(110, 200, 255), Vector3.new(0, 18, 0), 13)
-	-- Shelves of goods behind the counter.
-	for row = 0, 2 do
-		for col = -3, 3 do
-			local colors =
-				{ rgb(255, 90, 90), rgb(90, 220, 110), rgb(255, 210, 60), rgb(170, 110, 255) }
-			Bricks.part(model, {
-				name = "Good",
-				size = Vector3.new(1.6, 1.6, 1.6),
-				cframe = CFrame.new(origin + Vector3.new(-4.5, 5 + row * 3, col * 2.6)),
-				color = colors[(row + col) % 4 + 1],
-			})
-		end
-		Bricks.part(model, {
-			name = "Shelf",
-			size = Vector3.new(3, 0.4, 19),
-			cframe = CFrame.new(origin + Vector3.new(-4.5, 4 + row * 3, 0)),
-			color = rgb(150, 100, 60),
-		})
-	end
-end
-
 local function rebirthAltar(parent: Instance)
 	local model = Instance.new("Model")
 	model.Name = "Rebirth"
@@ -931,7 +867,6 @@ function LobbyBuilder.build(parent: Instance): Model
 	perimeter(lobby)
 	trainingGrounds(lobby)
 	forgeWorkshop(lobby)
-	upgradeStall(lobby)
 	rebirthAltar(lobby)
 	portal(lobby)
 	carpetAndDecor(lobby)

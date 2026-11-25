@@ -13,8 +13,6 @@ local player = Players.LocalPlayer
 local ink = Color3.fromRGB(28, 21, 42)
 local stations = {
 	Forge = "ForgeIcon",
-	Sell = "Shop",
-	Upgrades = "Shop",
 	Rebirth = "Gem",
 	Portal = "PortalIcon",
 }

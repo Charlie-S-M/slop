@@ -47,8 +47,6 @@ local bossModel: Model? = nil
 
 const STATION_MENUS = {
 	Forge = { menu = "Forge", text = "Forge a Gun" },
-	Sell = { menu = "Backpack", text = "Sell Ores" },
-	Upgrades = { menu = "Upgrades", text = "Upgrades" },
 	Rebirth = { menu = "Rebirth", text = "Rebirth" },
 	Portal = { menu = "Gauntlet", text = "Enter the Gauntlet" },
 }
