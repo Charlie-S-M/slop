@@ -325,6 +325,76 @@ local function voidCrystal(parent: Instance, position: Vector3, scale: number)
 	light.Parent = parent:FindFirstChildWhichIsA("BasePart")
 end
 
+-- A brick kiln with a glowing mouth and a chimney, for the Glassfall Foundry.
+-- `facing` is -1 or 1: which way along X the mouth opens, toward the middle of the arena.
+local function kiln(parent: Instance, position: Vector3, scale: number, facing: number)
+	local body = Bricks.part(parent, {
+		size = Vector3.new(10, 9, 8) * scale,
+		cframe = CFrame.new(position + Vector3.new(0, 4.5 * scale, 0)),
+		color = rgb(95, 80, 78),
+	})
+	Bricks.studTop(parent, body, nil, 2, 16)
+	local mouth = Bricks.part(parent, {
+		size = Vector3.new(0.6, 3.5, 5) * scale,
+		cframe = body.CFrame * CFrame.new(facing * 5.05 * scale, -1.5 * scale, 0),
+		color = rgb(255, 160, 60),
+		material = Enum.Material.Neon,
+		collide = false,
+	})
+	local fire = Instance.new("Fire")
+	fire.Size = 4 * scale
+	fire.Heat = 5
+	fire.Color = rgb(255, 170, 70)
+	fire.SecondaryColor = rgb(255, 90, 40)
+	fire.Parent = mouth
+	local light = Instance.new("PointLight")
+	light.Color = rgb(255, 160, 80)
+	light.Range = 20
+	light.Brightness = 2
+	light.Parent = mouth
+	Bricks.part(parent, {
+		size = Vector3.new(3, 8, 3) * scale,
+		cframe = body.CFrame * CFrame.new(2.5 * scale, 8.5 * scale, 1.5 * scale),
+		color = rgb(80, 68, 66),
+	})
+end
+
+-- A pile of glowing glass shards in teal, amber, and violet.
+local function glassCluster(parent: Instance, position: Vector3, scale: number)
+	local colors = { rgb(130, 230, 240), rgb(255, 180, 80), rgb(200, 150, 255) }
+	for index = 0, 4 do
+		local height = (10 - index * 1.6) * scale
+		local shard = Bricks.part(parent, {
+			size = Vector3.new(2.2, height, 2.2) * scale,
+			cframe = CFrame.new(
+				position
+					+ Vector3.new(
+						math.cos(index * 1.3) * 3 * scale,
+						height / 2,
+						math.sin(index * 1.3) * 3 * scale
+					)
+			) * CFrame.Angles(0, index, (index - 2) * 0.22),
+			color = colors[index % #colors + 1],
+			material = Enum.Material.Glass,
+			collide = false,
+		})
+		shard.Transparency = 0.25
+	end
+	local core = Bricks.part(parent, {
+		size = Vector3.new(2.6, 2.6, 2.6) * scale,
+		cframe = CFrame.new(position + Vector3.new(0, 1.6 * scale, 0)),
+		color = rgb(255, 200, 120),
+		material = Enum.Material.Neon,
+		collide = false,
+		shape = Enum.PartType.Ball,
+	})
+	local light = Instance.new("PointLight")
+	light.Color = rgb(255, 190, 120)
+	light.Range = 16
+	light.Brightness = 1.5
+	light.Parent = core
+end
+
 -- Props along the side walls that match the biome. Rebuilt whenever the arena changes biome.
 function ArenaBuilder.decorate(arena: Model, biome: Biomes.BiomeDef)
 	local old = arena:FindFirstChild("Decor")
@@ -361,6 +431,12 @@ function ArenaBuilder.decorate(arena: Model, biome: Biomes.BiomeDef)
 			iceSpike(decor, spot, scale)
 		elseif biome.index == 5 then
 			lavaPool(decor, spot, scale * 0.9)
+		elseif biome.index == 7 then
+			if index % 2 == 0 then
+				kiln(decor, spot, scale, -side)
+			else
+				glassCluster(decor, spot, scale)
+			end
 		else
 			voidCrystal(decor, spot + Vector3.new(0, 2, 0), scale)
 		end
