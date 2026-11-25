@@ -47,7 +47,7 @@ conversation. Update the **Status** column and **Now** section whenever an item 
   - a skip-wait countdown bar for stages and Tower waves.
 - **Items 9 and 10 are done in code.**
   - Blender scripts (`tools/blender/Armor*.py`, `SmithyInterior.py`) export to `assets/models/`.
-  - `ArmorBuilder` and `ForgeSet` use those models from `ReplicatedStorage.ForgeModels` (`ArmorHelmet`, `ArmorChestplate`, `ArmorBoots`, `SmithyInterior`) once the person imports them with the 3D Importer. Until then they fall back to bricks.
+  - `ArmorBuilder` and `ForgeSet` use those models from `ReplicatedStorage.ForgeModels` (`ArmorHelmet`, `ArmorChestplate`, `ArmorBoots`, `SmithyInterior`) They were imported into the place on 2026-11-25. Without them, the builders fall back to bricks.
   - The lobby's sell counter is removed, in `LobbyBuilder` and in the baked lobby.
 - The "equip items station" was the Upgrades stall; it is removed. Upgrades open from the HUD button (U).
 - All branches stack in order: pew-incremental → top-tier → armor → pets → aurora-reach → infinite-tower → attachments → upgrade-caps.
@@ -67,7 +67,7 @@ The person set this order. Names, drop rates, and growth numbers are proposals t
 | 6 | Infinite Tower at 1B Power | Done, `feat/infinite-tower` |
 | 7 | Attachments and boss chests | Done, `feat/attachments` |
 | 8 | Upgrade caps ×3–×4 | Done, `feat/upgrade-caps` |
-| 9 | Blender armor and an equipment hotbar | Done (models await import) |
+| 9 | Blender armor and an equipment hotbar | Done |
 | 10 | Blender forge, and remove the sell and equip stations | Done |
 
 What each item should let a player do:
