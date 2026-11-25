@@ -15,6 +15,17 @@ function ArmorStats.roll(def: Armor.ArmorDef, grade: Types.Grade, roll: number):
 		* roll
 end
 
+-- The owned piece a finished armor forge makes. Defense is kept to four decimals for saves and UI.
+function ArmorStats.makeItem(
+	uid: string,
+	def: Armor.ArmorDef,
+	grade: Types.Grade,
+	roll: number
+): Types.ArmorItem
+	local defense = math.floor(ArmorStats.roll(def, grade, roll) * 10000 + 0.5) / 10000
+	return { uid = uid, id = def.id, defense = defense, grade = grade, locked = false }
+end
+
 -- The equipped piece in `slot`, if the uid there names an owned piece made for that slot.
 function ArmorStats.equippedIn(
 	armor: { Types.ArmorItem },

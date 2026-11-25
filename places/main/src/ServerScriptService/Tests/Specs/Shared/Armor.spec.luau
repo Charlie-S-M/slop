@@ -23,6 +23,18 @@ describe("the armor catalog", function()
 	end)
 end)
 
+describe("a finished armor forge", function()
+	it("becomes an unlocked piece with its rolled defense", function()
+		local def = Armor.forSlot("Boots", 3)
+		local item = ArmorStats.makeItem("u7", def, "A", 1)
+		expect(item.uid).toBe("u7")
+		expect(item.id).toBe("SteelguardBoots")
+		expect(item.grade).toBe("A")
+		expect(item.locked).toBe(false)
+		expect(item.defense).toBeCloseTo(0.2 * 0.19 * 1.05, 4)
+	end)
+end)
+
 describe("armor defense", function()
 	it("comes from slot share, rarity, grade, and roll", function()
 		local def = Armor.forSlot("Chestplate", 5)
@@ -58,6 +70,13 @@ describe("armor defense", function()
 		local armor = { piece("DawnlightChestplate", 0.5), piece("DawnlightHelmet", 0.4) }
 		local equipped = { Chestplate = "DawnlightChestplate", Helmet = "DawnlightHelmet" }
 		expect(ArmorStats.blocked(armor, equipped)).toBe(Balance.ARMOR_MAX_BLOCK)
+	end)
+
+	it("sells for more at higher rarity and defense", function()
+		local low = Balance.armorSellPrice(0.02, 1)
+		local high = Balance.armorSellPrice(0.2, 6)
+		expect(low >= 5).toBe(true)
+		expect(high > low).toBe(true)
 	end)
 
 	it("ignores equipped uids it can't find and pieces in the wrong slot", function()
