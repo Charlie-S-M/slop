@@ -19,6 +19,7 @@ const Kit = require("../UI/Kit")
 const Menus = require("../Menus")
 const Preview = require("../UI/Preview")
 const Cutscene = require("../Cutscene/ForgeCutscene")
+const EvolveView = require("./EvolveView")
 const Timing = require("../Cutscene/TimingGame")
 const Players = game:GetService("Players")
 
@@ -31,6 +32,8 @@ local oddsRows: { { frame: Frame, fill: Frame, label: TextLabel } } = {}
 local powerLabel: TextLabel
 local forgeButton: TextButton
 local built = false
+local tab = "Forge"
+local showTab: ((string) -> ())? = nil
 local forging = false
 local activeToken: string? = nil
 local beganAt = 0
@@ -417,7 +420,50 @@ local function build(content: Frame)
 		onClick = doForge,
 	})
 
-	refreshOres()
+	-- Everything above is the Forge tab; the Evolve tab sits beside it.
+	local forgeView = Kit.new(
+		"Frame",
+		{ Name = "ForgeView", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1 }
+	)
+	for _, child in content:GetChildren() do
+		child.Parent = forgeView
+	end
+	forgeView.Parent = content
+	local evolveView = EvolveView.build(content)
+	local tabs: { [string]: TextButton } = {}
+	local function setTab(name: string)
+		tab = name
+		forgeView.Visible = name == "Forge"
+		evolveView.Visible = name == "Evolve"
+		for tabName, button in tabs do
+			if tabName == name then
+				Kit.setButtonColor(button, Kit.Colors.Orange, Kit.Colors.OrangeDark)
+			else
+				Kit.setButtonColor(button, Kit.Colors.GreyDark, Kit.Colors.Ink)
+			end
+		end
+		if name == "Evolve" then
+			EvolveView.refresh()
+		else
+			refreshOres()
+		end
+	end
+	for index, name in { "Forge", "Evolve" } do
+		tabs[name] = Kit.button({
+			name = `{name}Tab`,
+			color = Kit.Colors.GreyDark,
+			dark = Kit.Colors.Ink,
+			size = UDim2.new(0.15, 0, 0, 40),
+			position = UDim2.new(0.5 + (index - 1) * 0.16, 0, 0, -52),
+			text = if name == "Forge" then "🔨 Forge" else "✨ Evolve",
+			parent = content,
+			onClick = function()
+				setTab(name)
+			end,
+		})
+	end
+	showTab = setTab
+	setTab(tab)
 end
 
 function Forge:Init()
@@ -428,8 +474,8 @@ function Forge:Init()
 		size = Vector2.new(0.68, 0.72),
 		build = build,
 		onOpen = function()
-			if built then
-				refreshOres()
+			if built and showTab then
+				showTab(tab)
 			end
 		end,
 	})
@@ -501,9 +547,16 @@ function Forge:Start()
 			refreshOres()
 		end
 	end)
+	Net.event("EvolveResult").OnClientEvent:Connect(function(result)
+		Cutscene.reveal({ item = result.item, new = false, better = false }, "EVOLVED!")
+	end)
 	ClientState.ProfileChanged:Connect(function()
 		if built and Menus.isOpen("Forge") and not forging then
-			refreshOres()
+			if tab == "Evolve" then
+				EvolveView.refresh()
+			else
+				refreshOres()
+			end
 		end
 	end)
 end

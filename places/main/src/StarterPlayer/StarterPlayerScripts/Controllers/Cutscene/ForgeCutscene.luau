@@ -353,15 +353,24 @@ end
 
 --[[
 	Shows the forged gun rising out of the barrel and a card with its grade and stats. Equip and
-	Continue both end the cutscene and hand the camera back.
+	Continue both end the cutscene and hand the camera back. `label` replaces "NEW!" on the card,
+	such as "EVOLVED!". When no cutscene is playing (an evolution), the reveal takes over the camera
+	itself.
 ]]
-function ForgeCutscene.reveal(result: Result)
+function ForgeCutscene.reveal(result: Result, label: string?)
 	local item = result.item
 	local def = Guns.get(item.id)
 	if not def then
 		restore()
 		return
 	end
+	if not ForgeCutscene.playing then
+		ForgeCutscene.playing = true
+		Menus.close()
+		Hud.screen().Enabled = false
+		setControls(false)
+	end
+	local tag = label or (if result.new then "NEW!" else nil)
 	local set = ForgeSet.get()
 	local rarity = Rarity.get(def.rarity)
 	local barrel = set.barrelTop.Position
@@ -445,7 +454,7 @@ function ForgeCutscene.reveal(result: Result)
 		stroke.Color = rarity.color
 	end
 	Kit.text({
-		Text = def.name .. (if result.new then "  NEW!" else ""),
+		Text = def.name .. (if tag then `  {tag}` else ""),
 		Size = UDim2.fromScale(0.72, 0.14),
 		Position = UDim2.fromScale(0.05, 0.04),
 		TextXAlignment = Enum.TextXAlignment.Left,
