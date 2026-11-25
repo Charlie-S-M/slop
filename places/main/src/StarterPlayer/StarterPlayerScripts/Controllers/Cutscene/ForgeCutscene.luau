@@ -376,16 +376,21 @@ function ForgeCutscene.reveal(result: Result, label: string?)
 	local set = ForgeSet.get()
 	local rarity = Rarity.get(def.rarity)
 	local barrel = set.barrelTop.Position
-	stage = stage or Instance.new("Model");
-	(stage :: Model).Parent = workspace
+	local revealStage = stage or Instance.new("Model")
+	stage = revealStage
+	revealStage.Parent = workspace
+	-- An abort (the character died) runs restore() mid-reveal; after any wait, stop if it did.
+	local function alive(): boolean
+		return ForgeCutscene.playing and stage == revealStage
+	end
 	local gun = buildGun(def, true)
-	gun.Parent = stage
+	gun.Parent = revealStage
 	local glow = Instance.new("Part")
 	glow.Anchored = true
 	glow.CanCollide = false
 	glow.Transparency = 1
 	glow.Position = barrel + Vector3.new(0, 6, 0)
-	glow.Parent = stage
+	glow.Parent = revealStage
 	local light = Instance.new("PointLight")
 	light.Color = rarity.color
 	light.Range = 28
@@ -410,7 +415,12 @@ function ForgeCutscene.reveal(result: Result, label: string?)
 	if RevealStyles.forRarity(def.rarity) then
 		-- Let the gun rise into view, then hit the impact frame before the card.
 		task.wait(0.5)
-		ImpactFrames.play(def.rarity, gun, screen, stage :: Model)
+		if alive() then
+			ImpactFrames.play(def.rarity, gun, screen, revealStage, alive)
+		end
+		if not alive() then
+			return
+		end
 	end
 	if def.rarity >= 5 then
 		Effects.confetti({ rarity.color, rarity.glow, Color3.new(1, 1, 1) }, 80)

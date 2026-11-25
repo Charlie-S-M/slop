@@ -67,7 +67,8 @@ local function silhouette(
 	local copy = model:Clone()
 	for _, descendant in copy:GetDescendants() do
 		if descendant:IsA("BasePart") then
-			descendant.Color = color
+			-- White parts take the viewport's Ambient as their color, so swapping Ambient inverts it.
+			descendant.Color = Color3.new(1, 1, 1)
 			descendant.Material = Enum.Material.SmoothPlastic
 			descendant.Transparency = if descendant.Transparency >= 0.99 then 1 else 0
 		elseif
@@ -141,7 +142,48 @@ local function ember(style: RevealStyles.RevealStyle, at: UDim2, screen: ScreenG
 	end)
 end
 
-local function implode(style: RevealStyles.RevealStyle, at: UDim2, screen: ScreenGui)
+--[[
+	A lit copy of `model` drawn over the shade and halo, so a darkened reveal still shows the item
+	at full brightness. It follows the real item every frame and goes when `screen` is cleared.
+]]
+local function lift(model: Model, screen: ScreenGui)
+	local viewport = Kit.new("ViewportFrame", {
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		Ambient = Color3.fromRGB(170, 170, 170),
+		LightColor = Color3.new(1, 1, 1),
+		LightDirection = -camera.CFrame.LookVector + Vector3.new(0, -0.6, 0),
+		ZIndex = 0,
+		Parent = screen,
+	})
+	local copy = model:Clone()
+	for _, descendant in copy:GetDescendants() do
+		if descendant:IsA("ParticleEmitter") or descendant:IsA("Light") then
+			descendant:Destroy()
+		end
+	end
+	copy.Parent = viewport
+	local view = Instance.new("Camera")
+	view.Parent = viewport
+	viewport.CurrentCamera = view
+	local follow = RunService.RenderStepped:Connect(function()
+		view.CFrame = camera.CFrame
+		view.FieldOfView = camera.FieldOfView
+		if model.Parent then
+			copy:PivotTo(model:GetPivot())
+		end
+	end)
+	viewport.Destroying:Connect(function()
+		follow:Disconnect()
+	end)
+end
+
+local function implode(
+	style: RevealStyles.RevealStyle,
+	at: UDim2,
+	screen: ScreenGui,
+	alive: () -> boolean
+)
 	local motes = {}
 	for _ = 1, 26 do
 		local mote = circle(screen, style.silhouette, 21)
@@ -154,6 +196,9 @@ local function implode(style: RevealStyles.RevealStyle, at: UDim2, screen: Scree
 	task.wait(0.45)
 	for _, mote in motes do
 		mote:Destroy()
+	end
+	if not alive() then
+		return
 	end
 	local burst = circle(screen, style.accent, 20)
 	burst.Position = at
@@ -237,9 +282,17 @@ end
 
 --[[
 	Plays the impact frame for `tier` over `model`, yielding until the card should show. Does
-	nothing below Legendary. Lingering pieces go in `screen` and `world`.
+	nothing below Legendary. Lingering pieces go in `screen` and `world`. `alive` reports whether
+	the caller still wants the reveal; once it says no (the cutscene was aborted), this stops
+	adding anything and returns.
 ]]
-function ImpactFrames.play(tier: number, model: Model, screen: ScreenGui, world: Instance)
+function ImpactFrames.play(
+	tier: number,
+	model: Model,
+	screen: ScreenGui,
+	world: Instance,
+	alive: () -> boolean
+)
 	local style = RevealStyles.forRarity(tier)
 	if not style then
 		return
@@ -250,11 +303,17 @@ function ImpactFrames.play(tier: number, model: Model, screen: ScreenGui, world:
 	end
 	Kit.sound(Kit.Sounds.Boom, 0.45, if style.kind == "Ember" then 1.1 else 0.85)
 	flashFrames(style, model, screen)
+	if not alive() then
+		return
+	end
 	local at = screenPoint(model)
 	if style.kind == "Ember" then
 		ember(style, at, screen)
 	elseif style.kind == "Implode" then
-		implode(style, at, screen)
+		implode(style, at, screen, alive)
+		if not alive() then
+			return
+		end
 	else
 		if style.kind == "Radiant" then
 			local white = Kit.new("Frame", {
@@ -268,6 +327,9 @@ function ImpactFrames.play(tier: number, model: Model, screen: ScreenGui, world:
 			pillar(model, world, style.accent)
 		end
 		halo(at, screen)
+	end
+	if style.darken > 0 then
+		lift(model, screen)
 	end
 	local left = style.seconds - (os.clock() - started)
 	if left > 0 then
