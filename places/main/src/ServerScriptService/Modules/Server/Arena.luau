@@ -17,6 +17,7 @@ const Net = require("@game/ReplicatedStorage/Shared/Net")
 const OreBuilder = require("@game/ReplicatedStorage/Shared/OreBuilder")
 const Ores = require("@game/ReplicatedStorage/Shared/Ores")
 const Rarity = require("@game/ReplicatedStorage/Shared/Rarity")
+const Types = require("@game/ReplicatedStorage/Shared/Types")
 const Upgrades = require("@game/ReplicatedStorage/Shared/Upgrades")
 const ArenaBuilder = require("./World/ArenaBuilder")
 const EnemyBuilder = require("./World/EnemyBuilder")
@@ -332,6 +333,30 @@ local function dropOres(run: Run, enemy: Enemy)
 	end
 end
 
+--[[
+	Boss kills record the boss as defeated, and the Glassfall Foundry boss drops a Glassheart: always
+	on the player's first kill, sometimes after. Materials go straight into the profile, so dying
+	later in the run can't lose them.
+]]
+local function awardBossMaterials(run: Run, enemy: Enemy, profile: Types.Profile)
+	local bossId = enemy.def.id
+	local firstKill = not profile.bossesDefeated[bossId]
+	profile.bossesDefeated[bossId] = true
+	if bossId == Balance.GLASSHEART_BOSS then
+		local count = Balance.glassheartDrop(firstKill, random:NextNumber())
+		if count > 0 then
+			profile.materials.Glassheart = (profile.materials.Glassheart or 0) + count
+			rewardRemote:FireClient(run.player, {
+				kind = "material",
+				id = "Glassheart",
+				count = count,
+				position = enemy.position + Vector3.new(0, enemy.rootHeight * 2, 0),
+			})
+		end
+	end
+	PlayerData.markState(run.player)
+end
+
 local function killEnemy(run: Run, enemy: Enemy)
 	if not enemy.alive then
 		return
@@ -365,6 +390,9 @@ local function killEnemy(run: Run, enemy: Enemy)
 		})
 	end
 	dropOres(run, enemy)
+	if enemy.isBoss and profile then
+		awardBossMaterials(run, enemy, profile)
+	end
 	if enemy.def.behavior == "Splitter" and not enemy.isMini then
 		for side = -1, 1, 2 do
 			local mini = spawnEnemy(

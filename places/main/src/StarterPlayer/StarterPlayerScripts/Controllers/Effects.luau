@@ -478,6 +478,12 @@ local function onReward(info: any)
 		if info.new then
 			Effects.toast(`New ore discovered: {ore.name}!`, rarity.color)
 		end
+	elseif info.kind == "material" then
+		local glow = Color3.fromRGB(255, 150, 200)
+		Kit.sound(Kit.Sounds.Ding, 0.5, 1.3)
+		Effects.worldText(info.position, `+{info.count} {info.id}`, glow, 2.2, 7)
+		Effects.toast(`💎 Glassheart found! Evolve a Legendary+ gun at the forge.`, glow)
+		Effects.confetti({ glow, Color3.fromRGB(140, 230, 240), Color3.new(1, 1, 1) }, 40)
 	elseif info.kind == "coins" then
 		Kit.sound(Kit.Sounds.CoinRetro, 0.4)
 		popupAt(

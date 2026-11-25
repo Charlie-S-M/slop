@@ -5,6 +5,7 @@ const describe = JestGlobals.describe
 const expect = JestGlobals.expect
 const it = JestGlobals.it
 
+const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const Biomes = require("@game/ReplicatedStorage/Shared/Biomes")
 const Ores = require("@game/ReplicatedStorage/Shared/Ores")
 
@@ -19,6 +20,12 @@ describe("Glassfall Foundry", function()
 
 	it("is guarded by the Glassheart Warden", function()
 		expect(Biomes.List[7].boss.id).toBe("GlassheartWarden")
+	end)
+
+	it("guarantees a Glassheart on the first Warden kill and sometimes after", function()
+		expect(Balance.glassheartDrop(true, 0.99)).toBe(1)
+		expect(Balance.glassheartDrop(false, 0.1)).toBe(1)
+		expect(Balance.glassheartDrop(false, 0.2)).toBe(0)
 	end)
 
 	it("drops five Godly ores", function()

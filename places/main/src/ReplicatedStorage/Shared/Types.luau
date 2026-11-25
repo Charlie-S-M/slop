@@ -53,6 +53,10 @@ export type Profile = {
 	playSeconds: number,
 	-- Saved so a crash between starting and finishing a forge can't lose the ores.
 	pendingForge: PendingForge?,
+	-- Catalysts and other non-ore materials by id. Unlike the bag, these survive dying.
+	materials: { [string]: number },
+	-- Bosses this player has ever defeated, by enemy id, for first-kill rewards.
+	bossesDefeated: { [string]: boolean },
 }
 
 -- The stats that change many times a second, sent on their own so the full state stays quiet.

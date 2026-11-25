@@ -79,6 +79,18 @@ Balance.SPEED_ROLL_MAX = 1.03
 -- Training Power climbs this much per rarity tier of the ores used, from 1 for Common ores.
 Balance.ORE_TRAINING_GROWTH = 1.25
 -- A finish faster than this can't have played the cutscene; one slower than the timeout is filled in.
+-- The Glassheart catalyst: the Glassfall Foundry boss's first kill always drops one, later kills
+-- sometimes do.
+Balance.GLASSHEART_BOSS = "GlassheartWarden"
+Balance.GLASSHEART_REPEAT_CHANCE = 0.15
+
+function Balance.glassheartDrop(firstKill: boolean, roll: number): number
+	if firstKill or roll < Balance.GLASSHEART_REPEAT_CHANCE then
+		return 1
+	end
+	return 0
+end
+
 Balance.FORGE_MIN_SECONDS = 3
 Balance.FORGE_TIMEOUT_SECONDS = 60
 Balance.DAILY_COOLDOWN = 20 * 60 * 60

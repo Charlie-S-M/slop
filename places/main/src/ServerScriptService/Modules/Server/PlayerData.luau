@@ -21,7 +21,7 @@ const Types = require("@game/ReplicatedStorage/Shared/Types")
 type Profile = Types.Profile
 
 const STORE_NAME = "PewIncremental_v1"
-const CURRENT_VERSION = 2
+const CURRENT_VERSION = 3
 const AUTOSAVE_SECONDS = 60
 -- A lock older than this belongs to a server that died without releasing it.
 const LOCK_STALE_SECONDS = AUTOSAVE_SECONDS * 3
@@ -97,6 +97,9 @@ local function defaultProfile(): Profile
 		kills = 0,
 		forges = 0,
 		playSeconds = 0,
+		-- Version 3: catalysts and first-kill records. Older saves get these empty.
+		materials = {},
+		bossesDefeated = {},
 	}
 end
 
