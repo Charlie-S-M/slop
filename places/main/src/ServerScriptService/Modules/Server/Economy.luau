@@ -3,11 +3,13 @@
 -- Selling, equipping, upgrades, rebirths, and the daily reward. Every handler validates its
 -- arguments and prices on the server. Forging lives in Forge.
 
+const Armor = require("@game/ReplicatedStorage/Shared/Armor")
 const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const Biomes = require("@game/ReplicatedStorage/Shared/Biomes")
 const Guns = require("@game/ReplicatedStorage/Shared/Guns")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
 const Ores = require("@game/ReplicatedStorage/Shared/Ores")
+const Types = require("@game/ReplicatedStorage/Shared/Types")
 const Upgrades = require("@game/ReplicatedStorage/Shared/Upgrades")
 const Loadout = require("./Loadout")
 const PlayerData = require("./PlayerData")
@@ -85,6 +87,86 @@ local function onSellGun(player: Player, uid: unknown)
 	local def = Guns.get(item.id)
 	local price = Balance.gunSellPrice(item.power, if def then def.rarity else 1)
 	table.remove(profile.guns, index)
+	PlayerData.addCoins(player, price)
+	PlayerData.markState(player)
+	rewardRemote:FireClient(player, { kind = "coins", coins = price })
+end
+
+------------------------------------------------------------------------------------------------
+-- Armor
+------------------------------------------------------------------------------------------------
+
+local function findArmor(profile: Types.Profile, uid: string): (Types.ArmorItem?, number?)
+	for index, item in profile.armor do
+		if item.uid == uid then
+			return item, index
+		end
+	end
+	return nil, nil
+end
+
+-- Wears an owned piece in the slot it was made for, replacing whatever was there.
+local function onEquipArmor(player: Player, uid: unknown)
+	if not RateLimit.allow(player, "EquipArmor", 3, 4) or not isUid(uid) then
+		return
+	end
+	local profile = PlayerData.get(player)
+	local item = profile and findArmor(profile, uid :: string)
+	local def = item and Armor.get(item.id)
+	if not profile or not item or not def or profile.equippedArmor[def.slot] == item.uid then
+		return
+	end
+	profile.equippedArmor[def.slot] = item.uid
+	PlayerData.markState(player)
+	Loadout.refreshArmor(player)
+end
+
+local function onUnequipArmor(player: Player, slot: unknown)
+	if not RateLimit.allow(player, "EquipArmor", 3, 4) or not Armor.isSlot(slot) then
+		return
+	end
+	local profile = PlayerData.get(player)
+	if not profile or profile.equippedArmor[slot :: string] == nil then
+		return
+	end
+	profile.equippedArmor[slot :: string] = nil
+	PlayerData.markState(player)
+	Loadout.refreshArmor(player)
+end
+
+local function onLockArmor(player: Player, uid: unknown)
+	if not RateLimit.allow(player, "ToggleLock", 5, 6) or not isUid(uid) then
+		return
+	end
+	local profile = PlayerData.get(player)
+	local item = profile and findArmor(profile, uid :: string)
+	if item then
+		item.locked = not item.locked
+		PlayerData.markState(player)
+	end
+end
+
+-- Sells a piece that isn't worn or locked.
+local function onSellArmor(player: Player, uid: unknown)
+	if not RateLimit.allow(player, "SellGun", 5, 6) or not isUid(uid) or not inLobby(player) then
+		return
+	end
+	local profile = PlayerData.get(player)
+	if not profile then
+		return
+	end
+	local item, index = findArmor(profile, uid :: string)
+	if not item or not index or item.locked then
+		return
+	end
+	for _, worn in profile.equippedArmor do
+		if worn == item.uid then
+			return
+		end
+	end
+	local def = Armor.get(item.id)
+	local price = Balance.armorSellPrice(item.defense, if def then def.rarity else 1)
+	table.remove(profile.armor, index)
 	PlayerData.addCoins(player, price)
 	PlayerData.markState(player)
 	rewardRemote:FireClient(player, { kind = "coins", coins = price })
@@ -223,6 +305,10 @@ function Economy:Start()
 	Net.event("Equip").OnServerEvent:Connect(onEquip)
 	Net.event("ToggleLock").OnServerEvent:Connect(onToggleLock)
 	Net.event("SellGun").OnServerEvent:Connect(onSellGun)
+	Net.event("EquipArmor").OnServerEvent:Connect(onEquipArmor)
+	Net.event("UnequipArmor").OnServerEvent:Connect(onUnequipArmor)
+	Net.event("LockArmor").OnServerEvent:Connect(onLockArmor)
+	Net.event("SellArmor").OnServerEvent:Connect(onSellArmor)
 	Net.event("SellOres").OnServerEvent:Connect(onSellOres)
 	Net.event("BuyUpgrade").OnServerEvent:Connect(onBuyUpgrade)
 	Net.event("Rebirth").OnServerEvent:Connect(onRebirth)

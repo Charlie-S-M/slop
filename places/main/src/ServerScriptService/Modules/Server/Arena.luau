@@ -11,6 +11,7 @@
 const Players = game:GetService("Players")
 const RunService = game:GetService("RunService")
 
+const ArmorStats = require("@game/ReplicatedStorage/Shared/ArmorStats")
 const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const Biomes = require("@game/ReplicatedStorage/Shared/Biomes")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
@@ -589,7 +590,11 @@ end
 local function damagePlayer(run: Run, amount: number)
 	local humanoid = humanoidOf(run.player)
 	if humanoid and humanoid.Health > 0 then
-		humanoid:TakeDamage(amount)
+		local profile = PlayerData.get(run.player)
+		local blocked = if profile
+			then ArmorStats.blocked(profile.armor, profile.equippedArmor)
+			else 0
+		humanoid:TakeDamage(amount * (1 - blocked))
 	end
 end
 
