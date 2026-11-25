@@ -50,7 +50,9 @@ local function gunDamage(item: Types.GunItem, def: Guns.GunDef): number
 		profile.rebirths,
 		profile.level,
 		def.id
-	) * PetStats.multiplier(profile.pets, profile.equippedPets, "Damage")
+	) * PetStats.multiplier(profile.pets, profile.equippedPets, "Damage") * Balance.prestigeDamage(
+		profile.prestige
+	)
 end
 
 local function card(parent: Instance, rarityTier: number, order: number): TextButton

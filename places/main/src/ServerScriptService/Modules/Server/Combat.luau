@@ -155,7 +155,9 @@ local function onEnemyHit(
 		profile.rebirths,
 		profile.level,
 		gunId
-	) * PetStats.multiplier(profile.pets, profile.equippedPets, "Damage")
+	) * PetStats.multiplier(profile.pets, profile.equippedPets, "Damage") * Balance.prestigeDamage(
+		profile.prestige
+	)
 	local crit = math.random() < CRIT_CHANCE
 	local amount = perPellet * pelletsHit * (if crit then CRIT_MULTIPLIER else 1)
 	if stats.splashRadius > 0 then

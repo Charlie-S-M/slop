@@ -82,6 +82,9 @@ type Run = {
 	integrity: number,
 	capacity: number,
 	nextWave: number,
+	-- When the current break ends, and a token that a skip bumps so a stale timer can't also fire.
+	nextAt: number,
+	breakToken: number,
 }
 
 const MAX_SLOTS = 16
@@ -148,6 +151,12 @@ local function sendRunInfo(run: Run, cleared: boolean?)
 		floor = if run.tower then Balance.towerFloor(run.stage) else nil,
 		cleared = cleared == true,
 		state = run.state,
+		-- Seconds until the next stage or wave, for the countdown bar and its Skip button.
+		nextIn = if run.tower
+			then math.max(0, run.nextWave - os.clock())
+			elseif run.state == "break" then math.max(0, run.nextAt - os.clock())
+			else nil,
+		nextTotal = if run.tower then Balance.TOWER_WAVE_SECONDS else Balance.STAGE_BREAK_SECONDS,
 	})
 end
 
@@ -300,6 +309,7 @@ local function dropOres(run: Run, enemy: Enemy)
 			< Balance.oreDropChance(
 				if profile
 					then PetStats.multiplier(profile.pets, profile.equippedPets, "Ores")
+						* Balance.prestigeOres(profile.prestige)
 					else 1
 			)
 	then
@@ -566,9 +576,12 @@ local function onStageCleared(run: Run)
 		startNextStage(run)
 		return
 	end
+	run.breakToken += 1
+	local token = run.breakToken
+	run.nextAt = os.clock() + Balance.STAGE_BREAK_SECONDS
 	sendRunInfo(run, true)
 	task.delay(Balance.STAGE_BREAK_SECONDS, function()
-		if run.state ~= "break" then
+		if run.state ~= "break" or run.breakToken ~= token then
 			return
 		end
 		run.stage += 1
@@ -631,6 +644,8 @@ local function startRun(player: Player, startStage: number, tower: boolean?)
 		integrity = Balance.enemyDamage(startStage) * Balance.CRYSTAL_HITS,
 		capacity = Balance.enemyDamage(startStage) * Balance.CRYSTAL_HITS,
 		nextWave = math.huge,
+		nextAt = 0,
+		breakToken = 0,
 	}
 	if run.tower then
 		local crystal = Instance.new("Part")
@@ -988,6 +1003,27 @@ function Arena:Start()
 			return
 		end
 		startRun(player, stage)
+	end)
+
+	-- Skips the wait: in a break, the next stage starts now; in the Tower, the next wave comes now.
+	Net.event("SkipWait").OnServerEvent:Connect(function(player)
+		if not RateLimit.allow(player, "SkipWait", 1, 2) then
+			return
+		end
+		local run = runs[player]
+		if not run or run.state == "ended" then
+			return
+		end
+		if run.tower then
+			if run.integrity > 0 then
+				run.nextWave = os.clock()
+			end
+		elseif run.state == "break" then
+			run.breakToken += 1
+			run.stage += 1
+			run.player:SetAttribute("Stage", run.stage)
+			startNextStage(run)
+		end
 	end)
 
 	Net.event("EnterTower").OnServerEvent:Connect(function(player)

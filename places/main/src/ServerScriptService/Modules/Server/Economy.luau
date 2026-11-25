@@ -314,6 +314,27 @@ local function onRebirth(player: Player)
 	rewardRemote:FireClient(player, { kind = "rebirth", rebirths = profile.rebirths })
 end
 
+-- Prestige: at PRESTIGE_REBIRTHS rebirths, resets rebirths and Power for permanent bonuses (Balance).
+local function onPrestige(player: Player)
+	if not RateLimit.allow(player, "Rebirth", 0.5, 1) or not inLobby(player) then
+		return
+	end
+	local profile = PlayerData.get(player)
+	if not profile or not Balance.canPrestige(profile.rebirths) then
+		return
+	end
+	profile.power = 0
+	profile.rebirths = 0
+	profile.prestige += 1
+	PlayerData.markState(player)
+	PlayerData.LoadoutChanged:Fire(player)
+	notify(
+		player,
+		`Prestige {profile.prestige}! Damage ×{Balance.prestigeDamage(profile.prestige)} for good.`,
+		Color3.fromRGB(255, 210, 90)
+	)
+end
+
 local function onClaimDaily(player: Player)
 	if not RateLimit.allow(player, "ClaimDaily", 0.5, 1) then
 		return
@@ -373,6 +394,7 @@ function Economy:Start()
 	Net.event("SellOres").OnServerEvent:Connect(onSellOres)
 	Net.event("BuyUpgrade").OnServerEvent:Connect(onBuyUpgrade)
 	Net.event("Rebirth").OnServerEvent:Connect(onRebirth)
+	Net.event("Prestige").OnServerEvent:Connect(onPrestige)
 	Net.event("ClaimDaily").OnServerEvent:Connect(onClaimDaily)
 end
 

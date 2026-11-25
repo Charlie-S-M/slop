@@ -7,6 +7,7 @@
 ]]
 
 const Players = game:GetService("Players")
+const RunService = game:GetService("RunService")
 const TweenService = game:GetService("TweenService")
 const UserInputService = game:GetService("UserInputService")
 
@@ -39,6 +40,13 @@ local healthText: TextLabel
 local ammoLabel: TextLabel
 local autoButton: TextButton
 local runPanel: Frame
+-- The countdown to the next stage or Tower wave, with a Skip button.
+local nextBar: Frame
+local nextFill: Frame
+local nextLabel: TextLabel
+local nextDeadline = 0
+local nextTotal = 1
+local nextIsWave = false
 local stageLabel: TextLabel
 local enemiesLabel: TextLabel
 local suggestedLabel: TextLabel
@@ -454,6 +462,52 @@ local function buildRight()
 	})
 	Kit.new("UISizeConstraint", { MaxSize = Vector2.new(150, 64), Parent = backButton })
 	backButton.Visible = false
+
+	nextBar = Kit.panel({
+		Name = "NextBar",
+		Size = UDim2.fromScale(0.2, 0.09),
+		Position = UDim2.fromScale(0.985, 0.52),
+		AnchorPoint = Vector2.new(1, 0),
+		Visible = false,
+		Parent = screen,
+	})
+	Kit.new("UISizeConstraint", { MaxSize = Vector2.new(300, 86), Parent = nextBar })
+	nextLabel = Kit.text({
+		Text = "",
+		Size = UDim2.new(0.62, -10, 0.45, 0),
+		Position = UDim2.new(0, 10, 0.06, 0),
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Stroke = 2.5,
+		Parent = nextBar,
+	})
+	local track = Kit.new("Frame", {
+		Size = UDim2.new(0.62, -10, 0.26, 0),
+		Position = UDim2.new(0, 10, 0.6, 0),
+		BackgroundColor3 = Kit.Colors.Ink,
+		Parent = nextBar,
+	})
+	Kit.cornerScale(0.5).Parent = track
+	nextFill = Kit.new("Frame", {
+		Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = Color3.fromRGB(110, 200, 255),
+		BorderSizePixel = 0,
+		Parent = track,
+	})
+	Kit.cornerScale(0.5).Parent = nextFill
+	Kit.button({
+		name = "Skip",
+		color = Kit.Colors.Orange,
+		dark = Kit.Colors.OrangeDark,
+		size = UDim2.fromScale(0.32, 0.78),
+		position = UDim2.fromScale(0.97, 0.5),
+		anchor = Vector2.new(1, 0.5),
+		text = "Skip ⏩",
+		parent = nextBar,
+		onClick = function()
+			Kit.sound(Kit.Sounds.Click, 0.4)
+			Net.event("SkipWait"):FireServer()
+		end,
+	})
 end
 
 -- Count-up tweens pass through fractions; show whole numbers only.
@@ -488,6 +542,14 @@ local function refreshRun(run: any)
 	local active = run.active == true
 	runPanel.Visible = active
 	backButton.Visible = active
+	if active and typeof(run.nextIn) == "number" then
+		nextDeadline = os.clock() + run.nextIn
+		nextTotal = math.max(1, run.nextTotal or 1)
+		nextIsWave = run.tower == true
+		nextBar.Visible = true
+	else
+		nextBar.Visible = false
+	end
 	if not active then
 		return
 	end
@@ -597,6 +659,15 @@ end
 function Hud:Start()
 	ClientState.StatsChanged:Connect(refreshStats)
 	ClientState.RunChanged:Connect(refreshRun)
+	-- The countdown drains every frame toward the next stage or wave.
+	RunService.RenderStepped:Connect(function()
+		if not nextBar or not nextBar.Visible then
+			return
+		end
+		local left = math.max(0, nextDeadline - os.clock())
+		nextFill.Size = UDim2.fromScale(math.clamp(left / nextTotal, 0, 1), 1)
+		nextLabel.Text = `{if nextIsWave then "Next wave" else "Next stage"} in {math.ceil(left)}s`
+	end)
 	if ClientState.profile then
 		refreshStats()
 	end

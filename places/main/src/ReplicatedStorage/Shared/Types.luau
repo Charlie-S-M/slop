@@ -86,6 +86,8 @@ export type Profile = {
 	equippedPets: { string },
 	-- The highest Infinite Tower floor cleared.
 	towerBest: number,
+	-- How many times the player has prestiged.
+	prestige: number,
 	-- Attachments not on a gun, by part id.
 	attachments: { [string]: number },
 }
@@ -111,6 +113,9 @@ export type RunInfo = {
 	-- Set in the Infinite Tower, where stages are shown as floors.
 	tower: boolean?,
 	floor: number?,
+	-- Seconds until the next stage or Tower wave, and the full wait, for the countdown bar.
+	nextIn: number?,
+	nextTotal: number?,
 }
 
 return {}

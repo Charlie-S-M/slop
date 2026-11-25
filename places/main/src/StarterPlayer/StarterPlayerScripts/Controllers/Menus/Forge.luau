@@ -71,6 +71,7 @@ end
 local function refreshOdds()
 	local profile = ClientState.profile
 	local luck = Upgrades.value("Luck", if profile then profile.upgrades.Luck or 0 else 0)
+		+ (if profile then Balance.prestigeLuck(profile.prestige) else 0)
 	local odds = Balance.forgeOdds(selectedDefs(), luck)
 	local bestTier = 1
 	for tier, row in oddsRows do

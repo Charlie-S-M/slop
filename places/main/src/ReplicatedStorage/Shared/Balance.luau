@@ -161,6 +161,27 @@ Balance.TRAINING_ZONES = {
 -- Player stats
 ------------------------------------------------------------------------------------------------
 
+-- Prestige: at PRESTIGE_REBIRTHS rebirths a player can reset rebirths and Power for permanent bonuses
+-- that stack with each prestige: damage, forge luck, and ore drops.
+Balance.PRESTIGE_REBIRTHS = 15
+
+function Balance.canPrestige(rebirths: number): boolean
+	return rebirths >= Balance.PRESTIGE_REBIRTHS
+end
+
+function Balance.prestigeDamage(prestige: number): number
+	return 1 + 0.5 * prestige
+end
+
+-- Forge luck units; the Forge Luck card shows them doubled, so 0.05 reads as +10%.
+function Balance.prestigeLuck(prestige: number): number
+	return 0.05 * prestige
+end
+
+function Balance.prestigeOres(prestige: number): number
+	return 1 + 0.25 * prestige
+end
+
 function Balance.rebirthDamageMultiplier(rebirths: number): number
 	return 1 + 0.5 * rebirths
 end

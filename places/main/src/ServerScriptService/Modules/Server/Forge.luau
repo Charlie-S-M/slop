@@ -225,6 +225,7 @@ local function startForge(player: Player, request: unknown, slot: Types.ArmorSlo
 	end
 
 	local luck = Upgrades.value("Luck", profile.upgrades.Luck or 0)
+		+ Balance.prestigeLuck(profile.prestige)
 	local odds = Balance.forgeOdds(list, luck)
 	local rarity = Balance.pickRarity(odds, random:NextNumber())
 	local itemId: string

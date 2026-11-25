@@ -21,7 +21,7 @@ const Types = require("@game/ReplicatedStorage/Shared/Types")
 type Profile = Types.Profile
 
 const STORE_NAME = "PewIncremental_v1"
-const CURRENT_VERSION = 7
+const CURRENT_VERSION = 8
 const AUTOSAVE_SECONDS = 60
 -- A lock older than this belongs to a server that died without releasing it.
 const LOCK_STALE_SECONDS = AUTOSAVE_SECONDS * 3
@@ -105,6 +105,7 @@ local function defaultProfile(): Profile
 		pets = {},
 		equippedPets = {},
 		towerBest = 0,
+		prestige = 0,
 		attachments = {},
 	}
 end

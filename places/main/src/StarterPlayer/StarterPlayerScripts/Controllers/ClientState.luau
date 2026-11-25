@@ -51,7 +51,9 @@ function ClientState.shotDamage(): number
 		profile.rebirths,
 		profile.level,
 		def.id
-	) * PetStats.multiplier(profile.pets, profile.equippedPets, "Damage")
+	) * PetStats.multiplier(profile.pets, profile.equippedPets, "Damage") * Balance.prestigeDamage(
+		profile.prestige
+	)
 end
 
 function ClientState.bagCount(): number

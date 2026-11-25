@@ -25,6 +25,7 @@ local rebirthFill: Frame
 local rebirthNeed: TextLabel
 local rebirthRewards: TextLabel
 local rebirthButton: TextButton
+local prestigeButton: TextButton
 
 local function refreshRebirth()
 	local profile = ClientState.profile
@@ -53,6 +54,14 @@ local function refreshRebirth()
 		table.insert(lines, `🎯 Unlocks the {nextZone.multiplier}x Power pad`)
 	end
 	table.insert(lines, "⚠️ Resets your Power to 0")
+	if profile.prestige > 0 then
+		table.insert(
+			lines,
+			`⭐ Prestige {profile.prestige}: damage ×{Balance.prestigeDamage(profile.prestige)}, forge luck +{math.floor(
+				Balance.prestigeLuck(profile.prestige) * 200 + 0.5
+			)}%, ore drops ×{Balance.prestigeOres(profile.prestige)}`
+		)
+	end
 	rebirthRewards.Text = table.concat(lines, "\n")
 	if share >= 1 then
 		Kit.setButtonColor(rebirthButton, Kit.Colors.Purple, Kit.Colors.PurpleDark)
@@ -60,6 +69,16 @@ local function refreshRebirth()
 	else
 		Kit.setButtonColor(rebirthButton, Kit.Colors.Grey, Kit.Colors.GreyDark)
 		Kit.setButtonText(rebirthButton, `Need {Format.abbreviate(cost - profile.power)} more`)
+	end
+	if Balance.canPrestige(profile.rebirths) then
+		Kit.setButtonColor(prestigeButton, Kit.Colors.Gold, Kit.Colors.GoldDark)
+		Kit.setButtonText(prestigeButton, "⭐ PRESTIGE!")
+	else
+		Kit.setButtonColor(prestigeButton, Kit.Colors.Grey, Kit.Colors.GreyDark)
+		Kit.setButtonText(
+			prestigeButton,
+			`Prestige at {Balance.PRESTIGE_REBIRTHS} rebirths ({profile.rebirths}/{Balance.PRESTIGE_REBIRTHS})`
+		)
 	end
 end
 
@@ -109,12 +128,26 @@ local function buildRebirth(content: Frame)
 		name = "Rebirth",
 		color = Kit.Colors.Purple,
 		dark = Kit.Colors.PurpleDark,
-		size = UDim2.fromScale(0.7, 0.16),
-		position = UDim2.fromScale(0.15, 0.8),
+		size = UDim2.fromScale(0.44, 0.16),
+		position = UDim2.fromScale(0.04, 0.8),
 		text = "REBIRTH",
 		parent = content,
 		onClick = function()
 			Net.event("Rebirth"):FireServer()
+		end,
+	})
+	-- Prestige: at 15 rebirths, reset rebirths and Power for 1.5x damage, +10% forge luck, and +25%
+	-- ore drops, for good, stacking each time.
+	prestigeButton = Kit.button({
+		name = "Prestige",
+		color = Kit.Colors.Gold,
+		dark = Kit.Colors.GoldDark,
+		size = UDim2.fromScale(0.44, 0.16),
+		position = UDim2.fromScale(0.52, 0.8),
+		text = "PRESTIGE",
+		parent = content,
+		onClick = function()
+			Net.event("Prestige"):FireServer()
 		end,
 	})
 	refreshRebirth()
