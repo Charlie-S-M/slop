@@ -549,36 +549,7 @@ local function forgeWorkshop(parent: Instance)
 	anvil:SetAttribute("Station", "Forge")
 	Props.label(anvil, "Forge", rgb(255, 170, 60), Vector3.new(0, 9, 0), 12)
 
-	-- The sell counter at the front of the workshop.
-	local counter = Bricks.part(model, {
-		name = "SellCounter",
-		size = Vector3.new(6, 4, 14),
-		cframe = CFrame.new(origin + Vector3.new(-14, 2.6, 16)),
-		color = rgb(200, 150, 80),
-	})
-	Bricks.part(model, {
-		name = "CounterTop",
-		size = Vector3.new(7, 0.6, 15),
-		cframe = counter.CFrame * CFrame.new(0, 2.3, 0),
-		color = rgb(240, 240, 245),
-	})
-	counter:SetAttribute("Station", "Sell")
-	Props.label(counter, "Sell", rgb(120, 255, 120), Vector3.new(0, 8, 0), 9)
-	-- A pile of coins on the counter.
-	for index = 1, 6 do
-		Bricks.part(model, {
-			name = "Coin",
-			size = Vector3.new(0.35, 1.4, 1.4),
-			cframe = counter.CFrame
-				* CFrame.new(0, 2.8 + index * 0.36, (index % 3 - 1) * 1.2)
-				* CFrame.Angles(0, 0, math.rad(90)),
-			color = GOLD,
-			material = Enum.Material.SmoothPlastic,
-			shape = Enum.PartType.Cylinder,
-			collide = false,
-		})
-	end
-
+	-- Selling happens in the Backpack, so the workshop has no sell counter.
 	for index = 1, 3 do
 		Props.barrel(
 			model,
