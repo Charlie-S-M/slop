@@ -501,6 +501,12 @@ local function refreshRun(run: any)
 		else Color3.new(1, 1, 1)
 	if run.state == "starting" then
 		enemiesLabel.Text = "Get ready..."
+	elseif run.tower then
+		enemiesLabel.Text = "Crystal "
+			.. tostring(run.integrity or 100)
+			.. "% • "
+			.. tostring(run.enemiesLeft or 0)
+			.. " foes"
 	elseif run.cleared then
 		enemiesLabel.Text = "✅ CLEAR!"
 	else

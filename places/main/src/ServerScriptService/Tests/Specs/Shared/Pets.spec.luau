@@ -87,3 +87,32 @@ describe("ore drop chance with pets", function()
 		expect(Balance.oreDropChance(10)).toBe(Balance.MAX_ORE_DROP_CHANCE)
 	end)
 end)
+
+describe("equip best", function()
+	it("maximizes the selected bonus across unique pets and keeps equipped ties", function()
+		local owned = {}
+		for i, def in Pets.List do
+			table.insert(owned, { uid = tostring(i), id = def.id })
+		end
+		for _, kind: Pets.PetKind in { "Damage", "Training", "Ores" } :: { Pets.PetKind } do
+			local chosen = PetStats.best(owned, {}, kind)
+			local bonuses = {}
+			for _, def in Pets.List do
+				if def.kind == kind then
+					table.insert(bonuses, def.bonus)
+				end
+			end
+			table.sort(bonuses, function(a, b)
+				return a > b
+			end)
+			local expected = 1
+			for i = 1, math.min(#bonuses, Balance.PET_SLOTS) do
+				expected += bonuses[i]
+			end
+			expect(PetStats.multiplier(owned, chosen, kind)).toBeCloseTo(expected, 6)
+			expect(#chosen).toBe(Balance.PET_SLOTS)
+		end
+		local same = { { uid = "a", id = Pets.List[1].id }, { uid = "z", id = Pets.List[1].id } }
+		expect(PetStats.best(same, { "z" }, Pets.List[1].kind)[1]).toBe("z")
+	end)
+end)

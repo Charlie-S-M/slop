@@ -123,7 +123,7 @@ end
 
 -- Evolving: the coin cost is worth this many stage-70 kills, by rarity, so it keeps pace with the
 -- income of players who can reach the catalyst.
-Balance.EVOLVE_KILLS = { [5] = 10, [6] = 30, [7] = 100 }
+Balance.EVOLVE_KILLS = { [5] = 10, [6] = 30, [7] = 100, [8] = 300 }
 Balance.EVOLVE_MULTIPLIERS = { power = 3, train = 2, speed = 1.1 }
 
 -- Coins to evolve a gun of this rarity, or nil when the rarity can't evolve.
@@ -138,7 +138,7 @@ end
 Balance.FORGE_MIN_SECONDS = 3
 Balance.FORGE_TIMEOUT_SECONDS = 60
 Balance.DAILY_COOLDOWN = 20 * 60 * 60
-Balance.STAGE_BREAK_SECONDS = 3
+Balance.STAGE_BREAK_SECONDS = 8
 
 Balance.TRAINING_ZONES = {
 	{ multiplier = 1, rebirthsNeeded = 0 },
@@ -506,5 +506,8 @@ end
 
 -- The biome a stage uses, re-exported so UI code needs one require.
 Balance.biomeForStage = Biomes.forStage
+
+Balance.TOWER_WAVE_SECONDS = 23
+Balance.CRYSTAL_HITS = 40
 
 return Balance

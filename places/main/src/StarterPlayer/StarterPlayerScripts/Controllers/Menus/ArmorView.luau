@@ -20,13 +20,12 @@ const Preview = require("../UI/Preview")
 local ArmorView = {}
 
 local root: Frame
-local slotCards: { [string]: { button: TextButton, viewport: ViewportFrame, label: TextLabel } } =
-	{}
+local slotCards: { [string]: { button: TextButton, viewport: Frame, label: TextLabel } } = {}
 local totalLabel: TextLabel
 local list: ScrollingFrame
 local emptyLabel: TextLabel
 local detail: Frame
-local detailViewport: ViewportFrame
+local detailViewport: Frame
 local detailName: TextLabel
 local detailStats: TextLabel
 local equipButton: TextButton

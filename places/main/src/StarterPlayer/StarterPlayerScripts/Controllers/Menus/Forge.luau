@@ -116,7 +116,7 @@ end
 local function refreshSlots()
 	for index, slot in slotFrames do
 		local id = selected[index]
-		local viewport = slot:FindFirstChild("Viewport") :: ViewportFrame
+		local viewport = slot:FindFirstChild("Viewport") :: Frame
 		local plus = slot:FindFirstChild("Plus") :: TextLabel
 		if id then
 			Preview.ore(viewport, id, 1.2)

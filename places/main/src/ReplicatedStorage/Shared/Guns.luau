@@ -559,6 +559,22 @@ end
 
 const EVOLUTIONS: { GunDef } = {
 	evolved(
+		"Dawnbringer",
+		"SolsticeParagon",
+		"Solstice Paragon",
+		rgb(255, 247, 196),
+		rgb(255, 126, 68),
+		rgb(117, 229, 255)
+	),
+	evolved(
+		"EverlightCannon",
+		"EventideNova",
+		"Eventide Nova",
+		rgb(74, 58, 124),
+		rgb(255, 174, 237),
+		rgb(127, 242, 248)
+	),
+	evolved(
 		"SolarFlare",
 		"SolarCrown",
 		"Solar Crown",

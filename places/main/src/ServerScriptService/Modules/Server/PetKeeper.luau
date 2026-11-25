@@ -62,7 +62,7 @@ function PetKeeper.publish(player: Player)
 	player:SetAttribute("Pets", table.concat(ids, ","))
 end
 
-local function onHatch(player: Player, eggId: unknown)
+local function onHatch(player: Player, eggId: unknown, quantity: unknown)
 	if not RateLimit.allow(player, "HatchEgg", 1, 2) or typeof(eggId) ~= "string" then
 		return
 	end
@@ -75,19 +75,25 @@ local function onHatch(player: Player, eggId: unknown)
 		notifyRemote:FireClient(player, `Reach stage {egg.unlockStage} to open the {egg.name}!`)
 		return
 	end
-	if #profile.pets >= Balance.MAX_PETS then
+	local count = if quantity == 3 then 3 else 1
+	if #profile.pets + count > Balance.MAX_PETS then
 		notifyRemote:FireClient(player, "Your pet pen is full. Release a few first!")
 		return
 	end
-	if not PlayerData.spendCoins(player, Pets.price(egg)) then
+	if not PlayerData.spendCoins(player, Pets.price(egg) * count) then
 		notifyRemote:FireClient(player, "Not enough coins for that egg!")
 		return
 	end
-	local def = Pets.roll(egg, random:NextNumber())
-	local pet: Types.PetItem = { uid = PlayerData.newGunUid(profile), id = def.id, locked = false }
-	table.insert(profile.pets, pet)
+	local last: Types.PetItem? = nil
+	for _ = 1, count do
+		local def = Pets.roll(egg, random:NextNumber())
+		local pet: Types.PetItem =
+			{ uid = PlayerData.newGunUid(profile), id = def.id, locked = false }
+		table.insert(profile.pets, pet)
+		last = pet
+	end
 	PlayerData.markState(player)
-	hatchedRemote:FireClient(player, { pet = pet, eggId = egg.id })
+	hatchedRemote:FireClient(player, { pet = last, eggId = egg.id, count = count })
 end
 
 local function onEquip(player: Player, uid: unknown)
@@ -124,21 +130,54 @@ local function onUnequip(player: Player, uid: unknown)
 	PetKeeper.publish(player)
 end
 
-local function onRelease(player: Player, uid: unknown)
-	if not RateLimit.allow(player, "ReleasePet", 4, 5) or not isUid(uid) then
+local function onBest(player: Player, kind: unknown)
+	if kind ~= "Damage" and kind ~= "Training" and kind ~= "Ores" then
+		return
+	end
+	if not RateLimit.allow(player, "EquipPet", 4, 5) then
 		return
 	end
 	local profile = PlayerData.get(player)
 	if not profile then
 		return
 	end
-	local pet, index = findPet(profile, uid :: string)
-	if not pet or not index or pet.locked or table.find(profile.equippedPets, pet.uid) then
+	profile.equippedPets = PetStats.best(profile.pets, profile.equippedPets, kind :: Pets.PetKind)
+	PlayerData.markState(player)
+	PetKeeper.publish(player)
+end
+
+local function onRelease(player: Player, selection: unknown)
+	if not RateLimit.allow(player, "ReleasePet", 4, 5) then
 		return
 	end
-	local egg = eggOf(pet.id)
-	local refund = if egg then math.floor(Pets.price(egg) * RELEASE_REFUND) else 0
-	table.remove(profile.pets, index)
+	local profile = PlayerData.get(player)
+	if not profile then
+		return
+	end
+	local ids = if typeof(selection) == "table" then selection :: { unknown } else { selection }
+	local selected: { [string]: boolean } = {}
+	for i = 1, Balance.MAX_PETS do
+		local uid = ids[i]
+		if not isUid(uid) then
+			break
+		end
+		selected[uid :: string] = true
+	end
+	local refund = 0
+	for i = #profile.pets, 1, -1 do
+		local pet = profile.pets[i]
+		if
+			selected[pet.uid]
+			and not pet.locked
+			and not table.find(profile.equippedPets, pet.uid)
+		then
+			local egg = eggOf(pet.id)
+			if egg then
+				refund += math.floor(Pets.price(egg) * RELEASE_REFUND)
+			end
+			table.remove(profile.pets, i)
+		end
+	end
 	if refund > 0 then
 		PlayerData.addCoins(player, refund)
 		rewardRemote:FireClient(player, { kind = "coins", coins = refund })
@@ -163,6 +202,7 @@ function PetKeeper:Start()
 	hatchedRemote = Net.event("Hatched")
 	rewardRemote = Net.event("Reward")
 	Net.event("HatchEgg").OnServerEvent:Connect(onHatch)
+	Net.event("EquipBestPets").OnServerEvent:Connect(onBest)
 	Net.event("EquipPet").OnServerEvent:Connect(onEquip)
 	Net.event("UnequipPet").OnServerEvent:Connect(onUnequip)
 	Net.event("ReleasePet").OnServerEvent:Connect(onRelease)

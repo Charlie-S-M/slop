@@ -18,6 +18,7 @@ const Guns = require("@game/ReplicatedStorage/Shared/Guns")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
 const Rarity = require("@game/ReplicatedStorage/Shared/Rarity")
 const ShotStyles = require("@game/ReplicatedStorage/Shared/ShotStyles")
+const Birdseye = require("./Birdseye")
 const ClientState = require("./ClientState")
 const Hud = require("./Hud")
 const Kit = require("./UI/Kit")
@@ -483,13 +484,27 @@ local function startReload(stats: Guns.KindStats)
 end
 
 -- Where the shot aims: the auto target, or the point under the cursor or touch.
-local function aimRay(autoPart: BasePart?): Ray
-	if autoPart then
-		local from = camera.CFrame.Position
-		return Ray.new(from, (autoPart.Position - from).Unit)
-	end
+local function aimRay(origin: Vector3, autoPart: BasePart?): Ray
 	local point = aimScreen or UserInputService:GetMouseLocation()
-	return camera:ViewportPointToRay(point.X, point.Y)
+	if not aimScreen and UserInputService.PreferredInput == Enum.PreferredInput.Gamepad then
+		autoPart = autoPart or autoTarget()
+		local character = player.Character
+		local root = character and character:FindFirstChild("HumanoidRootPart")
+		if not autoPart and root and root:IsA("BasePart") then
+			return Ray.new(origin, root.CFrame.LookVector)
+		end
+		point = camera.ViewportSize / 2
+	end
+	local target = autoPart or Birdseye.targetAt(point)
+	local screenRay = camera:ViewportPointToRay(point.X, point.Y)
+	local at = if target
+		then target.Position
+		else screenRay.Origin + screenRay.Direction * ((origin.Y - screenRay.Origin.Y) / math.min(
+			-0.001,
+			screenRay.Direction.Y
+		))
+	local delta = at - origin
+	return Ray.new(origin, if delta.Magnitude > 0.01 then delta.Unit else Vector3.new(0, 0, -1))
 end
 
 local function fire(def: Guns.GunDef, stats: Guns.KindStats, autoPart: BasePart?)
@@ -498,11 +513,11 @@ local function fire(def: Guns.GunDef, stats: Guns.KindStats, autoPart: BasePart?
 	if not root then
 		return
 	end
-	local ray = aimRay(autoPart)
 	local params = rayParams()
 	local rarity = Rarity.get(def.rarity)
 	local color = def.accent:Lerp(rarity.glow, 0.3)
 	local origin = muzzlePosition() or (root.Position + Vector3.new(0, 1.5, 0))
+	local ray = aimRay(origin, autoPart)
 	local style = ShotStyles.forRarity(def.rarity)
 	-- Spread guns fire many pellets at once, so each pellet's extras shrink to keep the part count flat.
 	local pelletScale = if stats.pellets > 1 then 0.5 else 1
@@ -533,7 +548,9 @@ local function fire(def: Guns.GunDef, stats: Guns.KindStats, autoPart: BasePart?
 			if part:IsA("BasePart") and (isEnemyPart(part) or isTrainingPart(part)) then
 				hits[part] = (hits[part] or 0) + 1
 				hitPositions[part] = result.Position
-				styledImpact(style, result.Position, color, pelletScale)
+				if isTrainingPart(part) then
+					styledImpact(style, result.Position, color, pelletScale)
+				end
 			elseif TrainingDummy.isDummy(part) then
 				styledImpact(style, result.Position, color, pelletScale)
 				TrainingDummy.hit(
@@ -546,17 +563,13 @@ local function fire(def: Guns.GunDef, stats: Guns.KindStats, autoPart: BasePart?
 		end
 	end
 
-	-- Report the part most pellets hit; the server checks everything else.
-	local bestPart: BasePart? = nil
-	local bestCount = 0
+	local groups = {}
+	local aimPoint = firstEnd
 	for part, count in hits do
-		if count > bestCount then
-			bestPart = part
-			bestCount = count
-		end
+		table.insert(groups, { part = part, count = count, point = hitPositions[part] })
+		aimPoint = hitPositions[part]
 	end
-	local aimPoint = if bestPart then hitPositions[bestPart] else firstEnd
-	shootRemote:FireServer(bestPart, bestCount, aimPoint)
+	shootRemote:FireServer(groups, nil, aimPoint)
 
 	if def.kind == "Launcher" and aimPoint then
 		explosion(aimPoint, stats.splashRadius, color)
@@ -578,6 +591,9 @@ local function fire(def: Guns.GunDef, stats: Guns.KindStats, autoPart: BasePart?
 end
 
 local function step()
+	if player:GetAttribute("ForgeCamera") then
+		return
+	end
 	local def, stats = currentGun()
 	if not def or not stats or not tool or tool.Parent ~= player.Character then
 		return
@@ -729,16 +745,25 @@ function GunController:Start()
 	end)
 
 	-- Runs right after the camera scripts so the recoil kick isn't overwritten.
-	RunService:BindToRenderStep("PewGun", Enum.RenderPriority.Camera.Value + 1, function(dt)
+	RunService:BindToRenderStep("PewGun", Enum.RenderPriority.Camera.Value + 1, function(dt: number)
 		step()
 		-- Recoil kicks the camera up and settles back.
 		if recoil > 0.01 then
-			local kick = recoil * dt * 6
-			camera.CFrame *= CFrame.Angles(math.rad(kick * 0.4), 0, 0)
 			recoil = math.max(0, recoil - dt * 30)
 		end
 	end)
 
+	Net.unreliable("HitFx").OnClientEvent:Connect(function(at: Vector3)
+		local def, stats = currentGun()
+		if def and stats then
+			styledImpact(
+				ShotStyles.forRarity(def.rarity),
+				at,
+				def.accent:Lerp(Rarity.get(def.rarity).glow, 0.3),
+				if stats.pellets > 1 then 0.5 else 1
+			)
+		end
+	end)
 	Net.unreliable("ShotFx").OnClientEvent:Connect(drawOtherShot)
 	ClientState.ProfileChanged:Connect(function()
 		local _, stats = currentGun()

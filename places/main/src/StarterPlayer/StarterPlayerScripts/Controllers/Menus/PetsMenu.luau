@@ -32,13 +32,18 @@ local eggCards: { { egg: Pets.EggDef, price: TextLabel, button: TextButton } } =
 local list: ScrollingFrame
 local equippedLabel: TextLabel
 local detail: Frame
-local detailViewport: ViewportFrame
+local detailViewport: Frame
 local detailName: TextLabel
 local detailStats: TextLabel
 local equipButton: TextButton
 local lockButton: TextButton
 local releaseButton: TextButton
 local selectedUid: string? = nil
+local selecting = false
+local marked: { [string]: boolean } = {}
+local releaseMany: TextButton
+local hatchCard: Frame?
+local hatchCount = 0
 local content: Frame
 
 local function owned(uid: string?): PetStats.OwnedPet?
@@ -66,8 +71,8 @@ local function refreshDetail()
 	local profile = ClientState.profile
 	local pet = owned(selectedUid)
 	local def = pet and Pets.get(pet.id)
-	detail.Visible = profile ~= nil and pet ~= nil and def ~= nil
-	if not profile or not pet or not def then
+	detail.Visible = not selecting and profile ~= nil and pet ~= nil and def ~= nil
+	if selecting or not profile or not pet or not def then
 		return
 	end
 	local rarity = Rarity.get(def.rarity)
@@ -127,8 +132,9 @@ local function refreshEggs()
 			Kit.setButtonColor(card.button, Kit.Colors.Grey, Kit.Colors.GreyDark)
 		end
 	end
-	equippedLabel.Text =
-		`Following you: {#profile.equippedPets}/{Balance.PET_SLOTS}  ·  Owned: {#profile.pets}/{Balance.MAX_PETS}`
+	equippedLabel.Text = if selecting
+		then "Select unlocked pets to release"
+		else `Following you: {#profile.equippedPets}/{Balance.PET_SLOTS}  ·  Owned: {#profile.pets}/{Balance.MAX_PETS}`
 end
 
 -- What the grid shows; it is only rebuilt when this changes.
@@ -140,7 +146,21 @@ local function refresh()
 		return
 	end
 	refreshEggs()
-	local parts = { selectedUid or "", table.concat(profile.equippedPets, ",") }
+	local count = 0
+	for uid in marked do
+		local pet = owned(uid)
+		if not pet or pet.locked or table.find(profile.equippedPets, uid) then
+			marked[uid] = nil
+		else
+			count += 1
+		end
+	end
+	Kit.setButtonText(
+		releaseMany,
+		if not selecting then "Select pets" elseif count == 0 then "Cancel" else "Release " .. count
+	)
+	local parts =
+		{ tostring(selecting), selectedUid or "", table.concat(profile.equippedPets, ",") }
 	for _, pet in profile.pets do
 		table.insert(parts, `{pet.uid}:{pet.id}:{if pet.locked then 1 else 0}`)
 	end
@@ -165,7 +185,7 @@ local function refresh()
 		local def = Pets.get(pet.id)
 		if def then
 			local rarity = Rarity.get(def.rarity)
-			local selected = pet.uid == selectedUid
+			local selected = if selecting then marked[pet.uid] == true else pet.uid == selectedUid
 			local button = Kit.new("TextButton", {
 				Text = "",
 				AutoButtonColor = false,
@@ -197,7 +217,19 @@ local function refresh()
 			})
 			button.Activated:Connect(function()
 				Kit.sound(Kit.Sounds.Click, 0.3)
-				selectedUid = pet.uid
+				if selecting then
+					if pet.locked or table.find(profile.equippedPets, pet.uid) then
+						return
+					end
+					if marked[pet.uid] then
+						marked[pet.uid] = nil
+					else
+						marked[pet.uid] = true
+					end
+					lastGrid = ""
+				else
+					selectedUid = pet.uid
+				end
 				refresh()
 			end)
 		end
@@ -209,12 +241,16 @@ local function refresh()
 end
 
 -- A card that pops over the menu with the pet that just hatched.
-local function showHatch(pet: PetStats.OwnedPet)
+local function showHatch(pet: PetStats.OwnedPet, count: number)
 	local def = Pets.get(pet.id)
 	if not def or not built then
 		return
 	end
 	local rarity = Rarity.get(def.rarity)
+	if hatchCard then
+		hatchCard:Destroy()
+	end
+	hatchCount += count
 	local card = Kit.new("Frame", {
 		Size = UDim2.fromScale(0.4, 0.62),
 		Position = UDim2.fromScale(0.5, 0.5),
@@ -223,6 +259,7 @@ local function showHatch(pet: PetStats.OwnedPet)
 		ZIndex = 20,
 		Parent = content,
 	})
+	hatchCard = card
 	Kit.corner(16).Parent = card
 	Kit.stroke(5, rarity.color, Enum.ApplyStrokeMode.Border).Parent = card
 	local viewport = Preview.viewport({
@@ -255,9 +292,11 @@ local function showHatch(pet: PetStats.OwnedPet)
 		dark = Kit.Colors.BlueDark,
 		size = UDim2.fromScale(0.6, 0.13),
 		position = UDim2.fromScale(0.2, 0.83),
-		text = "Nice!",
+		text = if hatchCount == 1 then "Okay" else "Okay (" .. hatchCount .. " hatched)",
 		parent = card,
 		onClick = function()
+			hatchCard = nil
+			hatchCount = 0
 			card:Destroy()
 		end,
 	})
@@ -337,12 +376,24 @@ local function build(frame: Frame)
 			name = "Hatch",
 			color = Kit.Colors.Green,
 			dark = Kit.Colors.GreenDark,
-			size = UDim2.fromScale(0.9, 0.22),
+			size = UDim2.fromScale(0.47, 0.22),
 			position = UDim2.fromScale(0.05, 0.75),
 			text = "Hatch",
 			parent = card,
 			onClick = function()
 				Net.event("HatchEgg"):FireServer(egg.id)
+			end,
+		})
+		Kit.button({
+			name = "HatchThree",
+			color = Kit.Colors.Blue,
+			dark = Kit.Colors.BlueDark,
+			size = UDim2.fromScale(0.4, 0.22),
+			position = UDim2.fromScale(0.55, 0.75),
+			text = "Hatch ×3",
+			parent = card,
+			onClick = function()
+				Net.event("HatchEgg"):FireServer(egg.id, 3)
 			end,
 		})
 		table.insert(eggCards, { egg = egg, price = price, button = button })
@@ -361,9 +412,46 @@ local function build(frame: Frame)
 		Stroke = 2.5,
 		Parent = right,
 	})
+	for i, kind in { "Damage", "Training", "Ores" } do
+		Kit.button({
+			name = "Best" .. kind,
+			color = Kit.Colors.Blue,
+			dark = Kit.Colors.BlueDark,
+			size = UDim2.fromScale(0.24, 0.075),
+			position = UDim2.fromScale((i - 1) * 0.25, 0.085),
+			text = "Best " .. kind,
+			parent = right,
+			onClick = function()
+				Net.event("EquipBestPets"):FireServer(kind)
+			end,
+		})
+	end
+	releaseMany = Kit.button({
+		name = "SelectPets",
+		color = Kit.Colors.Red,
+		dark = Kit.Colors.RedDark,
+		size = UDim2.fromScale(0.24, 0.075),
+		position = UDim2.fromScale(0.75, 0.085),
+		text = "Select pets",
+		parent = right,
+		onClick = function()
+			if selecting then
+				local ids = {}
+				for uid in marked do
+					table.insert(ids, uid)
+				end
+				if #ids > 0 then
+					Net.event("ReleasePet"):FireServer(ids)
+				end
+				table.clear(marked)
+			end
+			selecting = not selecting
+			refresh()
+		end,
+	})
 	list = Kit.new("ScrollingFrame", {
-		Size = UDim2.fromScale(0.58, 0.91),
-		Position = UDim2.fromScale(0, 0.09),
+		Size = UDim2.fromScale(0.58, 0.82),
+		Position = UDim2.fromScale(0, 0.18),
 		BackgroundColor3 = Kit.Colors.Ink,
 		BackgroundTransparency = 0.6,
 		BorderSizePixel = 0,
@@ -381,8 +469,8 @@ local function build(frame: Frame)
 		Parent = list,
 	})
 	detail = Kit.new("Frame", {
-		Size = UDim2.fromScale(0.4, 0.91),
-		Position = UDim2.fromScale(0.6, 0.09),
+		Size = UDim2.fromScale(0.4, 0.82),
+		Position = UDim2.fromScale(0.6, 0.18),
 		BackgroundColor3 = Kit.Colors.Ink,
 		BackgroundTransparency = 0.5,
 		Visible = false,
@@ -486,7 +574,7 @@ function PetsMenu:Start()
 	end)
 	Net.event("Hatched").OnClientEvent:Connect(function(data)
 		if typeof(data) == "table" and typeof(data.pet) == "table" then
-			showHatch(data.pet)
+			showHatch(data.pet, data.count or 1)
 		end
 	end)
 end

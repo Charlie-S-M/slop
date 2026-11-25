@@ -24,7 +24,7 @@ local selectedUid: string? = nil
 local gunsGrid: ScrollingFrame
 local oresGrid: ScrollingFrame
 local detail: Frame
-local detailViewport: ViewportFrame
+local detailViewport: Frame
 local detailName: TextLabel
 local detailRarity: TextLabel
 local detailStats: TextLabel

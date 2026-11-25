@@ -24,6 +24,36 @@ local sound: Sound
 local muted = false
 local trackIndex = 1
 local inGauntlet = false
+local towerMusic = false
+local rhythmVersion = 0
+
+local function setTowerMusic(active: boolean)
+	if towerMusic == active then
+		return
+	end
+	towerMusic = active
+	rhythmVersion += 1
+	local version = rhythmVersion
+	if not active then
+		return
+	end
+	task.spawn(function()
+		local beat = 0
+		while rhythmVersion == version do
+			if not muted then
+				if beat % 4 == 0 then
+					Kit.sound(Kit.Sounds.Boom, 0.12, 1.8)
+				elseif beat % 4 == 2 then
+					Kit.sound(Kit.Sounds.Pump, 0.075, 1.5)
+				else
+					Kit.sound(Kit.Sounds.Toggle, 0.035, 2.2)
+				end
+			end
+			beat += 1
+			task.wait(60 / 150 / 2)
+		end
+	end)
+end
 local muteButton: TextButton
 
 local function play(id: string)
@@ -80,6 +110,8 @@ function Music:Start()
 	end)
 	ClientState.RunChanged:Connect(function(run)
 		local active = run.active == true
+		setTowerMusic(active and run.tower == true)
+		sound.PlaybackSpeed = if towerMusic then 1.24 else 1
 		if active ~= inGauntlet then
 			inGauntlet = active
 			task.spawn(play, if active then GAUNTLET_TRACK else LOBBY_TRACKS[trackIndex])

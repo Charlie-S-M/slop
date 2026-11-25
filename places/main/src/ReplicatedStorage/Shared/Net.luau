@@ -25,6 +25,7 @@ export type EventName =
 	| "SellArmor"
 	| "LockArmor"
 	| "HatchEgg"
+	| "EquipBestPets"
 	| "EquipPet"
 	| "UnequipPet"
 	| "ReleasePet"
@@ -70,6 +71,7 @@ const EVENTS: { EventName } = {
 	"SellArmor",
 	"LockArmor",
 	"HatchEgg",
+	"EquipBestPets",
 	"EquipPet",
 	"UnequipPet",
 	"ReleasePet",

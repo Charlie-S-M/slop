@@ -219,22 +219,42 @@ local function onShoot(player: Player, target: unknown, pellets: unknown, aim: u
 		end
 	end
 
-	if typeof(target) ~= "Instance" or not target:IsA("BasePart") then
-		return
+	local groups = if typeof(target) == "table"
+		then target :: { any }
+		else { { part = target, count = pellets, point = aim } }
+	local remaining = stats.pellets
+	local trained = false
+	for i = 1, stats.pellets do
+		local hit = groups[i]
+		if remaining == 0 or typeof(hit) ~= "table" then
+			break
+		end
+		local part, count, point = hit.part, hit.count, hit.point
+		if
+			typeof(part) ~= "Instance"
+			or not part:IsA("BasePart")
+			or typeof(count) ~= "number"
+			or count ~= count
+			or count < 1
+			or typeof(point) ~= "Vector3"
+			or point ~= point
+			or (point - root.Position).Magnitude > MAX_RANGE
+			or (part.Position - root.Position).Magnitude > MAX_RANGE + part.Size.Magnitude
+		then
+			continue
+		end
+		local accepted = math.min(math.floor(count), remaining)
+		remaining -= accepted
+		local training = findTrainingTarget(part)
+		if training then
+			if not trained then
+				onTraining(player, training, root, item.train, def.kind, point)
+				trained = true
+			end
+		else
+			onEnemyHit(player, part, accepted, item.power, def.kind, def.id, point)
+		end
 	end
-	if (target.Position - root.Position).Magnitude > MAX_RANGE + target.Size.Magnitude then
-		return
-	end
-	local count = if typeof(pellets) == "number" and pellets == pellets
-		then math.clamp(math.floor(pellets), 1, stats.pellets)
-		else 1
-
-	local trainingTarget = findTrainingTarget(target)
-	if trainingTarget then
-		onTraining(player, trainingTarget, root, item.train, def.kind, aim)
-		return
-	end
-	onEnemyHit(player, target, count, item.power, def.kind, def.id, aim)
 end
 
 function Combat:Start()

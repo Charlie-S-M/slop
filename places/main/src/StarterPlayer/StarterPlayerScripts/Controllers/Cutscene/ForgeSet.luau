@@ -322,13 +322,13 @@ local function buildBarrel(root: Model): (CFrame, ParticleEmitter)
 		root,
 		Vector3.new(0.3, 6.4, 6.4),
 		CFrame.new(center + Vector3.new(0, 6.05, 0)) * CFrame.Angles(0, 0, math.rad(90)),
-		rgb(60, 200, 255),
+		rgb(255, 92, 12),
 		Enum.Material.Neon,
-		"Water"
+		"Lava"
 	)
 	water.Shape = Enum.PartType.Cylinder
 	water.Transparency = 0.15
-	light(water, rgb(90, 200, 255), 14, 1)
+	light(water, rgb(255, 126, 30), 16, 2)
 	local steam = Instance.new("ParticleEmitter")
 	steam.Name = "Steam"
 	steam.Texture = "rbxasset://textures/particles/smoke_main.dds"

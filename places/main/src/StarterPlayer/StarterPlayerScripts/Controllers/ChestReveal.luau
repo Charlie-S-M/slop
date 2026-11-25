@@ -122,8 +122,6 @@ local function showPart(partId: string, rarity: number)
 		Parent = holder,
 	})
 	Kit.corner(2).Parent = pointer
-	-- Let the holder lay out first, so its width is real.
-	task.wait()
 	-- Land the result card's center under the pointer, a little off so it doesn't look scripted.
 	local width = holder.AbsoluteSize.X
 	local target = width / 2
@@ -209,15 +207,7 @@ function ChestReveal:Start()
 		end
 		busy = true
 		while #queue > 0 do
-			-- One broken reveal must not stop every later chest from showing.
-			local data = table.remove(queue, 1)
-			local ok, err = pcall(function()
-				open(data)
-			end)
-			if not ok then
-				warn(`[ChestReveal] {err}`)
-				screen:ClearAllChildren()
-			end
+			open(table.remove(queue, 1))
 		end
 		busy = false
 	end)

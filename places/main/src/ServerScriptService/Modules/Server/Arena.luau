@@ -34,6 +34,7 @@ export type Enemy = {
 	def: EnemyDef,
 	model: Model,
 	root: BasePart,
+	stage: number,
 	health: number,
 	maxHealth: number,
 	damage: number,
@@ -77,6 +78,10 @@ type Run = {
 	bossName: string?,
 	-- A Tower run: stages are floors (stage - TOWER_STAGE_OFFSET) and clears raise towerBest.
 	tower: boolean,
+	crystal: BasePart?,
+	integrity: number,
+	capacity: number,
+	nextWave: number,
 }
 
 const MAX_SLOTS = 16
@@ -139,6 +144,7 @@ local function sendRunInfo(run: Run, cleared: boolean?)
 		suggested = Balance.suggestedDamage(run.stage),
 		bossName = run.bossName,
 		tower = run.tower,
+		integrity = math.ceil(100 * run.integrity / run.capacity),
 		floor = if run.tower then Balance.towerFloor(run.stage) else nil,
 		cleared = cleared == true,
 		state = run.state,
@@ -181,9 +187,10 @@ local function spawnEnemy(
 	def: EnemyDef,
 	isBoss: boolean,
 	isMini: boolean,
-	position: Vector3?
+	position: Vector3?,
+	spawnStageNumber: number?
 )
-	local stage = run.stage
+	local stage = spawnStageNumber or run.stage
 	local scale = Balance.enemyScale(stage, isBoss)
 	if isMini then
 		scale *= 0.55
@@ -223,6 +230,7 @@ local function spawnEnemy(
 	local rootHeight = EnemyBuilder.rootHeight(model)
 	local enemy: Enemy = {
 		id = nextEnemyId,
+		stage = stage,
 		def = def,
 		model = model,
 		root = root,
@@ -261,7 +269,9 @@ local function spawnStage(run: Run)
 	local stage = run.stage
 	local biome = run.biome
 	local count = Balance.enemyCount(stage)
-	run.enemies = {}
+	if run.tower then
+		run.nextWave = os.clock() + Balance.TOWER_WAVE_SECONDS
+	end
 	run.bossName = nil
 	if Balance.isBossStage(stage) then
 		local boss = spawnEnemy(run, biome.boss, true, false, nil)
@@ -295,7 +305,7 @@ local function dropOres(run: Run, enemy: Enemy)
 	then
 		drops = 1
 	end
-	local pool = Ores.forBiome(run.biome.index)
+	local pool = Ores.forBiome(Biomes.forStage(enemy.stage).index)
 	if #pool == 0 then
 		return
 	end
@@ -314,7 +324,7 @@ local function dropOres(run: Run, enemy: Enemy)
 		local tag = Instance.new("BillboardGui")
 		tag.Name = "Tag"
 		tag.Size = UDim2.fromScale(6, 1.4)
-		tag.StudsOffsetWorldSpace = Vector3.new(0, 2.4, 0)
+		tag.StudsOffsetWorldSpace = Vector3.new(0, 0, -2.8)
 		tag.MaxDistance = 90
 		tag.LightInfluence = 0
 		tag.Parent = model.PrimaryPart
@@ -378,7 +388,7 @@ end
 
 -- Every boss leaves a chest: usually coins, sometimes (CHEST_PART_CHANCE) an attachment whose rarity
 -- is rolled on the reel, which Part Luck tilts toward rarer parts.
-local function openChest(run: Run, _enemy: Enemy, profile: Types.Profile)
+local function openChest(run: Run, enemy: Enemy, profile: Types.Profile)
 	if random:NextNumber() < Balance.CHEST_PART_CHANCE then
 		local luck = Upgrades.value("PartLuck", profile.upgrades.PartLuck or 0)
 		local rarity = Balance.reelRarity(random:NextNumber(), luck)
@@ -391,7 +401,7 @@ local function openChest(run: Run, _enemy: Enemy, profile: Types.Profile)
 			return
 		end
 	end
-	local coins = Balance.enemyCoins(run.stage)
+	local coins = Balance.enemyCoins(enemy.stage)
 		* Balance.CHEST_COIN_KILLS
 		* Upgrades.value("CoinBoost", profile.upgrades.CoinBoost or 0)
 		* Balance.towerBonus(profile.towerBest)
@@ -406,6 +416,13 @@ local function killEnemy(run: Run, enemy: Enemy)
 	enemy.alive = false
 	enemy.model:SetAttribute("Health", 0)
 	enemy.model:SetAttribute("Dead", true)
+	-- The death animation lingers, but shots must reach the live mob behind it.
+	for _, part in enemy.model:GetDescendants() do
+		if part:IsA("BasePart") then
+			part.CanCollide = false
+			part.CanQuery = false
+		end
+	end
 	local index = table.find(run.enemies, enemy)
 	if index then
 		table.remove(run.enemies, index)
@@ -414,12 +431,12 @@ local function killEnemy(run: Run, enemy: Enemy)
 	local profile = PlayerData.get(player)
 	if profile then
 		local coinBoost = Upgrades.value("CoinBoost", profile.upgrades.CoinBoost or 0)
-		local coins = Balance.enemyCoins(run.stage)
+		local coins = Balance.enemyCoins(enemy.stage)
 			* coinBoost
 			* (if enemy.isBoss then 6 else 1)
 			* (if enemy.isMini then 0.3 else 1)
 			* Balance.towerBonus(profile.towerBest)
-		local xp = Balance.enemyXp(run.stage) * (if enemy.isBoss then 5 else 1)
+		local xp = Balance.enemyXp(enemy.stage) * (if enemy.isBoss then 5 else 1)
 		PlayerData.addCoins(player, coins)
 		PlayerData.addXp(player, xp)
 		profile.kills += 1
@@ -444,7 +461,8 @@ local function killEnemy(run: Run, enemy: Enemy)
 				enemy.def,
 				false,
 				true,
-				enemy.position + Vector3.new(side * enemy.radius, 0, 0)
+				enemy.position + Vector3.new(side * enemy.radius, 0, 0),
+				enemy.stage
 			)
 			run.totalEnemies += 1
 			mini.model:SetAttribute("DisplayName", `Mini {enemy.def.name}`)
@@ -542,6 +560,12 @@ local function onStageCleared(run: Run)
 		profile.bestStage = run.stage
 		PlayerData.markState(run.player)
 	end
+	if run.tower then
+		run.stage += 1
+		run.player:SetAttribute("Stage", run.stage)
+		startNextStage(run)
+		return
+	end
 	sendRunInfo(run, true)
 	task.delay(Balance.STAGE_BREAK_SECONDS, function()
 		if run.state ~= "break" then
@@ -603,7 +627,25 @@ local function startRun(player: Player, startStage: number, tower: boolean?)
 		lastBagNotice = 0,
 		bossName = nil,
 		tower = tower == true,
+		crystal = nil,
+		integrity = Balance.enemyDamage(startStage) * Balance.CRYSTAL_HITS,
+		capacity = Balance.enemyDamage(startStage) * Balance.CRYSTAL_HITS,
+		nextWave = math.huge,
 	}
+	if run.tower then
+		local crystal = Instance.new("Part")
+		crystal.Name = "DefenseCrystal"
+		crystal.Size = Vector3.new(6, 9, 6)
+		crystal.Anchored = true
+		crystal.CanCollide = false
+		crystal.CanQuery = false
+		crystal.Color = Color3.fromRGB(59, 242, 255)
+		crystal.Material = Enum.Material.Neon
+		crystal.CFrame = CFrame.new(origin + Vector3.new(0, 6, 60))
+			* CFrame.Angles(0, 0, math.rad(35))
+		crystal.Parent = container
+		run.crystal = crystal
+	end
 	runs[player] = run
 	player:SetAttribute("InRun", true)
 	player:SetAttribute("Stage", startStage)
@@ -634,7 +676,11 @@ local function startRun(player: Player, startStage: number, tower: boolean?)
 
 	local character = player.Character
 	if character then
-		character:PivotTo(CFrame.new(origin + ArenaBuilder.PLAYER_START))
+		character:PivotTo(
+			CFrame.new(
+				origin + (if run.tower then Vector3.new(0, 3, 70) else ArenaBuilder.PLAYER_START)
+			)
+		)
 	end
 	sendRunInfo(run)
 	task.delay(2, function()
@@ -648,7 +694,23 @@ end
 -- Simulation
 ------------------------------------------------------------------------------------------------
 
-local function damagePlayer(run: Run, amount: number)
+local function damageObjective(run: Run, amount: number)
+	if run.tower then
+		if run.integrity <= 0 then
+			return
+		end
+		run.integrity = math.max(0, run.integrity - amount)
+		sendRunInfo(run)
+		if run.integrity == 0 then
+			task.defer(function()
+				if runs[run.player] == run then
+					notify(run.player, "The crystal shattered!")
+					endRun(run, true)
+				end
+			end)
+		end
+		return
+	end
 	local humanoid = humanoidOf(run.player)
 	if humanoid and humanoid.Health > 0 then
 		local profile = PlayerData.get(run.player)
@@ -676,9 +738,9 @@ local function launchProjectile(run: Run, enemy: Enemy, targetPosition: Vector3)
 		if run.state ~= "fighting" and run.state ~= "break" then
 			return
 		end
-		local root = rootOf(run.player)
+		local root = run.crystal or rootOf(run.player)
 		if root and (root.Position - targetPosition).Magnitude <= hitRadius then
-			damagePlayer(run, enemy.damage)
+			damageObjective(run, enemy.damage)
 		end
 	end)
 end
@@ -691,7 +753,10 @@ local function stepRun(run: Run, dt: number, now: number, roots: { BasePart }, c
 	if not playerRoot then
 		return
 	end
-	local target = playerRoot.Position
+	if run.tower and now >= run.nextWave and run.integrity > 0 then
+		onStageCleared(run)
+	end
+	local target = if run.crystal then run.crystal.Position else playerRoot.Position
 	local flatTarget = Vector3.new(target.X, run.origin.Y, target.Z)
 	local halfWidth = ArenaBuilder.WIDTH / 2 - 3
 	local halfLength = ArenaBuilder.LENGTH / 2 - 3
@@ -776,7 +841,7 @@ local function stepRun(run: Run, dt: number, now: number, roots: { BasePart }, c
 		elseif distance <= enemy.reach + 1 and now - enemy.lastAttack >= MELEE_COOLDOWN then
 			enemy.lastAttack = now
 			attackRemote:FireClient(run.player, { kind = "melee", enemy = enemy.model })
-			damagePlayer(run, enemy.damage)
+			damageObjective(run, enemy.damage)
 		end
 	end
 end
@@ -882,7 +947,7 @@ function Arena.damage(player: Player, enemy: Enemy, amount: number): boolean
 	enemy.health -= amount
 	if enemy.health <= 0 then
 		killEnemy(run, enemy)
-		if #run.enemies == 0 and run.state == "fighting" then
+		if not run.tower and #run.enemies == 0 and run.state == "fighting" then
 			onStageCleared(run)
 		end
 		return true

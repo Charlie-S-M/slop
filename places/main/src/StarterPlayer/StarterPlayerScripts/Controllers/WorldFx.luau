@@ -63,7 +63,8 @@ local function healthBar(model: Model, root: BasePart): (Frame, TextLabel)
 	gui.Name = "HealthBar"
 	-- Studs plus a pixel floor, so far-away bars stay readable and big enemies get big bars.
 	gui.Size = UDim2.new(math.clamp(2.6 * scale, 2.6, 30), 90, math.clamp(0.7 * scale, 0.7, 8), 30)
-	gui.StudsOffsetWorldSpace = Vector3.new(0, root.Size.Y / 2 + 1.2 * scale, 0)
+	gui.StudsOffsetWorldSpace =
+		Vector3.new(0, 1, -math.max(4, model:GetExtentsSize().Magnitude * 0.38))
 	gui.LightInfluence = 0
 	gui.MaxDistance = 220
 	-- Drawn in the world, so walls hide bars of enemies behind them.

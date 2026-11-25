@@ -6,6 +6,7 @@
 ]]
 
 const Players = game:GetService("Players")
+const TweenService = game:GetService("TweenService")
 const StarterGui = game:GetService("StarterGui")
 
 const Armor = require("@game/ReplicatedStorage/Shared/Armor")
@@ -132,14 +133,36 @@ local function build()
 		DisplayOrder = 5,
 		Parent = Players.LocalPlayer:WaitForChild("PlayerGui"),
 	})
-	local bar = Kit.new("Frame", {
+	local bar = Kit.new("CanvasGroup", {
 		Size = UDim2.fromOffset(SLOT_COUNT * 58 + 24, 96),
-		Position = UDim2.new(0.5, 0, 1, -158),
+		Position = UDim2.new(0.5, 0, 1, -150),
 		AnchorPoint = Vector2.new(0.5, 1),
 		BackgroundColor3 = Color3.fromRGB(22, 26, 34),
 		BackgroundTransparency = 0.12,
 		Parent = screen,
 	})
+	local transition: Tween? = nil
+	local function fade()
+		if transition then
+			transition:Cancel()
+		end
+		local hidden = Players.LocalPlayer:GetAttribute("ForgeCamera") == true
+		screen.Enabled = true
+		local tween = TweenService:Create(
+			bar,
+			TweenInfo.new(0.24),
+			{ GroupTransparency = if hidden then 1 else 0 }
+		)
+		transition = tween
+		tween.Completed:Once(function(state)
+			if state == Enum.PlaybackState.Completed and hidden then
+				screen.Enabled = false
+			end
+		end)
+		tween:Play()
+	end
+	Players.LocalPlayer:GetAttributeChangedSignal("ForgeCamera"):Connect(fade)
+	fade()
 	Kit.new("UICorner", { CornerRadius = UDim.new(0, 22), Parent = bar })
 	Kit.new(
 		"UIStroke",

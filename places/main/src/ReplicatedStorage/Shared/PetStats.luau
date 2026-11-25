@@ -42,4 +42,28 @@ function PetStats.multiplier(pets: { OwnedPet }, equipped: { string }, kind: Pet
 	return total
 end
 
+function PetStats.best(pets: { OwnedPet }, equipped: { string }, kind: Pets.PetKind): { string }
+	local ranked = table.clone(pets)
+	local function score(pet: OwnedPet): number
+		local def = Pets.get(pet.id)
+		return if def and def.kind == kind then def.bonus else 0
+	end
+	table.sort(ranked, function(a, b)
+		local sa, sb = score(a), score(b)
+		if sa ~= sb then
+			return sa > sb
+		end
+		local ea, eb = table.find(equipped, a.uid), table.find(equipped, b.uid)
+		if ea or eb then
+			return (ea or math.huge) < (eb or math.huge)
+		end
+		return a.uid < b.uid
+	end)
+	local chosen = {}
+	for i = 1, math.min(#ranked, Balance.PET_SLOTS) do
+		table.insert(chosen, ranked[i].uid)
+	end
+	return chosen
+end
+
 return PetStats

@@ -4,9 +4,9 @@ local Balance = require("@game/ReplicatedStorage/Shared/Balance")
 local Guns = require("@game/ReplicatedStorage/Shared/Guns")
 local Ores = require("@game/ReplicatedStorage/Shared/Ores")
 Jest.it(
-	"indexes twenty-two forgeable guns plus five evolutions and resolves retired IDs",
+	"indexes twenty-two forgeable guns plus seven evolutions and resolves retired IDs",
 	function()
-		Jest.expect(#Guns.List).toBe(27)
+		Jest.expect(#Guns.List).toBe(29)
 		for tier, expected in { 5, 4, 3, 3, 3, 1, 1, 2 } do
 			Jest.expect(#Guns.pool(tier)).toBe(expected)
 		end

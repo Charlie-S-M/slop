@@ -11,6 +11,7 @@ const TweenService = game:GetService("TweenService")
 const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const Format = require("@game/ReplicatedStorage/Shared/Format")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
+const PixelSprites = require("@game/ReplicatedStorage/Shared/PixelSprites")
 const Ores = require("@game/ReplicatedStorage/Shared/Ores")
 const Rarity = require("@game/ReplicatedStorage/Shared/Rarity")
 const Upgrades = require("@game/ReplicatedStorage/Shared/Upgrades")
@@ -67,7 +68,7 @@ function Effects.worldText(
 	scale.Parent = label
 	TweenService:Create(scale, Kit.BOUNCY, { Scale = 1 }):Play()
 	TweenService:Create(gui, TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-		StudsOffsetWorldSpace = Vector3.new(0, rise or 4, 0),
+		StudsOffsetWorldSpace = Vector3.new(0, 1, -(rise or 4)),
 	}):Play()
 	task.delay(0.55, function()
 		TweenService:Create(label, TweenInfo.new(0.35), { TextTransparency = 1 }):Play()
@@ -158,14 +159,18 @@ end
 ]]
 local function flyToHud(
 	from: Vector3,
-	glyph: string,
+	sprite: string,
 	target: Vector2,
 	color: Color3,
 	onArrive: () -> ()
 )
 	local point, onScreen = camera:WorldToViewportPoint(from)
 	local start = if onScreen then Vector2.new(point.X, point.Y) else camera.ViewportSize / 2
-	local icon = Kit.iconTile(glyph, color, UDim2.fromOffset(44, 44), screen)
+	local icon = Kit.new(
+		"Frame",
+		{ Size = UDim2.fromOffset(44, 44), BackgroundTransparency = 1, Parent = screen }
+	)
+	PixelSprites.draw(icon, sprite, color, color:Lerp(Color3.new(1, 1, 1), 0.4))
 	icon.AnchorPoint = Vector2.new(0.5, 0.5)
 	icon.Position = UDim2.fromOffset(start.X, start.Y)
 	icon.ZIndex = 30
@@ -466,7 +471,7 @@ local function onReward(info: any)
 			6
 		)
 		Kit.sound(Kit.Sounds.Coin, 0.25, 1.1)
-		Hud.flashCoins()
+		flyToHud(position, "CoinIcon", Hud.coinTarget(), Kit.Colors.Gold, Hud.flashCoins)
 	elseif info.kind == "ore" then
 		local ore = Ores.get(info.oreId)
 		if not ore then
@@ -474,9 +479,15 @@ local function onReward(info: any)
 		end
 		local rarity = Rarity.get(ore.rarity)
 		Kit.sound(Kit.Sounds.Pop, 0.4, 1 + ore.rarity * 0.05)
-		flyToHud(info.position, "💎", Hud.bagTarget(), ore.color, function()
-			Hud.flashBag()
-		end)
+		flyToHud(
+			info.position,
+			PixelSprites.forOre(ore.style),
+			Hud.bagTarget(),
+			ore.color,
+			function()
+				Hud.flashBag()
+			end
+		)
 		Effects.worldText(
 			info.position + Vector3.new(0, 2, 0),
 			`+1 {ore.name}`,

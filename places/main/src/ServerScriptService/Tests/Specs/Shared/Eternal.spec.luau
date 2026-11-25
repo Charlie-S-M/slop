@@ -50,9 +50,18 @@ describe("the Eternal tier", function()
 		expect(Balance.GUN_DAMAGE_TIERS[8] > Balance.GUN_DAMAGE_TIERS[7]).toBe(true)
 	end)
 
-	it("has two guns that don't evolve", function()
+	it("evolves both Eternal guns once and keeps their evolutions out of the forge pool", function()
 		expect(#Guns.pool(8)).toBe(2)
-		expect(Guns.evolutionOf("Dawnbringer")).toBe(nil)
-		expect(Guns.evolutionOf("EverlightCannon")).toBe(nil)
+		expect(Balance.evolveCost(8)).toBe(Balance.enemyCoins(70) * 300)
+		local recipes: { [string]: string } =
+			{ Dawnbringer = "SolsticeParagon", EverlightCannon = "EventideNova" }
+		for base, id in recipes do
+			local evolution = assert(Guns.evolutionOf(base))
+			expect(evolution.id).toBe(id)
+			expect(evolution.rarity).toBe(8)
+			expect(evolution.kind).toBe(assert(Guns.get(base)).kind)
+			expect(Guns.evolutionOf(id)).toBeNil()
+			expect(table.find(Guns.pool(8), evolution)).toBeNil()
+		end
 	end)
 end)

@@ -24,7 +24,7 @@ local function entry(
 	rarityTier: number,
 	found: boolean,
 	name: string,
-	fill: (ViewportFrame) -> (),
+	fill: (Frame) -> (),
 	note: string?
 )
 	local rarity = Rarity.get(rarityTier)
@@ -47,8 +47,12 @@ local function entry(
 	fill(viewport)
 	if not found then
 		-- A dark silhouette for things not yet discovered.
-		viewport.ImageColor3 = Color3.new(0, 0, 0)
-		viewport.ImageTransparency = 0.2
+		for _, pixel in viewport:GetDescendants() do
+			if pixel:IsA("Frame") and pixel.BackgroundTransparency < 1 then
+				pixel.BackgroundColor3 = Color3.new(0, 0, 0)
+				pixel.BackgroundTransparency = 0.2
+			end
+		end
 	end
 	Kit.text({
 		Text = if found then name else "???",

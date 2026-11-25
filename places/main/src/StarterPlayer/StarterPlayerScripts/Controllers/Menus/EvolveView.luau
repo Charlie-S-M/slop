@@ -23,8 +23,8 @@ local root: Frame
 local list: ScrollingFrame
 local emptyLabel: TextLabel
 local detail: Frame
-local beforeViewport: ViewportFrame
-local afterViewport: ViewportFrame
+local beforeViewport: Frame
+local afterViewport: Frame
 local titleLabel: TextLabel
 local statsLabel: TextLabel
 local costLabel: TextLabel
@@ -196,7 +196,7 @@ function EvolveView.build(parent: Frame): Frame
 		Parent = list,
 	})
 	emptyLabel = Kit.text({
-		Text = "Only Legendary, Mythic, and Godly guns can evolve. Forge one, then bring a Glassheart from the Glassfall Foundry boss!",
+		Text = "Legendary, Mythic, Godly, and Eternal guns can evolve. Forge one, then bring a Glassheart from the Glassfall Foundry boss!",
 		Size = UDim2.new(0.42, -20, 0, 90),
 		Position = UDim2.new(0, 10, 0.12, 0),
 		Stroke = 2,

@@ -20,7 +20,7 @@ describe("evolutions", function()
 	end)
 
 	it("gives every Legendary+ forge gun an evolution and nothing below", function()
-		for rarity = 1, 7 do
+		for rarity = 1, 8 do
 			for _, def in Guns.pool(rarity) do
 				expect(Guns.evolutionOf(def.id) ~= nil).toBe(rarity >= 5)
 			end
@@ -36,7 +36,7 @@ describe("evolutions", function()
 				expect(table.find(Guns.pool(def.rarity), def)).toBeNil()
 			end
 		end
-		expect(evolvedCount).toBe(5)
+		expect(evolvedCount).toBe(7)
 	end)
 
 	it("charges coins worth stage-70 kills, only from Legendary up", function()

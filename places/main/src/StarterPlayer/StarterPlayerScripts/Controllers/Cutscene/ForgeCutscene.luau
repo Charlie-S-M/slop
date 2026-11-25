@@ -301,11 +301,10 @@ local function quench(set: ForgeSet.Set, gun: Model, paints: { Paint })
 	local barrel = set.barrelTop.Position
 	shot(barrel + Vector3.new(-8, 6, 10), barrel + Vector3.new(0, 2, 0))
 	local above = CFrame.new(barrel + Vector3.new(0, 7, 0))
-	gun:PivotTo(above * CFrame.Angles(0, math.rad(90), math.rad(90)))
+	gun:PivotTo(above * CFrame.Angles(0, math.rad(90), 0))
 	tweenNumber(0, 1, 0.45, function(t)
 		gun:PivotTo(
-			CFrame.new(barrel + Vector3.new(0, 7 - 10 * t, 0))
-				* CFrame.Angles(0, math.rad(90), math.rad(90))
+			CFrame.new(barrel + Vector3.new(0, 7 - 10 * t, 0)) * CFrame.Angles(0, math.rad(90), 0)
 		)
 	end)
 	task.wait(0.45)
@@ -357,6 +356,7 @@ local function restore()
 	end
 	camera.CameraType = Enum.CameraType.Custom
 	camera.FieldOfView = 70
+	Players.LocalPlayer:SetAttribute("ForgeCamera", false)
 	Hud.screen().Enabled = true
 	setControls(true)
 	if stage then
@@ -391,6 +391,7 @@ function ForgeCutscene.reveal(result: Result, label: string?)
 	if not ForgeCutscene.playing then
 		ForgeCutscene.playing = true
 		Menus.close()
+		Players.LocalPlayer:SetAttribute("ForgeCamera", true)
 		Hud.screen().Enabled = false
 		setControls(false)
 	end
@@ -633,6 +634,7 @@ function ForgeCutscene.play(start: Start, strike: (number) -> number): { number 
 	ForgeCutscene.skipRequested = false
 	aborted = false
 	Menus.close()
+	Players.LocalPlayer:SetAttribute("ForgeCamera", true)
 	Hud.screen().Enabled = false
 	setControls(false)
 	local set = ForgeSet.get()
