@@ -4,13 +4,9 @@
 
 const Players = game:GetService("Players")
 
-const Armor = require("@game/ReplicatedStorage/Shared/Armor")
-const ArmorBuilder = require("@game/ReplicatedStorage/Shared/ArmorBuilder")
-const ArmorStats = require("@game/ReplicatedStorage/Shared/ArmorStats")
 const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const GunBuilder = require("@game/ReplicatedStorage/Shared/GunBuilder")
 const Guns = require("@game/ReplicatedStorage/Shared/Guns")
-const Types = require("@game/ReplicatedStorage/Shared/Types")
 const Upgrades = require("@game/ReplicatedStorage/Shared/Upgrades")
 const PlayerData = require("./PlayerData")
 
@@ -74,23 +70,13 @@ function Loadout.refreshStats(player: Player)
 	humanoid.UseJumpPower = true
 end
 
--- Rebuilds the armor the character wears from the profile's equipped pieces.
+-- Armor no longer shows on the avatar (the hotbar shows it instead); this only clears pieces an
+-- older server welded on. Worn armor still blocks damage through the profile.
 function Loadout.refreshArmor(player: Player)
-	local profile = PlayerData.get(player)
 	local character = player.Character
-	if not profile or not character then
-		return
-	end
-	local old = character:FindFirstChild("Armor")
+	local old = character and character:FindFirstChild("Armor")
 	if old then
 		old:Destroy()
-	end
-	for _, slot: Types.ArmorSlot in Armor.SLOTS do
-		local item = ArmorStats.equippedIn(profile.armor, profile.equippedArmor, slot)
-		local def = item and Armor.get(item.id)
-		if def then
-			ArmorBuilder.attach(character, def)
-		end
 	end
 end
 
