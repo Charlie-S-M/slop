@@ -104,7 +104,11 @@ end
 
 -- Puts an owned part on the equipped gun, returning whatever was in that slot to the pile.
 local function onEquipPart(player: Player, partId: unknown)
-	if not RateLimit.allow(player, "EquipPart", 4, 5) or typeof(partId) ~= "string" then
+	if
+		not RateLimit.allow(player, "EquipPart", 4, 5)
+		or typeof(partId) ~= "string"
+		or not inLobby(player)
+	then
 		return
 	end
 	local profile = PlayerData.get(player)
@@ -132,7 +136,11 @@ local function onEquipPart(player: Player, partId: unknown)
 end
 
 local function onUnequipPart(player: Player, slot: unknown)
-	if not RateLimit.allow(player, "EquipPart", 4, 5) or not Attachments.isSlot(slot) then
+	if
+		not RateLimit.allow(player, "EquipPart", 4, 5)
+		or not Attachments.isSlot(slot)
+		or not inLobby(player)
+	then
 		return
 	end
 	local profile = PlayerData.get(player)
