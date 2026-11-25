@@ -431,6 +431,69 @@ const LIST: { BiomeDef } = {
 			"Crown"
 		),
 	},
+	{
+		-- A glassworks of glowing kilns and crystal cullet, past the Void Rift.
+		index = 7,
+		name = "Glassfall Foundry",
+		floor = rgb(48, 64, 74),
+		floorAccent = rgb(120, 220, 230),
+		wall = rgb(70, 150, 165),
+		wallAccent = rgb(255, 170, 70),
+		trim = rgb(210, 245, 250),
+		glow = rgb(255, 175, 80),
+		fogColor = rgb(150, 205, 215),
+		ambient = rgb(120, 150, 160),
+		enemies = {
+			enemy(
+				"KilnHound",
+				"Kiln Hound",
+				"Critter",
+				"Fast",
+				rgb(255, 140, 60),
+				rgb(70, 60, 60),
+				rgb(255, 230, 140),
+				0.6,
+				17,
+				"Spikes"
+			),
+			enemy(
+				"PaneKnight",
+				"Pane Knight",
+				"Humanoid",
+				"Melee",
+				rgb(150, 220, 230),
+				rgb(60, 110, 130),
+				rgb(255, 180, 80),
+				1.1,
+				10,
+				"Helmet"
+			),
+			enemy(
+				"CulletGolem",
+				"Cullet Golem",
+				"Brute",
+				"Tank",
+				rgb(120, 200, 215),
+				rgb(255, 150, 60),
+				rgb(255, 240, 180),
+				2.6,
+				5.5,
+				"Spikes"
+			),
+		},
+		boss = enemy(
+			"GlassheartWarden",
+			"Glassheart Warden",
+			"Brute",
+			"Ranged",
+			rgb(170, 235, 245),
+			rgb(255, 140, 50),
+			rgb(255, 90, 140),
+			1,
+			6,
+			"Crown"
+		),
+	},
 }
 
 local Biomes = {}

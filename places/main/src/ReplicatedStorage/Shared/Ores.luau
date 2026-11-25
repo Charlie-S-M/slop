@@ -61,6 +61,12 @@ const ENTRIES: { Entry } = {
 	{ "Quasarite", "Quasarite", 7, rgb(80, 240, 230), "Core" },
 	{ "EclipseCore", "Eclipse Core", 7, rgb(255, 120, 250), "Core" },
 	{ "Singularity", "Singularity", 7, rgb(255, 255, 255), "Core" },
+	-- 7 Glassfall Foundry
+	{ "Kilnglass", "Kilnglass", 7, rgb(255, 160, 70), "Crystal" },
+	{ "Cullet", "Cullet", 7, rgb(140, 230, 240), "Crystal" },
+	{ "Prismite", "Prismite", 7, rgb(200, 150, 255), "Gem" },
+	{ "AnnealedEmber", "Annealed Ember", 7, rgb(255, 100, 60), "Core" },
+	{ "Glasscore", "Glasscore", 7, rgb(220, 250, 255), "Core" },
 }
 
 const PER_BIOME = 5
