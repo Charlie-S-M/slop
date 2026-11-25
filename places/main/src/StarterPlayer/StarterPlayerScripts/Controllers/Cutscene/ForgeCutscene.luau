@@ -15,6 +15,8 @@ const TweenService = game:GetService("TweenService")
 
 const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const Format = require("@game/ReplicatedStorage/Shared/Format")
+const Armor = require("@game/ReplicatedStorage/Shared/Armor")
+const ArmorBuilder = require("@game/ReplicatedStorage/Shared/ArmorBuilder")
 const GunBuilder = require("@game/ReplicatedStorage/Shared/GunBuilder")
 const GunStats = require("@game/ReplicatedStorage/Shared/GunStats")
 const Guns = require("@game/ReplicatedStorage/Shared/Guns")
@@ -32,7 +34,8 @@ const Kit = require("../UI/Kit")
 const Menus = require("../Menus")
 
 export type Start = { token: string, gunId: string, rarity: number, oreIds: { string } }
-export type Result = { item: Types.GunItem, new: boolean, better: boolean }
+export type Result =
+	{ item: Types.GunItem?, armor: Types.ArmorItem?, new: boolean, better: boolean }
 
 const MOLTEN = Color3.fromRGB(255, 130, 30)
 const GRADE_COLORS = {
@@ -129,10 +132,22 @@ end
 
 type Paint = { part: BasePart, color: Color3, material: Enum.Material }
 
--- A copy of the gun, anchored, lying flat with its barrel along +X, recording its real colors.
-local function buildGun(def: Guns.GunDef, reveal: boolean?): (Model, { Paint })
-	local model = GunBuilder.build(def)
+--[[
+	A copy of the forged item, anchored, recording its real colors. `id` names a gun (lying flat with
+	its barrel along +X) or an armor piece. Nil when the id is in neither catalog.
+]]
+local function buildGun(id: string, reveal: boolean?): (Model?, { Paint })
+	local gunDef = Guns.get(id)
+	local armorDef = Armor.get(id)
 	local paints: { Paint } = {}
+	local model: Model
+	if gunDef then
+		model = GunBuilder.build(gunDef)
+	elseif armorDef then
+		model = ArmorBuilder.build(armorDef)
+	else
+		return nil, paints
+	end
 	for _, descendant in model:GetDescendants() do
 		if descendant:IsA("BasePart") then
 			descendant.Anchored = true
@@ -361,11 +376,18 @@ end
 ]]
 function ForgeCutscene.reveal(result: Result, label: string?)
 	local item = result.item
-	local def = Guns.get(item.id)
-	if not def then
+	local armorItem = result.armor
+	local gunDef = if item then Guns.get(item.id) else nil
+	local armorDef = if armorItem then Armor.get(armorItem.id) else nil
+	local id = if item then item.id elseif armorItem then armorItem.id else ""
+	local tier = if gunDef then gunDef.rarity elseif armorDef then armorDef.rarity else nil
+	local grade: Types.Grade = if item then item.grade elseif armorItem then armorItem.grade else "D"
+	if not tier then
 		restore()
 		return
 	end
+	local displayName = if gunDef then gunDef.name elseif armorDef then armorDef.name else id
+	local kindLabel = if gunDef then gunDef.kind elseif armorDef then armorDef.slot else ""
 	if not ForgeCutscene.playing then
 		ForgeCutscene.playing = true
 		Menus.close()
@@ -374,7 +396,7 @@ function ForgeCutscene.reveal(result: Result, label: string?)
 	end
 	local tag = label or (if result.new then "NEW!" else nil)
 	local set = ForgeSet.get()
-	local rarity = Rarity.get(def.rarity)
+	local rarity = Rarity.get(tier)
 	local barrel = set.barrelTop.Position
 	local revealStage = stage or Instance.new("Model")
 	stage = revealStage
@@ -383,7 +405,7 @@ function ForgeCutscene.reveal(result: Result, label: string?)
 	local function alive(): boolean
 		return ForgeCutscene.playing and stage == revealStage
 	end
-	local gun = buildGun(def, true)
+	local gun = buildGun(id, true) :: Model
 	gun.Parent = revealStage
 	local glow = Instance.new("Part")
 	glow.Anchored = true
@@ -394,7 +416,7 @@ function ForgeCutscene.reveal(result: Result, label: string?)
 	local light = Instance.new("PointLight")
 	light.Color = rarity.color
 	light.Range = 28
-	light.Brightness = if def.rarity >= 4 then 6 else 3
+	light.Brightness = if tier >= 4 then 6 else 3
 	light.Parent = glow
 	shot(barrel + Vector3.new(0, 7, 15), barrel + Vector3.new(0, 6, 0), 45)
 	local started = os.clock()
@@ -408,21 +430,21 @@ function ForgeCutscene.reveal(result: Result, label: string?)
 	end)
 	revealSpin = spin
 	set.steam:Emit(20)
-	Kit.sound(Kit.Sounds.Ding, 0.5, 1 + def.rarity * 0.04)
-	if def.rarity >= 4 then
+	Kit.sound(Kit.Sounds.Ding, 0.5, 1 + tier * 0.04)
+	if tier >= 4 then
 		Kit.sound(Kit.Sounds.Boom, 0.3, 1.2)
 	end
-	if RevealStyles.forRarity(def.rarity) then
+	if RevealStyles.forRarity(tier) then
 		-- Let the gun rise into view, then hit the impact frame before the card.
 		task.wait(0.5)
 		if alive() then
-			ImpactFrames.play(def.rarity, gun, screen, revealStage, alive)
+			ImpactFrames.play(tier, gun, screen, revealStage, alive)
 		end
 		if not alive() then
 			return
 		end
 	end
-	if def.rarity >= 5 then
+	if tier >= 5 then
 		Effects.confetti({ rarity.color, rarity.glow, Color3.new(1, 1, 1) }, 80)
 	end
 
@@ -451,7 +473,7 @@ function ForgeCutscene.reveal(result: Result, label: string?)
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Rotation = index * 15,
 			BackgroundColor3 = rarity.glow,
-			BackgroundTransparency = if def.rarity >= 4 then 0.45 else 0.7,
+			BackgroundTransparency = if tier >= 4 then 0.45 else 0.7,
 			BorderSizePixel = 0,
 			Parent = rays,
 		})
@@ -471,7 +493,7 @@ function ForgeCutscene.reveal(result: Result, label: string?)
 		stroke.Color = rarity.color
 	end
 	Kit.text({
-		Text = def.name .. (if tag then `  {tag}` else ""),
+		Text = displayName .. (if tag then `  {tag}` else ""),
 		Size = UDim2.fromScale(0.72, 0.14),
 		Position = UDim2.fromScale(0.05, 0.04),
 		TextXAlignment = Enum.TextXAlignment.Left,
@@ -480,7 +502,7 @@ function ForgeCutscene.reveal(result: Result, label: string?)
 		Parent = card,
 	})
 	Kit.text({
-		Text = `{rarity.name} {def.kind}`,
+		Text = `{rarity.name} {kindLabel}`,
 		Size = UDim2.fromScale(0.7, 0.08),
 		Position = UDim2.fromScale(0.05, 0.18),
 		TextXAlignment = Enum.TextXAlignment.Left,
@@ -492,14 +514,14 @@ function ForgeCutscene.reveal(result: Result, label: string?)
 		Size = UDim2.fromScale(0.2, 0.2),
 		Position = UDim2.fromScale(0.95, 0.04),
 		AnchorPoint = Vector2.new(1, 0),
-		BackgroundColor3 = GRADE_COLORS[item.grade] or Kit.Colors.Grey,
+		BackgroundColor3 = GRADE_COLORS[grade] or Kit.Colors.Grey,
 		Parent = card,
 	})
 	Kit.aspect(1).Parent = badge
 	Kit.corner(12).Parent = badge
 	Kit.stroke(3, Kit.Colors.Ink, Enum.ApplyStrokeMode.Border).Parent = badge
 	Kit.text({
-		Text = item.grade,
+		Text = grade,
 		Size = UDim2.fromScale(0.8, 0.8),
 		Position = UDim2.fromScale(0.1, 0.1),
 		Stroke = 3,
@@ -515,28 +537,46 @@ function ForgeCutscene.reveal(result: Result, label: string?)
 		"UIListLayout",
 		{ SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0.02, 0), Parent = stats }
 	)
-	statLine(stats, 1, "💥 Power", Format.abbreviate(item.power), Color3.fromRGB(255, 200, 90))
-	statLine(
-		stats,
-		2,
-		"⚡ Speed",
-		`{string.format("%.1f", GunStats.fireRate(def.kind, item.speed))}/s ({Format.multiplier(
-			item.speed
-		)})`,
-		Color3.fromRGB(120, 220, 255)
-	)
-	statLine(
-		stats,
-		3,
-		"🎯 Training",
-		`+{Format.abbreviate(item.train)}/shot`,
-		Color3.fromRGB(150, 255, 130)
-	)
+	if item and gunDef then
+		statLine(
+			stats,
+			1,
+			"💥 Power",
+			Format.abbreviate(item.power),
+			Color3.fromRGB(255, 200, 90)
+		)
+		statLine(
+			stats,
+			2,
+			"⚡ Speed",
+			`{string.format("%.1f", GunStats.fireRate(gunDef.kind, item.speed))}/s ({Format.multiplier(
+				item.speed
+			)})`,
+			Color3.fromRGB(120, 220, 255)
+		)
+		statLine(
+			stats,
+			3,
+			"🎯 Training",
+			`+{Format.abbreviate(item.train)}/shot`,
+			Color3.fromRGB(150, 255, 130)
+		)
+	elseif armorItem then
+		statLine(
+			stats,
+			1,
+			"🛡️ Blocks",
+			`{Format.percent(armorItem.defense)} of each hit`,
+			Color3.fromRGB(150, 210, 255)
+		)
+	end
 
 	local function finish(equip: boolean)
 		spin:Disconnect()
-		if equip then
+		if equip and item then
 			Net.event("Equip"):FireServer(item.uid)
+		elseif equip and armorItem then
+			Net.event("EquipArmor"):FireServer(armorItem.uid)
 		end
 		restore()
 	end
@@ -583,11 +623,12 @@ end
 	because the cutscene was aborted count as 0.
 ]]
 function ForgeCutscene.play(start: Start, strike: (number) -> number): { number }
-	local def = Guns.get(start.gunId)
 	local accuracies = table.create(Balance.STRIKES, 0)
-	if not def then
+	local built, paints = buildGun(start.gunId)
+	if not built then
 		return accuracies
 	end
+	local gun: Model = built
 	ForgeCutscene.playing = true
 	ForgeCutscene.skipRequested = false
 	aborted = false
@@ -599,7 +640,6 @@ function ForgeCutscene.play(start: Start, strike: (number) -> number): { number 
 	(stage :: Model).Name = "ForgeStage"
 	(stage :: Model).Parent = workspace
 	local rarityColor = Rarity.get(start.rarity).color
-	local gun, paints = buildGun(def)
 
 	skipButton = Kit.button({
 		name = "Skip",

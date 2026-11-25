@@ -8,11 +8,14 @@
 
 const TweenService = game:GetService("TweenService")
 
+const Armor = require("@game/ReplicatedStorage/Shared/Armor")
+const ArmorStats = require("@game/ReplicatedStorage/Shared/ArmorStats")
 const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const Format = require("@game/ReplicatedStorage/Shared/Format")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
 const Ores = require("@game/ReplicatedStorage/Shared/Ores")
 const Rarity = require("@game/ReplicatedStorage/Shared/Rarity")
+const Types = require("@game/ReplicatedStorage/Shared/Types")
 const Upgrades = require("@game/ReplicatedStorage/Shared/Upgrades")
 const ClientState = require("../ClientState")
 const Kit = require("../UI/Kit")
@@ -38,6 +41,11 @@ local forging = false
 local activeToken: string? = nil
 local beganAt = 0
 local strikes: { number } = {}
+-- What the forge makes: "Gun", or an armor slot.
+local target = "Gun"
+local targetButtons: { [string]: TextButton } = {}
+const WORST: Types.Grade = "D"
+const BEST: Types.Grade = "S"
 
 local function selectedCount(id: string): number
 	local count = 0
@@ -88,6 +96,15 @@ local function refreshOdds()
 		if (odds.chances[tier] or 0) > 0.0005 then
 			lowTier = math.min(lowTier, tier)
 			topTier = tier
+		end
+	end
+	for _, slot: Types.ArmorSlot in Armor.SLOTS do
+		if slot == target then
+			local low = ArmorStats.roll(Armor.forSlot(slot, lowTier), WORST, Balance.ARMOR_ROLL_MIN)
+			local high = ArmorStats.roll(Armor.forSlot(slot, topTier), BEST, Balance.ARMOR_ROLL_MAX)
+			powerLabel.Text = `🛡️ Blocks {Format.percent(low)} – {Format.percent(high)}`
+			Kit.setButtonColor(forgeButton, Kit.Colors.Orange, Kit.Colors.OrangeDark)
+			return
 		end
 	end
 	local low = Balance.forgePowerRange(odds.basePower, lowTier)
@@ -248,7 +265,23 @@ local function doForge()
 	for _, id in selected do
 		request[id] = (request[id] or 0) + 1
 	end
-	Net.event("Forge"):FireServer(request)
+	if target == "Gun" then
+		Net.event("Forge"):FireServer(request)
+	else
+		Net.event("ForgeArmor"):FireServer(target, request)
+	end
+end
+
+local function setTarget(name: string)
+	target = name
+	for key, button in targetButtons do
+		if key == name then
+			Kit.setButtonColor(button, Kit.Colors.Orange, Kit.Colors.OrangeDark)
+		else
+			Kit.setButtonColor(button, Kit.Colors.GreyDark, Kit.Colors.Ink)
+		end
+	end
+	refreshOdds()
 end
 
 local function build(content: Frame)
@@ -361,9 +394,32 @@ local function build(content: Frame)
 		end,
 	})
 
+	-- What to forge: a gun or one of the armor slots.
+	local targets = {
+		{ "Gun", "Gun" },
+		{ "Helmet", "Helmet" },
+		{ "Chestplate", "Chest" },
+		{ "Boots", "Boots" },
+	}
+	for index, entry in targets do
+		targetButtons[entry[1]] = Kit.button({
+			name = entry[1],
+			color = Kit.Colors.GreyDark,
+			dark = Kit.Colors.Ink,
+			size = UDim2.fromScale(0.23, 0.065),
+			position = UDim2.fromScale((index - 1) * 0.255, 0.37),
+			text = entry[2],
+			parent = right,
+			onClick = function()
+				Kit.sound(Kit.Sounds.Click, 0.3)
+				setTarget(entry[1])
+			end,
+		})
+	end
+
 	local oddsBox = Kit.new("Frame", {
-		Size = UDim2.fromScale(1, 0.4),
-		Position = UDim2.fromScale(0, 0.38),
+		Size = UDim2.fromScale(1, 0.33),
+		Position = UDim2.fromScale(0, 0.45),
 		BackgroundColor3 = Kit.Colors.Ink,
 		BackgroundTransparency = 0.5,
 		Parent = right,
@@ -420,6 +476,7 @@ local function build(content: Frame)
 		parent = right,
 		onClick = doForge,
 	})
+	setTarget(target)
 
 	-- Everything above is the Forge tab; the Evolve tab sits beside it.
 	local forgeView = Kit.new(
