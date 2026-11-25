@@ -74,12 +74,10 @@ describe("evolutions", function()
 end)
 
 describe("Glassfall Foundry", function()
-	it("fills stages 61 to 70 and moves the loop to stage 71", function()
+	it("fills stages 61 to 70", function()
 		expect(Biomes.forStage(61).index).toBe(7)
 		expect(Biomes.forStage(70).index).toBe(7)
-		expect(Biomes.forStage(71).index).toBe(1)
 		expect(Biomes.ascension(70)).toBe(0)
-		expect(Biomes.ascension(71)).toBe(1)
 	end)
 
 	it("is guarded by the Glassheart Warden", function()

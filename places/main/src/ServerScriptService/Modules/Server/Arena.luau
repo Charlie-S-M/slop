@@ -353,13 +353,14 @@ local function awardBossMaterials(run: Run, enemy: Enemy, profile: Types.Profile
 	local bossId = enemy.def.id
 	local firstKill = not profile.bossesDefeated[bossId]
 	profile.bossesDefeated[bossId] = true
-	if bossId == Balance.GLASSHEART_BOSS then
-		local count = Balance.glassheartDrop(firstKill, random:NextNumber())
+	local material = Balance.BOSS_MATERIALS[bossId]
+	if material then
+		local count = Balance.bossMaterialDrop(firstKill, random:NextNumber())
 		if count > 0 then
-			profile.materials.Glassheart = (profile.materials.Glassheart or 0) + count
+			profile.materials[material] = (profile.materials[material] or 0) + count
 			rewardRemote:FireClient(run.player, {
 				kind = "material",
-				id = "Glassheart",
+				id = material,
 				count = count,
 				position = enemy.position + Vector3.new(0, enemy.rootHeight * 2, 0),
 			})

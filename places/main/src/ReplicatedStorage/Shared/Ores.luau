@@ -67,6 +67,12 @@ const ENTRIES: { Entry } = {
 	{ "Prismite", "Prismite", 7, rgb(200, 150, 255), "Gem" },
 	{ "AnnealedEmber", "Annealed Ember", 7, rgb(255, 100, 60), "Core" },
 	{ "Glasscore", "Glasscore", 7, rgb(220, 250, 255), "Core" },
+	-- Biome 8: Aurora Reach. Auroracore also unlocks the Eternal tier.
+	{ "Frostglass", "Frostglass", 7, rgb(200, 230, 255), "Crystal" },
+	{ "Rimesteel", "Rimesteel", 7, rgb(150, 170, 200), "Metal" },
+	{ "Polarite", "Polarite", 7, rgb(120, 200, 255), "Gem" },
+	{ "Borealite", "Borealite", 7, rgb(170, 110, 255), "Gem" },
+	{ "Auroracore", "Auroracore", 7, rgb(120, 255, 190), "Core" },
 }
 
 const PER_BIOME = 5

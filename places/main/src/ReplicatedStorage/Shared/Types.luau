@@ -30,6 +30,8 @@ export type ArmorItem = {
 	locked: boolean?,
 	-- What the ores it was forged from would have sold for; its own sell price comes from this.
 	worth: number?,
+	-- Set once a Starshard has tempered the piece; it can't be tempered again.
+	tempered: boolean?,
 }
 
 -- A forge the server has rolled but the player hasn't finished hammering yet.

@@ -494,6 +494,69 @@ const LIST: { BiomeDef } = {
 			"Crown"
 		),
 	},
+	{
+		-- A frozen ridge under the northern lights, past the Glassfall Foundry.
+		index = 8,
+		name = "Aurora Reach",
+		floor = rgb(225, 238, 250),
+		floorAccent = rgb(150, 255, 200),
+		wall = rgb(120, 170, 220),
+		wallAccent = rgb(170, 110, 255),
+		trim = rgb(245, 250, 255),
+		glow = rgb(120, 255, 190),
+		fogColor = rgb(180, 210, 255),
+		ambient = rgb(140, 150, 185),
+		enemies = {
+			enemy(
+				"FrostLynx",
+				"Frost Lynx",
+				"Critter",
+				"Fast",
+				rgb(230, 240, 255),
+				rgb(120, 160, 220),
+				rgb(120, 255, 200),
+				0.65,
+				18,
+				"Spikes"
+			),
+			enemy(
+				"RimeArcher",
+				"Rime Archer",
+				"Humanoid",
+				"Ranged",
+				rgb(190, 220, 255),
+				rgb(80, 90, 160),
+				rgb(170, 110, 255),
+				1.1,
+				10,
+				"Helmet"
+			),
+			enemy(
+				"GlacierOx",
+				"Glacier Ox",
+				"Brute",
+				"Tank",
+				rgb(170, 205, 235),
+				rgb(70, 90, 130),
+				rgb(150, 255, 210),
+				2.8,
+				5.5,
+				"Spikes"
+			),
+		},
+		boss = enemy(
+			"AuroraSentinel",
+			"Aurora Sentinel",
+			"Humanoid",
+			"Ranged",
+			rgb(220, 240, 255),
+			rgb(120, 90, 220),
+			rgb(120, 255, 190),
+			1,
+			8,
+			"Crown"
+		),
+	},
 }
 
 local Biomes = {}

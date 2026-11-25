@@ -490,7 +490,11 @@ local function onReward(info: any)
 		local glow = Color3.fromRGB(255, 150, 200)
 		Kit.sound(Kit.Sounds.Ding, 0.5, 1.3)
 		Effects.worldText(info.position, `+{info.count} {info.id}`, glow, 2.2, 7)
-		Effects.toast(`💎 Glassheart found! Evolve a Legendary+ gun at the forge.`, glow)
+		if info.id == "Starshard" then
+			Effects.toast(`✨ Starshard found! Temper an armor piece at the forge.`, glow)
+		else
+			Effects.toast(`💎 {info.id} found! Evolve a Legendary+ gun at the forge.`, glow)
+		end
 		Effects.confetti({ glow, Color3.fromRGB(140, 230, 240), Color3.new(1, 1, 1) }, 40)
 	elseif info.kind == "coins" then
 		Kit.sound(Kit.Sounds.CoinRetro, 0.4)

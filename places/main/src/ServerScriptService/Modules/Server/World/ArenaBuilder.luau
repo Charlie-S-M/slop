@@ -440,6 +440,13 @@ function ArenaBuilder.decorate(arena: Model, biome: Biomes.BiomeDef)
 			else
 				glassCluster(decor, spot, scale)
 			end
+		elseif biome.index == 8 then
+			-- Ice spires and frosted crystal heaps under the aurora.
+			if math.floor(index / 2) % 2 == 0 then
+				glassCluster(decor, spot, scale)
+			else
+				voidCrystal(decor, spot + Vector3.new(0, 2, 0), scale)
+			end
 		else
 			voidCrystal(decor, spot + Vector3.new(0, 2, 0), scale)
 		end

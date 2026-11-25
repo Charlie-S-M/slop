@@ -96,6 +96,25 @@ function Balance.glassheartDrop(firstKill: boolean, roll: number): number
 	return 0
 end
 
+-- The material each boss drops: one on the first kill ever, then at GLASSHEART_REPEAT_CHANCE.
+Balance.BOSS_MATERIALS = {
+	GlassheartWarden = "Glassheart",
+	AuroraSentinel = "Starshard",
+} :: { [string]: string }
+
+function Balance.bossMaterialDrop(firstKill: boolean, roll: number): number
+	return Balance.glassheartDrop(firstKill, roll)
+end
+
+-- Tempering: one Starshard plus coins makes an armor piece block TEMPER_MULTIPLIER times as much, once.
+Balance.TEMPER_MULTIPLIER = 1.25
+Balance.TEMPER_KILLS = { 2, 4, 8, 15, 30, 60, 120, 240 }
+
+function Balance.temperCost(rarity: number): number
+	return Balance.enemyCoins(80)
+		* Balance.TEMPER_KILLS[math.clamp(rarity, 1, #Balance.TEMPER_KILLS)]
+end
+
 -- Evolving: the coin cost is worth this many stage-70 kills, by rarity, so it keeps pace with the
 -- income of players who can reach the catalyst.
 Balance.EVOLVE_KILLS = { [5] = 10, [6] = 30, [7] = 100 }
@@ -312,7 +331,7 @@ end
 -- The forge reaches the Eternal tier only when the mix has one of these ores, so Godly ores alone
 -- can't roll it.
 Balance.ETERNAL_TIER = 8
-Balance.ETERNAL_ORES = { Glasscore = true } :: { [string]: boolean }
+Balance.ETERNAL_ORES = { Glasscore = true, Auroracore = true } :: { [string]: boolean }
 
 function Balance.forgeOdds(ores: { OreDef }, luck: number): ForgeOdds
 	local count = #ores

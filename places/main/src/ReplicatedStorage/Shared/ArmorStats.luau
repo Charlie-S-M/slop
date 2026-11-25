@@ -26,6 +26,19 @@ function ArmorStats.makeItem(
 	return { uid = uid, id = def.id, defense = defense, grade = grade, locked = false }
 end
 
+-- Whether a piece can still be tempered.
+function ArmorStats.canTemper(item: Types.ArmorItem): boolean
+	return item.tempered ~= true
+end
+
+-- A tempered copy of the piece: same uid, TEMPER_MULTIPLIER times the block.
+function ArmorStats.temper(item: Types.ArmorItem): Types.ArmorItem
+	local copy = table.clone(item)
+	copy.defense = math.floor(item.defense * Balance.TEMPER_MULTIPLIER * 10000 + 0.5) / 10000
+	copy.tempered = true
+	return copy
+end
+
 -- The equipped piece in `slot`, if the uid there names an owned piece made for that slot.
 function ArmorStats.equippedIn(
 	armor: { Types.ArmorItem },
