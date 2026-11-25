@@ -14,17 +14,14 @@ conversation. Update the **Status** column and **Now** section whenever an item 
   - It adds impact frames in `Controllers/Cutscene/ImpactFrames.luau`. Armor and chests reuse them
     by calling `ImpactFrames.play(tier, model, screen, world, alive)`, where `alive()` returns
     false once the caller's cutscene is gone.
-- **Item 3, armor, is in progress** on branch `feat/armor`, stacked on item 2. Follow
+- **Item 3, armor, is in progress** on branch `feat/armor`, stacked on item 2. Tasks 1–2 are done. Follow
   `docs/superpowers/plans/2026-11-25-armor.md`.
   - Done: Task 1, the catalog (`Shared/Armor.luau`) and stats (`Shared/ArmorStats.luau`:
     `roll`, `makeItem`, `equippedIn`, `blocked`), plus `Balance.ARMOR_*`,
     `Balance.armorSellPrice(defense, rarity)`, and `Types.ArmorItem` / `ArmorSlot`. 58 specs
     pass.
-  - Next: Task 2. Add `Profile.armor` and `Profile.equippedArmor` (PlayerData version 4), and
-    `PendingForge.armorId?` and `slot?`. Keep `gunId` and set it to the armor id for armor, so
-    saved pending forges still load. Add the `ForgeArmor(slot, request)` remote, and pull the
-    ore-taking out of `Forge.onForge` so both remotes share it. In `finishProfile`, branch on
-    `pending.slot`.
+  - Done: Task 2. Saves are at version 4, with `armor` and `equippedArmor`. `PendingForge.slot` marks an armor forge, and `gunId` holds the armor id. The `ForgeArmor(slot, request)` remote shares `startForge` with `Forge`. `ForgeResult` now sends `{ item?, armor?, new, better }`. The client still expects `item`, so the cutscene must handle `armor` before the UI can fire `ForgeArmor` (Task 4).
+  - Next: Task 3. Apply the block in `Arena.damagePlayer` with `ArmorStats.blocked(profile.armor, profile.equippedArmor)`. Build pieces with `ArmorBuilder.build` and `attach`. Add `Loadout.refreshArmor`. Handle `EquipArmor`, `UnequipArmor`, `SellArmor`, and `LockArmor` in `Economy`; those remotes already exist in `Net`.
   - `ArmorStats.blocked(armor, equipped)` takes the list and the slot-to-uid map, not the
     profile, so specs can call it without one.
 - `feat/pew-incremental` is PR #1 (Charlie-S-M/slop#1) with Auto-fix on. Merging it to `main`
@@ -39,7 +36,7 @@ The person set this order. Names, drop rates, and growth numbers are proposals t
 |---|------|--------|
 | 1 | Glassfall Foundry (stages 61–70) and evolving Legendary+ guns | Done, PR #1 |
 | 2 | Higher-tier guns and Legendary+ effects | Done, `feat/top-tier-guns-and-effects` |
-| 3 | Armor at the forge | In progress, `feat/armor` (Task 1 of 6 done) |
+| 3 | Armor at the forge | In progress, `feat/armor` (Tasks 1–2 of 6 done) |
 | 4 | Pets | Not started |
 | 5 | Stages 71–80 and collection goals | Not started |
 | 6 | Infinite Tower at 1B Power | Not started |

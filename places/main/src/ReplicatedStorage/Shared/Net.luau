@@ -19,6 +19,11 @@ export type EventName =
 	| "Forge"
 	| "ForgeFinish"
 	| "Evolve"
+	| "ForgeArmor"
+	| "EquipArmor"
+	| "UnequipArmor"
+	| "SellArmor"
+	| "LockArmor"
 	| "BuyUpgrade"
 	| "Rebirth"
 	| "ClaimDaily"
@@ -48,6 +53,11 @@ const EVENTS: { EventName } = {
 	"Forge",
 	"ForgeFinish",
 	"Evolve",
+	"ForgeArmor",
+	"EquipArmor",
+	"UnequipArmor",
+	"SellArmor",
+	"LockArmor",
 	"BuyUpgrade",
 	"Rebirth",
 	"ClaimDaily",

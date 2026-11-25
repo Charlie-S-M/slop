@@ -13,6 +13,8 @@
 
 const HttpService = game:GetService("HttpService")
 
+const Armor = require("@game/ReplicatedStorage/Shared/Armor")
+const ArmorStats = require("@game/ReplicatedStorage/Shared/ArmorStats")
 const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const GunStats = require("@game/ReplicatedStorage/Shared/GunStats")
 const Guns = require("@game/ReplicatedStorage/Shared/Guns")
@@ -61,20 +63,58 @@ local function rawDps(item: Types.GunItem): number
 		* GunStats.fireRate(def.kind, item.speed)
 end
 
---[[
-	Turns a profile's pending forge into a gun with the given strikes. Strikes that are missing or
-	malformed count as misses. Returns the new gun, or nil when there was nothing pending.
-]]
-local function finishProfile(
+-- What a finished forge made: a gun in `item` or an armor piece in `armor`.
+export type Outcome = {
+	item: Types.GunItem?,
+	armor: Types.ArmorItem?,
+	new: boolean,
+	better: boolean,
+}
+
+-- Turns a pending armor forge into the piece, and says whether it beats what's worn in its slot.
+local function finishArmor(
 	profile: Types.Profile,
-	accuracies: { any }
-): (Types.GunItem?, boolean, boolean)
+	pending: Types.PendingForge,
+	slot: Types.ArmorSlot,
+	grade: Types.Grade
+): Outcome?
+	local def = Armor.get(pending.gunId)
+	if not def then
+		return nil
+	end
+	local roll = random:NextNumber(Balance.ARMOR_ROLL_MIN, Balance.ARMOR_ROLL_MAX)
+	local piece = ArmorStats.makeItem(PlayerData.newGunUid(profile), def, grade, roll)
+	local worn = ArmorStats.equippedIn(profile.armor, profile.equippedArmor, slot)
+	local isNew = true
+	for _, owned in profile.armor do
+		if owned.id == piece.id then
+			isNew = false
+			break
+		end
+	end
+	table.insert(profile.armor, piece)
+	profile.forges += 1
+	return {
+		armor = piece,
+		new = isNew,
+		better = piece.defense > (if worn then worn.defense else 0),
+	}
+end
+
+--[[
+	Turns a profile's pending forge into a gun or armor piece with the given strikes. Strikes that
+	are missing or malformed count as misses. Returns nil when there was nothing pending.
+]]
+local function finishProfile(profile: Types.Profile, accuracies: { any }): Outcome?
 	local pending = profile.pendingForge
 	if not pending then
-		return nil, false, false
+		return nil
 	end
 	profile.pendingForge = nil
 	local grade: Types.Grade = GunStats.gradeFor(accuracies)
+	if pending.slot then
+		return finishArmor(profile, pending, pending.slot, grade)
+	end
 	local speedRoll = random:NextNumber(Balance.SPEED_ROLL_MIN, Balance.SPEED_ROLL_MAX)
 	local power, speed = GunStats.finalize(pending.basePower, grade, speedRoll)
 	local item: Types.GunItem = {
@@ -91,29 +131,30 @@ local function finishProfile(
 	local isNew = not profile.gunIndex[pending.gunId]
 	profile.gunIndex[pending.gunId] = true
 	profile.forges += 1
-	return item, isNew, rawDps(item) > rawDps(current)
+	return { item = item, new = isNew, better = rawDps(item) > rawDps(current) }
 end
 
 -- Finishes a player's pending forge and tells their client. Used by ForgeFinish and by timeouts.
-function Forge.finishPending(player: Player, accuracies: { any }?): Types.GunItem?
+function Forge.finishPending(player: Player, accuracies: { any }?): Outcome?
 	local profile = PlayerData.get(player)
 	if not profile then
 		return nil
 	end
-	local item, isNew, better = finishProfile(profile, accuracies or {})
-	if not item then
+	local outcome = finishProfile(profile, accuracies or {})
+	if not outcome then
 		return nil
 	end
 	PlayerData.markState(player)
-	resultRemote:FireClient(player, { item = item, new = isNew, better = better })
-	return item
+	resultRemote:FireClient(player, outcome)
+	return outcome
 end
 
 --[[
 	Step one. The request is a table of ore id -> count, one to five ores in all. Validates and
-	spends the ores, rolls everything but the grade, and sends the client a token.
+	spends the ores, rolls everything but the grade, and sends the client a token. With a `slot`
+	the forge makes that armor piece instead of a gun.
 ]]
-local function onForge(player: Player, request: unknown)
+local function startForge(player: Player, request: unknown, slot: Types.ArmorSlot?)
 	if not RateLimit.allow(player, "Forge", 0.5, 2) or player:GetAttribute("InRun") then
 		return
 	end
@@ -129,10 +170,17 @@ local function onForge(player: Player, request: unknown)
 		return
 	end
 	if not nearAnvil(player) then
-		notify(player, "Head to the forge to craft a gun!")
+		notify(player, "Head to the forge to craft!")
 		return
 	end
-	if #profile.guns >= Balance.MAX_GUNS then
+	if slot and #profile.armor >= Balance.MAX_ARMOR then
+		notify(
+			player,
+			"Your armor rack is full. Sell a few pieces first!",
+			Color3.fromRGB(255, 200, 60)
+		)
+		return
+	elseif not slot and #profile.guns >= Balance.MAX_GUNS then
 		notify(
 			player,
 			"Your backpack is full of guns. Sell a few first!",
@@ -171,11 +219,16 @@ local function onForge(player: Player, request: unknown)
 	local luck = Upgrades.value("Luck", profile.upgrades.Luck or 0)
 	local odds = Balance.forgeOdds(list, luck)
 	local rarity = Balance.pickRarity(odds, random:NextNumber())
-	local pool = Guns.pool(rarity)
-	if #pool == 0 then
-		return
+	local itemId: string
+	if slot then
+		itemId = Armor.forSlot(slot, rarity).id
+	else
+		local pool = Guns.pool(rarity)
+		if #pool == 0 then
+			return
+		end
+		itemId = pool[random:NextInteger(1, #pool)].id
 	end
-	local def = pool[random:NextInteger(1, #pool)]
 	local roll = random:NextNumber(Balance.FORGE_ROLL_MIN, Balance.FORGE_ROLL_MAX)
 	local basePower = math.max(1, odds.basePower * Rarity.get(rarity).powerMultiplier * roll)
 
@@ -193,7 +246,8 @@ local function onForge(player: Player, request: unknown)
 	end
 	local pending: Types.PendingForge = {
 		token = HttpService:GenerateGUID(false),
-		gunId = def.id,
+		gunId = itemId,
+		slot = slot,
 		rarity = rarity,
 		basePower = basePower,
 		train = math.max(1, math.floor(basePower * GunStats.oreTrainingFactor(list) + 0.5)),
@@ -205,9 +259,21 @@ local function onForge(player: Player, request: unknown)
 	startRemote:FireClient(player, {
 		token = pending.token,
 		gunId = pending.gunId,
+		slot = pending.slot,
 		rarity = pending.rarity,
 		oreIds = pending.oreIds,
 	})
+end
+
+local function onForge(player: Player, request: unknown)
+	startForge(player, request, nil)
+end
+
+local function onForgeArmor(player: Player, slot: unknown, request: unknown)
+	if not Armor.isSlot(slot) then
+		return
+	end
+	startForge(player, request, slot :: Types.ArmorSlot)
 end
 
 -- Step two. The token must match the pending forge, and enough time must have passed for the
@@ -282,6 +348,7 @@ function Forge:Start()
 	startRemote = Net.event("ForgeStart")
 	resultRemote = Net.event("ForgeResult")
 	Net.event("Forge").OnServerEvent:Connect(onForge)
+	Net.event("ForgeArmor").OnServerEvent:Connect(onForgeArmor)
 	Net.event("ForgeFinish").OnServerEvent:Connect(onForgeFinish)
 	evolveRemote = Net.event("EvolveResult")
 	Net.event("Evolve").OnServerEvent:Connect(onEvolve)

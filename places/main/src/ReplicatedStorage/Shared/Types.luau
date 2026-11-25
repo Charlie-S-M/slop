@@ -31,7 +31,9 @@ export type ArmorItem = {
 -- A forge the server has rolled but the player hasn't finished hammering yet.
 export type PendingForge = {
 	token: string,
+	-- The catalog id being forged: a gun, or an armor piece when `slot` is set.
 	gunId: string,
+	slot: ArmorSlot?,
 	rarity: number,
 	basePower: number,
 	train: number,
@@ -68,6 +70,9 @@ export type Profile = {
 	materials: { [string]: number },
 	-- Bosses this player has ever defeated, by enemy id, for first-kill rewards.
 	bossesDefeated: { [string]: boolean },
+	-- Forged armor pieces, and the uid worn in each slot.
+	armor: { ArmorItem },
+	equippedArmor: { [string]: string },
 }
 
 -- The stats that change many times a second, sent on their own so the full state stays quiet.
