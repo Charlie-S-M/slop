@@ -377,7 +377,8 @@ local function build(content: Frame)
 	for tier = 1, Rarity.Count do
 		local rarity = Rarity.get(tier)
 		local row = Kit.new("Frame", {
-			Size = UDim2.fromScale(1, 0.12),
+			-- Rows share the box evenly, leaving room for the 0.02 gaps between them.
+			Size = UDim2.fromScale(1, (1 - 0.02 * (Rarity.Count - 1)) / Rarity.Count),
 			BackgroundColor3 = Kit.Colors.Card,
 			LayoutOrder = tier,
 			Parent = oddsBox,

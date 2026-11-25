@@ -22,9 +22,11 @@ const Net = require("@game/ReplicatedStorage/Shared/Net")
 const OreBuilder = require("@game/ReplicatedStorage/Shared/OreBuilder")
 const Ores = require("@game/ReplicatedStorage/Shared/Ores")
 const Rarity = require("@game/ReplicatedStorage/Shared/Rarity")
+const RevealStyles = require("@game/ReplicatedStorage/Shared/RevealStyles")
 const Types = require("@game/ReplicatedStorage/Shared/Types")
 const Effects = require("../Effects")
 const ForgeSet = require("./ForgeSet")
+const ImpactFrames = require("./ImpactFrames")
 const Hud = require("../Hud")
 const Kit = require("../UI/Kit")
 const Menus = require("../Menus")
@@ -404,6 +406,11 @@ function ForgeCutscene.reveal(result: Result, label: string?)
 	Kit.sound(Kit.Sounds.Ding, 0.5, 1 + def.rarity * 0.04)
 	if def.rarity >= 4 then
 		Kit.sound(Kit.Sounds.Boom, 0.3, 1.2)
+	end
+	if RevealStyles.forRarity(def.rarity) then
+		-- Let the gun rise into view, then hit the impact frame before the card.
+		task.wait(0.5)
+		ImpactFrames.play(def.rarity, gun, screen, stage :: Model)
 	end
 	if def.rarity >= 5 then
 		Effects.confetti({ rarity.color, rarity.glow, Color3.new(1, 1, 1) }, 80)
