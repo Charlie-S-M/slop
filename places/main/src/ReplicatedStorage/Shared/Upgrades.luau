@@ -113,7 +113,7 @@ const LIST: { UpgradeDef } = {
 		description = "More health for deep stages",
 		icon = "Heart",
 		color = Color3.fromRGB(255, 70, 90),
-		maxLevel = 160,
+		maxLevel = 1000,
 		softCap = 40,
 		overflow = 0.5,
 		baseCost = 120,
@@ -200,6 +200,18 @@ function Upgrades.cost(def: UpgradeDef, currentLevel: number): number
 	local above = math.max(0, currentLevel - def.softCap)
 	local taper = 1 + (def.costGrowth - 1) * 0.4
 	return math.floor(def.baseCost * def.costGrowth ^ below * taper ^ above)
+end
+
+-- The price of the next `count` levels from `currentLevel`, stopping at the cap, and how many
+-- levels that is.
+function Upgrades.bulkCost(def: UpgradeDef, currentLevel: number, count: number): (number, number)
+	local total = 0
+	local levels = 0
+	for level = currentLevel, math.min(currentLevel + count, def.maxLevel) - 1 do
+		total += Upgrades.cost(def, level)
+		levels += 1
+	end
+	return total, levels
 end
 
 -- The level an upgrade's formula sees: full levels up to the soft cap, then `overflow` each.

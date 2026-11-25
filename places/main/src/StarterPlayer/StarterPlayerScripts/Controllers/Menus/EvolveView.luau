@@ -48,7 +48,8 @@ end
 local function refreshDetail()
 	local profile = ClientState.profile
 	local glasshearts = if profile then profile.materials.Glassheart or 0 else 0
-	catalystLabel.Text = `💎 Glasshearts: {glasshearts}`
+	local shards = if profile then profile.materials.AuroraShard or 0 else 0
+	catalystLabel.Text = `💎 Glasshearts: {glasshearts}   ✨ Aurora Shards: {shards}`
 	local item: Types.GunItem? = nil
 	for _, candidate in evolvable() do
 		if candidate.uid == selectedUid then
@@ -79,10 +80,15 @@ local function refreshDetail()
 		`🎯 Training  +{Format.abbreviate(item.train)} >>> +{Format.abbreviate(after.train)}`,
 		`Grade {item.grade} stays`,
 	}, "\n")
-	costLabel.Text = `Cost: 💎 1 Glassheart + 💰 {Format.abbreviate(cost)}`
+	local material = Balance.evolveMaterial(def.rarity)
+	local materialName = Balance.MATERIAL_NAMES[material] or material
+	local have = if material == "AuroraShard" then shards else glasshearts
+	costLabel.Text = `Cost: 💎 1 {materialName} + 💰 {Format.abbreviate(cost)}`
 	local reason = nil
-	if glasshearts < 1 then
-		reason = "Need a Glassheart (Foundry boss)"
+	if have < 1 then
+		reason = if material == "AuroraShard"
+			then "Need an Aurora Shard (Aurora Reach boss)"
+			else "Need a Glassheart (Foundry boss)"
 	elseif profile.coins < cost then
 		reason = `Need {Format.abbreviate(cost - profile.coins)} more coins`
 	end
@@ -196,7 +202,7 @@ function EvolveView.build(parent: Frame): Frame
 		Parent = list,
 	})
 	emptyLabel = Kit.text({
-		Text = "Legendary, Mythic, Godly, and Eternal guns can evolve. Forge one, then bring a Glassheart from the Glassfall Foundry boss!",
+		Text = "Legendary, Mythic, Godly, and Eternal guns can evolve. Forge one, then bring a Glassheart from the Glassfall Foundry boss (an Aurora Shard from the Aurora Reach boss for Eternal guns)!",
 		Size = UDim2.new(0.42, -20, 0, 90),
 		Position = UDim2.new(0, 10, 0.12, 0),
 		Stroke = 2,

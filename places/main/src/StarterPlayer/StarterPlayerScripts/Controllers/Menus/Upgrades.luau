@@ -27,6 +27,9 @@ type Card = { def: Upgrades.UpgradeDef, level: TextLabel, effect: TextLabel, buy
 local cards: { Card } = {}
 local coinsLabel: TextLabel
 local built = false
+-- How many levels one tap buys.
+local amount = 1
+local amountButtons: { [number]: TextButton } = {}
 
 local function refresh()
 	local profile = ClientState.profile
@@ -42,12 +45,17 @@ local function refresh()
 			Kit.setButtonText(card.buy, "MAX")
 			Kit.setButtonColor(card.buy, Kit.Colors.Gold, Kit.Colors.GoldDark)
 		else
+			local cost, levels = Upgrades.bulkCost(card.def, level, amount)
 			card.effect.Text = `{Upgrades.describe(card.def, level)}  >>>  {Upgrades.describe(
 				card.def,
-				level + 1
+				level + levels
 			)}`
-			local cost = Upgrades.cost(card.def, level)
-			Kit.setButtonText(card.buy, `💰 {Format.abbreviate(cost)}`)
+			Kit.setButtonText(
+				card.buy,
+				if levels > 1
+					then `×{levels}  💰 {Format.abbreviate(cost)}`
+					else `💰 {Format.abbreviate(cost)}`
+			)
 			if profile.coins >= cost then
 				Kit.setButtonColor(card.buy, Kit.Colors.Green, Kit.Colors.GreenDark)
 			else
@@ -69,6 +77,30 @@ local function build(content: Frame)
 		Stroke = 3,
 		Parent = content,
 	})
+	-- Buy one level, five, or ten at a time.
+	for index, count in { 1, 5, 10 } do
+		amountButtons[count] = Kit.button({
+			name = `Amount{count}`,
+			color = Kit.Colors.GreyDark,
+			dark = Kit.Colors.Ink,
+			size = UDim2.fromScale(0.1, 0.075),
+			position = UDim2.fromScale((index - 1) * 0.11, 0),
+			text = `×{count}`,
+			parent = content,
+			onClick = function()
+				amount = count
+				for other, button in amountButtons do
+					if other == count then
+						Kit.setButtonColor(button, Kit.Colors.Orange, Kit.Colors.OrangeDark)
+					else
+						Kit.setButtonColor(button, Kit.Colors.GreyDark, Kit.Colors.Ink)
+					end
+				end
+				refresh()
+			end,
+		})
+	end
+	Kit.setButtonColor(amountButtons[1], Kit.Colors.Orange, Kit.Colors.OrangeDark)
 	local list = Kit.new("ScrollingFrame", {
 		Size = UDim2.fromScale(1, 0.9),
 		Position = UDim2.fromScale(0, 0.1),
@@ -147,7 +179,7 @@ local function build(content: Frame)
 			text = "",
 			parent = card,
 			onClick = function()
-				Net.event("BuyUpgrade"):FireServer(def.id)
+				Net.event("BuyUpgrade"):FireServer(def.id, amount)
 			end,
 		})
 		table.insert(cards, { def = def, level = level, effect = effect, buy = buy })

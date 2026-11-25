@@ -302,7 +302,7 @@ local function onForgeFinish(player: Player, token: unknown, accuracies: unknown
 end
 
 --[[
-	Evolves an owned Legendary-and-up gun into its evolved catalog entry for one Glassheart and coins.
+	Evolves an owned Legendary-and-up gun into its evolved catalog entry for one boss material (Balance.evolveMaterial) and coins.
 	The same owned gun changes id and grows its stats; its uid, grade, and lock stay, so an equipped
 	gun stays equipped.
 ]]
@@ -328,10 +328,14 @@ local function onEvolve(player: Player, uid: unknown)
 	if not item or not index or not def or not evolution or not cost then
 		return
 	end
-	if (profile.materials.Glassheart or 0) < 1 then
+	local material = Balance.evolveMaterial(def.rarity)
+	if (profile.materials[material] or 0) < 1 then
+		local source = if material == "AuroraShard"
+			then "the Aurora Reach boss"
+			else "the Glassfall Foundry boss"
 		notify(
 			player,
-			"You need a Glassheart from the Glassfall Foundry boss.",
+			`You need a {Balance.MATERIAL_NAMES[material] or material} from {source}.`,
 			Color3.fromRGB(255, 150, 200)
 		)
 		return
@@ -340,7 +344,7 @@ local function onEvolve(player: Player, uid: unknown)
 		notify(player, "Not enough coins to evolve!", Color3.fromRGB(255, 120, 90))
 		return
 	end
-	profile.materials.Glassheart -= 1
+	profile.materials[material] -= 1
 	local evolved = GunStats.evolve(item, evolution.id)
 	profile.guns[index] = evolved
 	profile.gunIndex[evolution.id] = true

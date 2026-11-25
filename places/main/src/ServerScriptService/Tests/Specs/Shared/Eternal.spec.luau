@@ -65,3 +65,12 @@ describe("the Eternal tier", function()
 		end
 	end)
 end)
+
+describe("evolution materials", function()
+	it("take the next region's material for Eternal guns", function()
+		expect(Balance.evolveMaterial(8)).toBe("AuroraShard")
+		for rarity = 5, 7 do
+			expect(Balance.evolveMaterial(rarity)).toBe("Glassheart")
+		end
+	end)
+end)

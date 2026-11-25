@@ -126,6 +126,12 @@ end
 Balance.EVOLVE_KILLS = { [5] = 10, [6] = 30, [7] = 100, [8] = 300 }
 Balance.EVOLVE_MULTIPLIERS = { power = 3, train = 2, speed = 1.1 }
 
+-- The boss material an evolution takes: Legendary to Godly use the Foundry's Glassheart, and Eternal
+-- guns the next region's Aurora Shard.
+function Balance.evolveMaterial(rarity: number): string
+	return if rarity >= 8 then "AuroraShard" else "Glassheart"
+end
+
 -- Coins to evolve a gun of this rarity, or nil when the rarity can't evolve.
 function Balance.evolveCost(rarity: number): number?
 	local kills = Balance.EVOLVE_KILLS[rarity]

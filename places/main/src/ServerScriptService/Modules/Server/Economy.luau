@@ -269,10 +269,12 @@ end
 -- Upgrades, rebirth, daily
 ------------------------------------------------------------------------------------------------
 
-local function onBuyUpgrade(player: Player, id: unknown)
+-- Buys 1, 5, or 10 levels at once, as many as the cap allows, for their summed price.
+local function onBuyUpgrade(player: Player, id: unknown, count: unknown)
 	if not RateLimit.allow(player, "BuyUpgrade", 6, 8) or typeof(id) ~= "string" then
 		return
 	end
+	local amount = if count == 5 or count == 10 then count :: number else 1
 	local def = Upgrades.get(id)
 	local profile = PlayerData.get(player)
 	if not def or not profile then
@@ -282,15 +284,15 @@ local function onBuyUpgrade(player: Player, id: unknown)
 	if level >= def.maxLevel then
 		return
 	end
-	local cost = Upgrades.cost(def, level)
-	if not PlayerData.spendCoins(player, cost) then
+	local cost, levels = Upgrades.bulkCost(def, level, amount)
+	if levels < 1 or not PlayerData.spendCoins(player, cost) then
 		notify(player, "Not enough coins!", Color3.fromRGB(255, 120, 90))
 		return
 	end
-	profile.upgrades[id] = level + 1
+	profile.upgrades[id] = level + levels
 	PlayerData.markState(player)
 	PlayerData.LoadoutChanged:Fire(player)
-	rewardRemote:FireClient(player, { kind = "upgrade", id = id, level = level + 1 })
+	rewardRemote:FireClient(player, { kind = "upgrade", id = id, level = level + levels })
 end
 
 local function onRebirth(player: Player)
