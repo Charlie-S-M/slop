@@ -117,3 +117,12 @@ What each item should let a player do:
   - The Eternal pillar part doesn't set `CanTouch = false`.
   - `GunBuilder` gives tier 7 a denser corona than tier 8 (`tier == 7` should be `tier >= 7`).
   - The tween goal tables are typed `{ [string]: any }`.
+
+## Resume prompt
+
+Paste this into a new session to pick up where the last one stopped:
+
+> Read `docs/HANDOFF.md` and `CLAUDE.md`, then continue the roadmap from the **Now** section. Use
+> superpowers:executing-plans on the plan it names, carry on from the next unfinished task, and
+> keep running through the remaining checklist items without stopping to ask. Commit as you go
+> (don't push), and update `docs/HANDOFF.md` after each task.
