@@ -18,6 +18,7 @@ export type EventName =
 	| "SellOres"
 	| "Forge"
 	| "ForgeFinish"
+	| "Evolve"
 	| "BuyUpgrade"
 	| "Rebirth"
 	| "ClaimDaily"
@@ -30,6 +31,7 @@ export type EventName =
 	| "Run"
 	| "ForgeStart"
 	| "ForgeResult"
+	| "EvolveResult"
 	| "Reward"
 	| "EnemyAttack"
 
@@ -45,6 +47,7 @@ const EVENTS: { EventName } = {
 	"SellOres",
 	"Forge",
 	"ForgeFinish",
+	"Evolve",
 	"BuyUpgrade",
 	"Rebirth",
 	"ClaimDaily",
@@ -56,6 +59,7 @@ const EVENTS: { EventName } = {
 	"Run",
 	"ForgeStart",
 	"ForgeResult",
+	"EvolveResult",
 	"Reward",
 	"EnemyAttack",
 }

@@ -21,6 +21,7 @@ const Ores = require("@game/ReplicatedStorage/Shared/Ores")
 const Rarity = require("@game/ReplicatedStorage/Shared/Rarity")
 const Types = require("@game/ReplicatedStorage/Shared/Types")
 const Upgrades = require("@game/ReplicatedStorage/Shared/Upgrades")
+const Loadout = require("./Loadout")
 const PlayerData = require("./PlayerData")
 const RateLimit = require("./RateLimit")
 
@@ -32,6 +33,7 @@ local random = Random.new()
 local notifyRemote: RemoteEvent
 local startRemote: RemoteEvent
 local resultRemote: RemoteEvent
+local evolveRemote: RemoteEvent
 
 local function notify(player: Player, text: string, color: Color3?)
 	notifyRemote:FireClient(player, text, color)
@@ -221,12 +223,64 @@ local function onForgeFinish(player: Player, token: unknown, accuracies: unknown
 	Forge.finishPending(player, if typeof(accuracies) == "table" then accuracies :: { any } else {})
 end
 
+--[[
+	Evolves an owned Legendary-and-up gun into its evolved catalog entry for one Glassheart and coins.
+	The same owned gun changes id and grows its stats; its uid, grade, and lock stay, so an equipped
+	gun stays equipped.
+]]
+local function onEvolve(player: Player, uid: unknown)
+	if not RateLimit.allow(player, "Evolve", 1, 2) or player:GetAttribute("InRun") then
+		return
+	end
+	if typeof(uid) ~= "string" or #uid == 0 or #uid > 40 then
+		return
+	end
+	local profile = PlayerData.get(player)
+	if not profile or profile.pendingForge then
+		return
+	end
+	if not nearAnvil(player) then
+		notify(player, "Head to the forge to evolve a gun!")
+		return
+	end
+	local item, index = PlayerData.findGun(profile, uid)
+	local def = item and Guns.get(item.id)
+	local evolution = item and Guns.evolutionOf(item.id)
+	local cost = def and Balance.evolveCost(def.rarity)
+	if not item or not index or not def or not evolution or not cost then
+		return
+	end
+	if (profile.materials.Glassheart or 0) < 1 then
+		notify(
+			player,
+			"You need a Glassheart from the Glassfall Foundry boss.",
+			Color3.fromRGB(255, 150, 200)
+		)
+		return
+	end
+	if not PlayerData.spendCoins(player, cost) then
+		notify(player, "Not enough coins to evolve!", Color3.fromRGB(255, 120, 90))
+		return
+	end
+	profile.materials.Glassheart -= 1
+	local evolved = GunStats.evolve(item, evolution.id)
+	profile.guns[index] = evolved
+	profile.gunIndex[evolution.id] = true
+	PlayerData.markState(player)
+	if profile.equipped == evolved.uid then
+		Loadout.refreshGun(player)
+	end
+	evolveRemote:FireClient(player, { item = evolved })
+end
+
 function Forge:Start()
 	notifyRemote = Net.event("Notify")
 	startRemote = Net.event("ForgeStart")
 	resultRemote = Net.event("ForgeResult")
 	Net.event("Forge").OnServerEvent:Connect(onForge)
 	Net.event("ForgeFinish").OnServerEvent:Connect(onForgeFinish)
+	evolveRemote = Net.event("EvolveResult")
+	Net.event("Evolve").OnServerEvent:Connect(onEvolve)
 
 	-- A forge found on load was cut off by a crash or a leave the server couldn't settle.
 	local function settleOnLoad(player: Player)
