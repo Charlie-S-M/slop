@@ -72,7 +72,7 @@ function FarmAnimals:Start()
 		gui.Size = UDim2.fromScale(route.size, route.size)
 		gui.LightInfluence = 0
 		gui.AlwaysOnTop = true
-		gui.MaxDistance = 520
+		gui.MaxDistance = math.huge
 		gui.Parent = anchor
 		table.insert(flock, {
 			route = route,

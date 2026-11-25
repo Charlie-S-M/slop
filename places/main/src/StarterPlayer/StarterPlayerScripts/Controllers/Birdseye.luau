@@ -15,6 +15,7 @@ local stations = {
 	Forge = "ForgeIcon",
 	Rebirth = "Gem",
 	Portal = "PortalIcon",
+	Leaderboard = "Trophy",
 }
 local painted: { [Instance]: boolean } = setmetatable({}, { __mode = "k" }) :: any
 type Target = { anchor: BasePart, key: string, size: number }
@@ -35,13 +36,16 @@ function Birdseye.targetAt(point: Vector2): BasePart?
 		then
 			continue
 		end
-		local center, visible = camera:WorldToViewportPoint(target.anchor.Position)
+		-- Where the icon is drawn, which for a pinned target is on the floor below it.
+		local gui = target.anchor:FindFirstChild("PixelIcon")
+		local drawn = target.anchor.Position
+			+ if gui and gui:IsA("BillboardGui") then gui.StudsOffsetWorldSpace else Vector3.zero
+		local center, visible = camera:WorldToViewportPoint(drawn)
 		if not visible or center.Z <= 0 or center.Z >= nearest then
 			continue
 		end
-		local edge = camera:WorldToViewportPoint(
-			target.anchor.Position + camera.CFrame.RightVector * target.size / 2
-		)
+		local edge =
+			camera:WorldToViewportPoint(drawn + camera.CFrame.RightVector * target.size / 2)
 		local width = 2 * (edge.X - center.X)
 		if width <= 0 then
 			continue
@@ -55,6 +59,32 @@ function Birdseye.targetAt(point: Vector2): BasePart?
 		end
 	end
 	return best
+end
+
+-- The height of the floor under a point. Floors are "Tile", "Base", or "Lane" parts or thin slabs;
+-- anything else the ray meets first (a hidden wall ledge, a board, a pad) is passed through.
+local function floorBelow(position: Vector3, ignore: Instance): number?
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	local skipped: { Instance } = { ignore }
+	for _ = 1, 12 do
+		params.FilterDescendantsInstances = skipped
+		local hit = workspace:Raycast(position, Vector3.new(0, -400, 0), params)
+		if not hit then
+			return nil
+		end
+		local part = hit.Instance
+		if
+			part.Name == "Tile"
+			or part.Name == "Base"
+			or part.Name == "Lane"
+			or (part:IsA("BasePart") and part.Size.Y <= 0.6)
+		then
+			return hit.Position.Y
+		end
+		table.insert(skipped, part)
+	end
+	return nil
 end
 
 local function icon(
@@ -75,22 +105,25 @@ local function icon(
 	gui.Size = UDim2.fromScale(size, size)
 	gui.AlwaysOnTop = true
 	gui.LightInfluence = 0
-	gui.MaxDistance = 520
+	gui.MaxDistance = math.huge
 	PixelSprites.draw(gui, key, body, accent)
 	gui.Parent = anchor
-	-- Scenery drawn from a high part (a castle's cap, a treetop) would slide against the ground as
-	-- the camera moves; pin its icon to the ground under it instead.
+	-- The camera is a perspective one, so an icon drawn up high (a castle's cap, a wall torch, a
+	-- floating crystal) slides against the floor as it moves. Anything that stays put is drawn on
+	-- the floor instead, under the middle of its model, so every icon keeps its place on the map.
 	if
-		owner:IsA("Model")
+		anchor.Anchored
+		and not owner:IsA("Tool")
 		and not owner:GetAttribute("EnemyId")
 		and not owner:GetAttribute("OrePickup")
 	then
-		local params = RaycastParams.new()
-		params.FilterType = Enum.RaycastFilterType.Exclude
-		params.FilterDescendantsInstances = { owner }
-		local hit = workspace:Raycast(anchor.Position, Vector3.new(0, -300, 0), params)
-		if hit and anchor.Position.Y - hit.Position.Y > 2 then
-			gui.StudsOffsetWorldSpace = Vector3.new(0, hit.Position.Y - anchor.Position.Y + 0.5, 0)
+		local center = if owner:IsA("Model")
+			then owner:GetBoundingBox().Position
+			else anchor.Position
+		local floor = floorBelow(center, owner)
+		if floor then
+			local offset = Vector3.new(center.X, floor + 0.5, center.Z) - anchor.Position
+			gui.StudsOffsetWorldSpace = offset
 		end
 	end
 end
@@ -220,7 +253,7 @@ local function tileArt(tile: BasePart)
 	surface.CanvasSize = Vector2.new(32, 32)
 	surface.SizingMode = Enum.SurfaceGuiSizingMode.FixedSize
 	surface.LightInfluence = 0
-	surface.MaxDistance = 520
+	surface.MaxDistance = math.huge
 	local seed = math.floor(tile.Position.X * 31 + tile.Position.Z * 19)
 	local random = Random.new(seed)
 	for i = 1, 4 do
@@ -263,7 +296,15 @@ local function flatten(part: BasePart)
 		return
 	end
 	local name = part.Name
-	if name == "Stud" or name == "Puff" or name == "Roof" or name == "Awning" then
+	if
+		name == "Stud"
+		or name == "Puff"
+		or name == "Roof"
+		or name == "Awning"
+		or name == "Leaderboard"
+		or name == "BoardFrame"
+		or name == "BoardLeg"
+	then
 		part.LocalTransparencyModifier = 1
 		return
 	end
@@ -317,16 +358,32 @@ local function inspect(item: Instance)
 		and item.Name == "Gui"
 		and item.Parent
 		and item.Parent:IsA("BasePart")
-		and (item.Parent.Name == "Leaderboard" or item.Parent.Name == "StageSign")
+		and item.Parent.Name == "StageSign"
 	then
 		item.Face = Enum.NormalId.Top
 		item.AlwaysOnTop = true
+	elseif
+		item:IsA("SurfaceGui")
+		and item.Parent
+		and item.Parent:IsA("BasePart")
+		and item.Parent.Name == "Leaderboard"
+	then
+		-- The board stands on edge, so from above it's a line; its list opens from a prompt instead.
+		item.Enabled = false
 	elseif item:IsA("BillboardGui") and item.Name ~= "PixelIcon" then
-		if item.MaxDistance > 0 and item.MaxDistance < 360 then
-			item.MaxDistance = 360
-		end
+		-- The camera sits far above the floor, so signs must draw at any distance.
+		item.MaxDistance = math.huge
 		local offset = item.StudsOffsetWorldSpace
-		if offset.Y > 2 and offset.Z == 0 then
+		if item:FindFirstChild("ZoneLabel") then
+			-- A training pad's multiplier, written across the pad's upper half.
+			item.StudsOffsetWorldSpace = Vector3.new(0, 1, -3)
+			item.Size = UDim2.fromScale(15, 4.2)
+			item.AlwaysOnTop = true
+		elseif item:FindFirstChild("LockLabel") then
+			item.StudsOffsetWorldSpace = Vector3.new(0, 1, 3)
+			item.Size = UDim2.fromScale(13, 2.6)
+			item.AlwaysOnTop = true
+		elseif offset.Y > 2 and offset.Z == 0 then
 			item.StudsOffsetWorldSpace = Vector3.new(offset.X, 1, -offset.Y * 0.7)
 		end
 	elseif item:IsA("Model") then
@@ -337,12 +394,13 @@ local function inspect(item: Instance)
 		end
 		local station = item:GetAttribute("Station")
 		if typeof(station) == "string" then
+			local trophy = station == "Leaderboard"
 			icon(
 				item,
 				item,
 				(stations :: any)[station] or "Shop",
-				Color3.fromRGB(100, 116, 162),
-				Color3.fromRGB(255, 177, 70),
+				if trophy then Color3.fromRGB(255, 196, 60) else Color3.fromRGB(100, 116, 162),
+				if trophy then Color3.fromRGB(255, 240, 170) else Color3.fromRGB(255, 177, 70),
 				13
 			)
 		elseif
@@ -428,7 +486,7 @@ local function walker(model: Model, root: BasePart)
 	gui.Size = UDim2.fromScale(8, 8)
 	gui.AlwaysOnTop = true
 	gui.LightInfluence = 0
-	gui.MaxDistance = 520
+	gui.MaxDistance = math.huge
 	local layers: { [string]: Frame } = {}
 	for _, pose in POSES do
 		for _, side in { "R", "L" } do
@@ -525,6 +583,7 @@ local function watch(who: Player)
 	end
 end
 
+const CAMERA_HEIGHT = 400
 local zoom = 1
 local targetZoom = 1
 local pinchStart = 1
@@ -595,12 +654,13 @@ function Birdseye:Start()
 		local focus = root.Position
 		camera.CameraType = Enum.CameraType.Scriptable
 		zoom += (targetZoom - zoom) * (1 - math.exp(-12 * dt))
-		-- A high camera with a narrow view is close to orthographic, so tall things don't drift.
-		local height = 400 + (zoom - 1) * 64
-		camera.FieldOfView = math.deg(2 * math.atan(math.tan(math.rad(18)) * 100 * zoom / height))
+		-- A high camera with a narrow view is close to orthographic. Zooming only widens the view;
+		-- the camera stays at one height, so nothing passes a draw distance as you zoom out.
+		camera.FieldOfView =
+			math.deg(2 * math.atan(math.tan(math.rad(18)) * 100 * zoom / CAMERA_HEIGHT))
 		camera.Focus = CFrame.new(focus)
 		camera.CFrame =
-			CFrame.lookAt(focus + Vector3.new(0, height, 0), focus, Vector3.new(0, 0, -1))
+			CFrame.lookAt(focus + Vector3.new(0, CAMERA_HEIGHT, 0), focus, Vector3.new(0, 0, -1))
 	end)
 end
 return Birdseye

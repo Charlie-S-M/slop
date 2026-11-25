@@ -49,6 +49,7 @@ const STATION_MENUS = {
 	Forge = { menu = "Forge", text = "Forge a Gun" },
 	Rebirth = { menu = "Rebirth", text = "Rebirth" },
 	Portal = { menu = "Gauntlet", text = "Enter the Gauntlet" },
+	Leaderboard = { menu = "Leaderboard", text = "Leaderboard" },
 }
 
 ------------------------------------------------------------------------------------------------

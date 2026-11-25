@@ -731,6 +731,7 @@ local function carpetAndDecor(parent: Instance)
 			size = Vector3.new(1.4, 26, 1.4),
 			cframe = CFrame.new(-38, 13, 22 + side * 11),
 			color = rgb(120, 85, 55),
+			collide = false,
 		})
 	end
 	local board = Bricks.part(model, {
@@ -738,12 +739,15 @@ local function carpetAndDecor(parent: Instance)
 		size = Vector3.new(1.2, 18, 24),
 		cframe = CFrame.new(-37.6, 15, 22),
 		color = rgb(40, 44, 66),
+		collide = false,
 	})
+	board:SetAttribute("Station", "Leaderboard")
 	Bricks.part(model, {
 		name = "BoardFrame",
 		size = Vector3.new(1, 19.4, 25.4),
 		cframe = CFrame.new(-38.2, 15, 22),
 		color = GOLD,
+		collide = false,
 	})
 	local surface = Instance.new("SurfaceGui")
 	surface.Name = "Gui"

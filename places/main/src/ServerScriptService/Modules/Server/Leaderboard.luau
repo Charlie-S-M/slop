@@ -1,8 +1,10 @@
 --!strict
 
 -- Fills the lobby leaderboard with the strongest players in the server, and keeps the player list
--- stats (Power and Stage) current.
+-- stats (Power and Stage) current. The board's "Entries" attribute carries the same list as JSON
+-- for the Leaderboard menu, which opens from the board's prompt.
 
+const HttpService = game:GetService("HttpService")
 const Players = game:GetService("Players")
 
 const Format = require("@game/ReplicatedStorage/Shared/Format")
@@ -13,11 +15,10 @@ const ROWS = 8
 
 local Leaderboard = {}
 
-local function boardGui(): Instance?
+local function board(): Instance?
 	local lobby = workspace:FindFirstChild("Lobby")
 	local decor = lobby and lobby:FindFirstChild("Decor")
-	local board = decor and decor:FindFirstChild("Leaderboard")
-	return board and board:FindFirstChild("Gui")
+	return decor and decor:FindFirstChild("Leaderboard")
 end
 
 local function ensureStats(player: Player): (StringValue, IntValue)
@@ -69,7 +70,16 @@ local function refresh()
 		end
 		return a.power > b.power
 	end)
-	local gui = boardGui()
+	local found = board()
+	if not found then
+		return
+	end
+	local top = {}
+	for row = 1, math.min(ROWS, #entries) do
+		top[row] = entries[row]
+	end
+	found:SetAttribute("Entries", HttpService:JSONEncode(top))
+	local gui = found:FindFirstChild("Gui")
 	if not gui then
 		return
 	end
@@ -85,6 +95,24 @@ local function refresh()
 end
 
 function Leaderboard:Start()
+	-- A lobby baked before the board became a station gets the same setup the builder gives it:
+	-- a prompt station, and parts players walk through.
+	const found = board()
+	if found and found:IsA("BasePart") and found.Parent then
+		found:SetAttribute("Station", "Leaderboard")
+		for _, part in found.Parent:GetChildren() do
+			if
+				part:IsA("BasePart")
+				and (
+					part.Name == "Leaderboard"
+					or part.Name == "BoardFrame"
+					or part.Name == "BoardLeg"
+				)
+			then
+				part.CanCollide = false
+			end
+		end
+	end
 	task.spawn(function()
 		while true do
 			refresh()
