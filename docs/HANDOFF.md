@@ -19,7 +19,17 @@ conversation. Update the **Status** column and **Now** section whenever an item 
   - eggs bought in the Pets menu, three pets equipped at most;
   - Training, Damage, and Ores bonuses applied in `Combat` and `Arena` through `PetStats.multiplier`;
   - pets drawn locally by `PetFollow`.
-- **Item 5 is next:** stages 71–80 and collection goals, on a new branch stacked on `feat/pets`.
+- **Item 5 is done** on `feat/aurora-reach`. It adds Aurora Reach (stages 71–80) and the Aurora Shard; tempering armor at the forge; drop notes in the Index; and a client-side training dummy by the forge. It also carries the pets review fixes, including a shutdown-save fix in `PlayerData`.
+- **Item 6 is done** on `feat/infinite-tower`: the Tower opens at 1B Power from the Gauntlet menu. Floor N plays as stage 70+N, and every 10 floors gives +10% training and coins.
+- **Item 7 is done** on `feat/attachments`:
+  - boss chests, the reel, and Part Luck;
+  - the Backpack Parts tab;
+  - parts drawn on guns;
+  - `GunStats.effective` applies parts everywhere.
+  Its review was still running when this was written.
+- **Item 8 is done** on `feat/upgrade-caps`: caps are ×4 and ×3, with soft caps past the old maximum.
+- **Next:** items 9 and 10, each on a branch stacked on `feat/upgrade-caps`.
+- All branches stack in order: pew-incremental → top-tier → armor → pets → aurora-reach → infinite-tower → attachments → upgrade-caps.
 - The test profile in Studio keeps three hatched pets and a Copperplate Chestplate. Its coins were restored after testing.
 
 ## Roadmap
@@ -32,10 +42,10 @@ The person set this order. Names, drop rates, and growth numbers are proposals t
 | 2 | Higher-tier guns and Legendary+ effects | Done, `feat/top-tier-guns-and-effects` |
 | 3 | Armor at the forge | Done, `feat/armor` |
 | 4 | Pets | Done, `feat/pets` |
-| 5 | Stages 71–80 and collection goals | In progress |
-| 6 | Infinite Tower at 1B Power | Not started |
-| 7 | Attachments and boss chests | Not started |
-| 8 | Upgrade caps ×3–×4 | Not started |
+| 5 | Stages 71–80 and collection goals | Done, `feat/aurora-reach` |
+| 6 | Infinite Tower at 1B Power | Done, `feat/infinite-tower` |
+| 7 | Attachments and boss chests | Done, `feat/attachments` |
+| 8 | Upgrade caps ×3–×4 | Done, `feat/upgrade-caps` |
 | 9 | Blender armor and an equipment hotbar | Not started |
 | 10 | Blender forge, and remove the sell and equip stations | Not started |
 
