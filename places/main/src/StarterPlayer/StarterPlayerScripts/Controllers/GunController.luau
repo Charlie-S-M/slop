@@ -17,6 +17,7 @@ const GunStats = require("@game/ReplicatedStorage/Shared/GunStats")
 const Guns = require("@game/ReplicatedStorage/Shared/Guns")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
 const Rarity = require("@game/ReplicatedStorage/Shared/Rarity")
+const ShotStyles = require("@game/ReplicatedStorage/Shared/ShotStyles")
 const ClientState = require("./ClientState")
 const Hud = require("./Hud")
 const Kit = require("./UI/Kit")
@@ -43,6 +44,8 @@ local effectsFolder: Folder
 local shootRemote: RemoteEvent
 local reloadRemote: RemoteEvent
 local random = Random.new()
+-- Which ShotStyles.PRISM color the next prism tracer uses.
+local prismIndex = 0
 
 ------------------------------------------------------------------------------------------------
 -- Helpers
@@ -179,11 +182,19 @@ end
 -- Effects
 ------------------------------------------------------------------------------------------------
 
-local function tracer(from: Vector3, to: Vector3, color: Color3, width: number)
+local function tracer(
+	from: Vector3,
+	to: Vector3,
+	color: Color3,
+	width: number,
+	transparency: number?,
+	seconds: number?
+)
 	local length = (to - from).Magnitude
 	if length < 0.5 then
 		return
 	end
+	local lifetime = seconds or 0.12
 	local beam = Instance.new("Part")
 	beam.Anchored = true
 	beam.CanCollide = false
@@ -192,16 +203,45 @@ local function tracer(from: Vector3, to: Vector3, color: Color3, width: number)
 	beam.CastShadow = false
 	beam.Material = Enum.Material.Neon
 	beam.Color = color
+	beam.Transparency = transparency or 0
 	beam.Size = Vector3.new(width, width, length)
 	beam.CFrame = CFrame.lookAt(from, to) * CFrame.new(0, 0, -length / 2)
 	beam.Parent = effectsFolder
 	TweenService:Create(
 		beam,
-		TweenInfo.new(0.12),
+		TweenInfo.new(lifetime),
 		{ Transparency = 1, Size = Vector3.new(width * 0.2, width * 0.2, length) }
 	):Play()
-	task.delay(0.14, function()
+	task.delay(lifetime + 0.02, function()
 		beam:Destroy()
+	end)
+end
+
+-- A small neon part that tweens to `goal` and fades out, for sparks, embers, and rings.
+local function flyPart(
+	shape: Enum.PartType,
+	cframe: CFrame,
+	size: Vector3,
+	color: Color3,
+	goal: { [string]: any },
+	seconds: number
+)
+	local part = Instance.new("Part")
+	part.Anchored = true
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.CastShadow = false
+	part.Material = Enum.Material.Neon
+	part.Shape = shape
+	part.Color = color
+	part.Size = size
+	part.CFrame = cframe
+	part.Parent = effectsFolder
+	goal.Transparency = 1
+	TweenService:Create(part, TweenInfo.new(seconds, Enum.EasingStyle.Quad), goal):Play()
+	task.delay(seconds + 0.02, function()
+		part:Destroy()
 	end)
 end
 
@@ -290,6 +330,119 @@ local function muzzleFlash(position: Vector3, color: Color3, size: number)
 	end)
 end
 
+-- The tracer for one pellet in the gun's rarity style. `scale` shrinks it for other players' shots.
+local function styledTracer(
+	style: ShotStyles.ShotStyle,
+	from: Vector3,
+	to: Vector3,
+	color: Color3,
+	width: number,
+	scale: number
+)
+	local core = style.coreColor or color
+	if style.trail == "Prism" then
+		prismIndex = prismIndex % #ShotStyles.PRISM + 1
+		core = ShotStyles.PRISM[prismIndex]
+	end
+	local seconds = if style.trail == "Beam" then 0.22 else nil
+	local coreWidth = width * style.widthScale * scale
+	tracer(from, to, core, coreWidth, nil, seconds)
+	if style.sheathColor then
+		tracer(from, to, style.sheathColor, coreWidth * 2.4, 0.6, seconds)
+	end
+	if style.trail == "Embers" then
+		local direction = to - from
+		for _ = 1, math.max(1, math.floor(style.extraParts * scale)) do
+			local at = from + direction * random:NextNumber(0.1, 0.9)
+			flyPart(
+				Enum.PartType.Ball,
+				CFrame.new(at),
+				Vector3.one * 0.18 * scale,
+				Color3.fromRGB(255, 140, 40),
+				{ CFrame = CFrame.new(at + Vector3.new(0, random:NextNumber(1, 2.5), 0)) },
+				0.35
+			)
+		end
+	end
+end
+
+-- What a pellet does where it lands, in the gun's rarity style.
+local function styledImpact(
+	style: ShotStyles.ShotStyle,
+	position: Vector3,
+	color: Color3,
+	scale: number
+)
+	local accent = style.sheathColor or style.coreColor or color
+	if style.impact == "Puff" then
+		impact(position, color, 1.6 * scale)
+	elseif style.impact == "Sparks" then
+		impact(position, style.coreColor or color, 1.8 * scale)
+		for _ = 1, math.max(1, math.floor(style.extraParts * scale)) do
+			local out = Vector3.new(
+				random:NextNumber(-1, 1),
+				random:NextNumber(0, 1.2),
+				random:NextNumber(-1, 1)
+			)
+			flyPart(
+				Enum.PartType.Ball,
+				CFrame.new(position),
+				Vector3.one * 0.2 * scale,
+				Color3.fromRGB(255, 200, 80),
+				{ CFrame = CFrame.new(position + out * 2.5 * scale) },
+				0.25
+			)
+		end
+	elseif style.impact == "Ring" or style.impact == "Halo" then
+		impact(position, style.coreColor or color, 1.8 * scale)
+		local ringColor = if style.impact == "Halo"
+			then ShotStyles.PRISM[prismIndex] or accent
+			else accent
+		local facing = CFrame.lookAt(position, camera.CFrame.Position)
+			* CFrame.Angles(0, math.rad(90), 0)
+		flyPart(
+			Enum.PartType.Cylinder,
+			facing,
+			Vector3.new(0.12, 0.6, 0.6) * scale,
+			ringColor,
+			{ Size = Vector3.new(0.05, 3.2, 3.2) * scale },
+			if style.impact == "Halo" then 0.35 else 0.25
+		)
+	elseif style.impact == "Nova" then
+		impact(position, Color3.new(1, 1, 1), 2.6 * scale)
+		local spikes = math.max(2, math.floor(style.extraParts * scale))
+		for index = 1, spikes do
+			local angle = index / spikes * math.pi * 2
+			local spin = CFrame.lookAt(position, camera.CFrame.Position)
+				* CFrame.Angles(0, 0, angle)
+			flyPart(
+				Enum.PartType.Block,
+				spin,
+				Vector3.new(0.12, 0.6, 0.12) * scale,
+				accent,
+				{ Size = Vector3.new(0.05, 4.5, 0.05) * scale },
+				0.3
+			)
+		end
+	end
+end
+
+-- A column of light rising from the muzzle, for Eternal guns.
+local function lightPillar(position: Vector3, color: Color3)
+	flyPart(
+		Enum.PartType.Cylinder,
+		CFrame.new(position) * CFrame.Angles(0, 0, math.rad(90)),
+		Vector3.new(0.5, 0.35, 0.35),
+		color,
+		{
+			Size = Vector3.new(7, 0.1, 0.1),
+			CFrame = CFrame.new(position + Vector3.new(0, 3.5, 0))
+				* CFrame.Angles(0, 0, math.rad(90)),
+		},
+		0.3
+	)
+end
+
 local function shotSound(kind: Guns.GunKind)
 	if kind == "Shotgun" or kind == "Launcher" then
 		Kit.sound(Kit.Sounds.Blast, 0.35, if kind == "Launcher" then 0.7 else 1)
@@ -349,6 +502,9 @@ local function fire(def: Guns.GunDef, stats: Guns.KindStats, autoPart: BasePart?
 	local rarity = Rarity.get(def.rarity)
 	local color = def.accent:Lerp(rarity.glow, 0.3)
 	local origin = muzzlePosition() or (root.Position + Vector3.new(0, 1.5, 0))
+	local style = ShotStyles.forRarity(def.rarity)
+	-- Spread guns fire many pellets at once, so each pellet's extras shrink to keep the part count flat.
+	local pelletScale = if stats.pellets > 1 then 0.5 else 1
 
 	local hits: { [BasePart]: number } = {}
 	local hitPositions: { [BasePart]: Vector3 } = {}
@@ -363,18 +519,20 @@ local function fire(def: Guns.GunDef, stats: Guns.KindStats, autoPart: BasePart?
 		local result = workspace:Raycast(ray.Origin, direction * RANGE, params)
 		local endPoint = if result then result.Position else ray.Origin + direction * RANGE
 		firstEnd = firstEnd or endPoint
-		tracer(
+		styledTracer(
+			style,
 			origin,
 			endPoint,
 			color,
-			if def.kind == "Sniper" then 0.35 else 0.18 * Rarity.get(def.rarity).gunScale
+			if def.kind == "Sniper" then 0.35 else 0.18 * Rarity.get(def.rarity).gunScale,
+			pelletScale
 		)
 		if result then
 			local part = result.Instance
 			if part:IsA("BasePart") and (isEnemyPart(part) or isTrainingPart(part)) then
 				hits[part] = (hits[part] or 0) + 1
 				hitPositions[part] = result.Position
-				impact(result.Position, color, 1.6)
+				styledImpact(style, result.Position, color, pelletScale)
 			else
 				impact(result.Position, Color3.fromRGB(255, 240, 200), 0.8)
 			end
@@ -396,7 +554,10 @@ local function fire(def: Guns.GunDef, stats: Guns.KindStats, autoPart: BasePart?
 	if def.kind == "Launcher" and aimPoint then
 		explosion(aimPoint, stats.splashRadius, color)
 	end
-	muzzleFlash(origin, color, 1.2 * rarity.gunScale)
+	muzzleFlash(origin, style.coreColor or color, 1.2 * rarity.gunScale)
+	if style.pillar then
+		lightPillar(origin, style.sheathColor or color)
+	end
 	shotSound(def.kind)
 
 	-- Turn the character toward the shot so the gun points where the bullets go.
@@ -505,7 +666,9 @@ local function drawOtherShot(shooter: Player, aim: Vector3)
 	local id = held:GetAttribute("GunId")
 	local def = if typeof(id) == "string" then Guns.get(id) else nil
 	local color = if def then def.accent else Color3.fromRGB(255, 230, 120)
-	tracer(muzzle.WorldPosition, aim, color, 0.15)
+	local style = ShotStyles.forRarity(if def then def.rarity else 1)
+	-- Other players' shots draw smaller, with no impact, so a crowded arena stays readable.
+	styledTracer(style, muzzle.WorldPosition, aim, color, 0.15, 0.5)
 end
 
 function GunController:Init()
