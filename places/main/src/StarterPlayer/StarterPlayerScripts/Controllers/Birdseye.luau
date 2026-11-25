@@ -80,13 +80,48 @@ local function icon(
 	gui.MaxDistance = 520
 	PixelSprites.draw(gui, key, body, accent)
 	gui.Parent = anchor
+	-- Scenery drawn from a high part (a castle's cap, a treetop) would slide against the ground as
+	-- the camera moves; pin its icon to the ground under it instead.
+	if
+		owner:IsA("Model")
+		and not owner:GetAttribute("EnemyId")
+		and not owner:GetAttribute("OrePickup")
+	then
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		params.FilterDescendantsInstances = { owner }
+		local hit = workspace:Raycast(anchor.Position, Vector3.new(0, -300, 0), params)
+		if hit and anchor.Position.Y - hit.Position.Y > 2 then
+			gui.StudsOffsetWorldSpace = Vector3.new(0, hit.Position.Y - anchor.Position.Y + 0.5, 0)
+		end
+	end
+end
+
+-- Hides a model's 3D look on this client. Characters also lose faces, clothes, and shadows, so
+-- nothing of the avatar shows under its pixel icon.
+local function hidePart(item: Instance)
+	if item:IsA("BasePart") then
+		item.LocalTransparencyModifier = 1
+		item.CastShadow = false
+	elseif item:IsA("Decal") then
+		item.Transparency = 1
+	end
+end
+
+-- Characters are hidden by Transparency itself: Roblox's camera code keeps resetting a character's
+-- LocalTransparencyModifier, which let the avatar show through while moving. This is local only.
+local function hideCharacterPart(item: Instance)
+	if item:IsA("BasePart") then
+		item.Transparency = 1
+		item.CastShadow = false
+	elseif item:IsA("Decal") then
+		item.Transparency = 1
+	end
 end
 
 local function conceal(model: Model)
 	for _, child in model:GetDescendants() do
-		if child:IsA("BasePart") then
-			child.LocalTransparencyModifier = 1
-		end
+		hidePart(child)
 	end
 end
 
@@ -374,12 +409,102 @@ local function drawGun(tool: Tool, root: BasePart)
 	end)
 end
 
+-- Each character's pixel figure: an idle pose and two stride frames, each facing left or right.
+type Walker = {
+	root: BasePart,
+	layers: { [string]: Frame },
+	facing: string,
+	stride: number,
+	shown: string,
+}
+local walkers: { [Model]: Walker } = {}
+const POSES = { "Ranger", "RangerStepA", "RangerStepB" }
+
+local function walker(model: Model, root: BasePart)
+	if walkers[model] then
+		return
+	end
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "PixelIcon"
+	gui.Adornee = root
+	gui.Size = UDim2.fromScale(8, 8)
+	gui.AlwaysOnTop = true
+	gui.LightInfluence = 0
+	gui.MaxDistance = 520
+	local layers: { [string]: Frame } = {}
+	for _, pose in POSES do
+		for _, side in { "R", "L" } do
+			local layer = Instance.new("Frame")
+			layer.Name = pose .. side
+			layer.BackgroundTransparency = 1
+			layer.Size = UDim2.fromScale(1, 1)
+			layer.Visible = false
+			local key = if side == "L" then PixelSprites.flipped(pose) else pose
+			PixelSprites.draw(
+				layer,
+				key,
+				Color3.fromRGB(48, 126, 177),
+				Color3.fromRGB(255, 187, 101)
+			)
+			layer.Parent = gui
+			layers[pose .. side] = layer
+		end
+	end
+	layers.RangerR.Visible = true
+	gui.Parent = root
+	painted[model] = true
+	walkers[model] = { root = root, layers = layers, facing = "R", stride = 0, shown = "RangerR" }
+	model.Destroying:Once(function()
+		walkers[model] = nil
+	end)
+end
+
+-- Picks each walker's frame from how fast and which way it's moving, so the figure strides in step.
+local function animateWalkers(dt: number)
+	for model, walk in walkers do
+		if not model.Parent then
+			walkers[model] = nil
+			continue
+		end
+		local velocity = walk.root.AssemblyLinearVelocity
+		local speed = Vector2.new(velocity.X, velocity.Z).Magnitude
+		if velocity.X > 0.5 then
+			walk.facing = "R"
+		elseif velocity.X < -0.5 then
+			walk.facing = "L"
+		end
+		local pose = "Ranger"
+		local bob = 0
+		if speed > 1 then
+			-- Five to ten frames a second, quicker the faster the walk, so legs never flicker.
+			walk.stride = (walk.stride + dt * math.clamp(speed * 0.15, 5, 10)) % 4
+			local phase = math.floor(walk.stride)
+			pose = if phase == 0
+				then "RangerStepA"
+				elseif phase == 2 then "RangerStepB"
+				else "Ranger"
+			bob = math.abs(math.sin(walk.stride * math.pi / 2)) * 0.035
+		else
+			walk.stride = 0
+		end
+		local key = pose .. walk.facing
+		if key ~= walk.shown then
+			walk.layers[walk.shown].Visible = false
+			walk.layers[key].Visible = true
+			walk.shown = key
+		end
+		walk.layers[key].Position = UDim2.fromScale(0, -bob)
+	end
+end
+
 local function character(model: Model)
 	local anchor = model:WaitForChild("HumanoidRootPart", 10)
 	if not anchor or not anchor:IsA("BasePart") then
 		return
 	end
-	conceal(model)
+	for _, item in model:GetDescendants() do
+		hideCharacterPart(item)
+	end
 	local held = model:FindFirstChildOfClass("Tool")
 	if held then
 		drawGun(held, anchor)
@@ -390,11 +515,9 @@ local function character(model: Model)
 		end
 	end)
 	model.DescendantAdded:Connect(function(item)
-		if item:IsA("BasePart") then
-			item.LocalTransparencyModifier = 1
-		end
+		hideCharacterPart(item)
 	end)
-	icon(model, anchor, "Ranger", Color3.fromRGB(48, 126, 177), Color3.fromRGB(255, 187, 101), 8)
+	walker(model, anchor)
 end
 
 local function watch(who: Player)
@@ -457,6 +580,7 @@ function Birdseye:Start()
 		inspect(item)
 	end
 	RunService:BindToRenderStep("Birdseye", Enum.RenderPriority.Camera.Value, function(dt: number)
+		animateWalkers(dt)
 		if player:GetAttribute("ForgeCamera") then
 			return
 		end
@@ -473,7 +597,8 @@ function Birdseye:Start()
 		local focus = root.Position
 		camera.CameraType = Enum.CameraType.Scriptable
 		zoom += (targetZoom - zoom) * (1 - math.exp(-12 * dt))
-		local height = 100 + (zoom - 1) * 16
+		-- A high camera with a narrow view is close to orthographic, so tall things don't drift.
+		local height = 400 + (zoom - 1) * 64
 		camera.FieldOfView = math.deg(2 * math.atan(math.tan(math.rad(18)) * 100 * zoom / height))
 		camera.Focus = CFrame.new(focus)
 		camera.CFrame =

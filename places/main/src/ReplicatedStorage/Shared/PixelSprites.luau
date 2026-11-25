@@ -82,6 +82,43 @@ PixelSprites.SPRITES = {
 		"................",
 		"................",
 	},
+	-- Walk frames: the Ranger with one leg forward, then the other.
+	RangerStepA = {
+		"................",
+		".....kkkkk......",
+		"....kbbabbk.....",
+		"...kbbbabbbk....",
+		"...ktttttttk....",
+		"....kwtwtkk.....",
+		"....kttttk......",
+		"...kkbbbkk......",
+		"..kbbbbbaakk....",
+		"..ktkbbbbkwak...",
+		"..ktkbbbbkkak...",
+		"....kttttk.kk...",
+		"...kbbk.kbk.....",
+		"...kkkk.kkk.....",
+		"................",
+		"................",
+	},
+	RangerStepB = {
+		"................",
+		".....kkkkk......",
+		"....kbbabbk.....",
+		"...kbbbabbbk....",
+		"...ktttttttk....",
+		"....kwtwtkk.....",
+		"....kttttk......",
+		"...kkbbbkk......",
+		"..kbbbbbaakk....",
+		"..ktkbbbbkwak...",
+		"..ktkbbbbkkak...",
+		"....kttttk.kk...",
+		"....kbk.kbbk....",
+		"....kkk.kkkk....",
+		"................",
+		"................",
+	},
 	ForgeIcon = {
 		"................",
 		"................",
@@ -600,6 +637,19 @@ local oreIcons =
 	{ Rock = "Stone", Metal = "Ingot", Gem = "Gem", Crystal = "Shard", Core = "CoreIcon" }
 function PixelSprites.forOre(style: string): string
 	return (oreIcons :: { [string]: string })[style] or "Gem"
+end
+
+-- A left-right mirror of a sprite, registered under `<key>Flip` the first time it's asked for.
+function PixelSprites.flipped(key: string): string
+	local flip = key .. "Flip"
+	if not PixelSprites.SPRITES[flip] then
+		local rows = {}
+		for index, row in PixelSprites.SPRITES[key] do
+			rows[index] = string.reverse(row)
+		end
+		PixelSprites.SPRITES[flip] = rows
+	end
+	return flip
 end
 
 function PixelSprites.draw(
