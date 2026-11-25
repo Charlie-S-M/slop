@@ -47,7 +47,7 @@ conversation. Update the **Status** column and **Now** section whenever an item 
   - a skip-wait countdown bar for stages and Tower waves.
 - **Items 9 and 10 are done in code.**
   - Blender scripts (`tools/blender/Armor*.py`, `SmithyInterior.py`) export to `assets/models/`.
-  - `ArmorBuilder` and `ForgeSet` use those models from `ReplicatedStorage.ForgeModels` (`ArmorHelmet`, `ArmorChestplate`, `ArmorBoots`, `SmithyInterior`) They were imported into the place on 2026-11-25. Without them, the builders fall back to bricks.
+  - `ArmorBuilder` and `ForgeSet` use those models from `ReplicatedStorage.ForgeModels` (`ArmorHelmet`, `ArmorChestplate`, `ArmorBoots`, `SmithyInterior`). They were imported into the place on 2026-11-25. Without them, the builders fall back to bricks.
   - The lobby's sell counter is removed, in `LobbyBuilder` and in the baked lobby.
 - The "equip items station" was the Upgrades stall; it is removed. Upgrades open from the HUD button (U).
 - All branches stack in order: pew-incremental → top-tier → armor → pets → aurora-reach → infinite-tower → attachments → upgrade-caps.
@@ -136,9 +136,9 @@ What each item should let a player do:
 
 ## Waiting on the person
 
-- Import the five evolved-gun FBX files from `assets/models/` into `ReplicatedStorage.ForgeModels`
-  with Studio's 3D Importer, named by gun id, then refresh `ForgeModels.rbxm`. After that, check
-  that they sit right in hand.
+- Nothing. The five evolved guns, the armor pieces, and the smithy were imported on 2026-11-25 and
+  saved into `ForgeModels.rbxm`. The 3D Importer drops models where the camera is, facing +X, so
+  each was moved to the origin and the guns turned to point down −Z like the older ones.
 
 ## Known small issues
 
