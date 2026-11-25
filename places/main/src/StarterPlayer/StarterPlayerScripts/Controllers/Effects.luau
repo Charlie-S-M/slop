@@ -316,15 +316,23 @@ local hurtEdges: { Frame } = {}
 local function hurtVignette()
 	if #hurtEdges == 0 then
 		local sides = {
-			{ UDim2.fromScale(1, 0.13), UDim2.fromScale(0, 0), 90 },
-			{ UDim2.fromScale(1, 0.13), UDim2.fromScale(0, 0.87), -90 },
-			{ UDim2.fromScale(0.09, 1), UDim2.fromScale(0, 0), 0 },
-			{ UDim2.fromScale(0.09, 1), UDim2.fromScale(0.91, 0), 180 },
+			{ size = UDim2.fromScale(1, 0.13), position = UDim2.fromScale(0, 0), rotation = 90 },
+			{
+				size = UDim2.fromScale(1, 0.13),
+				position = UDim2.fromScale(0, 0.87),
+				rotation = -90,
+			},
+			{ size = UDim2.fromScale(0.09, 1), position = UDim2.fromScale(0, 0), rotation = 0 },
+			{
+				size = UDim2.fromScale(0.09, 1),
+				position = UDim2.fromScale(0.91, 0),
+				rotation = 180,
+			},
 		}
 		for _, side in sides do
 			local edge = Kit.new("Frame", {
-				Size = side[1],
-				Position = side[2],
+				Size = side.size,
+				Position = side.position,
 				BackgroundColor3 = Color3.fromRGB(255, 30, 40),
 				BackgroundTransparency = 1,
 				BorderSizePixel = 0,
@@ -333,7 +341,7 @@ local function hurtVignette()
 			})
 			Kit.new("UIGradient", {
 				Transparency = NumberSequence.new(0, 1),
-				Rotation = side[3],
+				Rotation = side.rotation,
 				Parent = edge,
 			})
 			table.insert(hurtEdges, edge)

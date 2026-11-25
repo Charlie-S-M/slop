@@ -74,7 +74,7 @@ local function finishProfile(
 		return nil, false, false
 	end
 	profile.pendingForge = nil
-	local grade = GunStats.gradeFor(accuracies)
+	local grade: Types.Grade = GunStats.gradeFor(accuracies)
 	local speedRoll = random:NextNumber(Balance.SPEED_ROLL_MIN, Balance.SPEED_ROLL_MAX)
 	local power, speed = GunStats.finalize(pending.basePower, grade, speedRoll)
 	local item: Types.GunItem = {
@@ -181,7 +181,11 @@ local function onForge(player: Player, request: unknown)
 
 	for id, count in used do
 		local remaining = (profile.bag[id] or 0) - count
-		profile.bag[id] = if remaining > 0 then remaining else nil
+		if remaining > 0 then
+			profile.bag[id] = remaining
+		else
+			profile.bag[id] = nil
+		end
 	end
 	local oreIds = {}
 	for _, ore in list do

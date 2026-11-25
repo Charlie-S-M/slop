@@ -76,25 +76,28 @@ function OreBuilder.build(def: Ores.OreDef): Model
 	else
 		local material = if def.rarity >= 3 then Enum.Material.Neon else Enum.Material.Glass
 		local shards = {
-			{ Vector3.new(0.42, 1.3, 0.42), CFrame.new(0, 0.25, 0) * CFrame.Angles(0, 0.6, 0.1) },
 			{
-				Vector3.new(0.32, 0.9, 0.32),
-				CFrame.new(0.35, 0.05, 0.1) * CFrame.Angles(0, 0.3, -0.5),
+				size = Vector3.new(0.42, 1.3, 0.42),
+				cframe = CFrame.new(0, 0.25, 0) * CFrame.Angles(0, 0.6, 0.1),
 			},
 			{
-				Vector3.new(0.3, 0.8, 0.3),
-				CFrame.new(-0.35, 0.0, -0.1) * CFrame.Angles(0.2, 0.2, 0.55),
+				size = Vector3.new(0.32, 0.9, 0.32),
+				cframe = CFrame.new(0.35, 0.05, 0.1) * CFrame.Angles(0, 0.3, -0.5),
 			},
 			{
-				Vector3.new(0.26, 0.6, 0.26),
-				CFrame.new(0.05, -0.05, 0.38) * CFrame.Angles(0.6, 0, 0.1),
+				size = Vector3.new(0.3, 0.8, 0.3),
+				cframe = CFrame.new(-0.35, 0.0, -0.1) * CFrame.Angles(0.2, 0.2, 0.55),
+			},
+			{
+				size = Vector3.new(0.26, 0.6, 0.26),
+				cframe = CFrame.new(0.05, -0.05, 0.38) * CFrame.Angles(0.6, 0, 0.1),
 			},
 		}
 		for index, shard in shards do
 			local part = chunk(
 				model,
-				shard[1],
-				shard[2],
+				shard.size,
+				shard.cframe,
 				if index % 2 == 0 then def.color else def.color:Lerp(Color3.new(1, 1, 1), 0.2),
 				material
 			)

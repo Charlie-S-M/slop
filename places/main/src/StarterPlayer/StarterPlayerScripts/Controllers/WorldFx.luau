@@ -578,12 +578,13 @@ function WorldFx:Start()
 	if arenas then
 		arenas.DescendantAdded:Connect(function(instance)
 			if instance:IsA("Model") then
+				local model: Model = instance
 				-- Attributes arrive with the instance, but give the children a frame to replicate.
 				task.defer(function()
-					if instance:GetAttribute("EnemyId") then
-						track(instance)
-					elseif instance:GetAttribute("OrePickup") then
-						trackPickup(instance)
+					if model:GetAttribute("EnemyId") then
+						track(model)
+					elseif model:GetAttribute("OrePickup") then
+						trackPickup(model)
 					end
 				end)
 			end

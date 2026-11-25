@@ -287,7 +287,10 @@ local function onPlayerRemoving(player: Player)
 		return
 	end
 	for _, handler in beforeRelease do
-		local ok, err = pcall(handler, player, session.profile)
+		local profile = session.profile
+		local ok, err = pcall(function()
+			handler(player, profile)
+		end)
 		if not ok then
 			warn(`[PlayerData] Before-release handler failed for {player.Name}: {err}`)
 		end

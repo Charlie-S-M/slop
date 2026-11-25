@@ -60,7 +60,7 @@ function GunStats.gradeFor(accuracies: { any }): Grade
 	local average = total / Balance.STRIKES
 	for _, threshold in Balance.GRADE_THRESHOLDS do
 		if average >= threshold.minimum then
-			return threshold.grade :: Grade
+			return threshold.grade
 		end
 	end
 	return "D"

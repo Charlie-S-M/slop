@@ -65,23 +65,26 @@ function ArenaBuilder.build(parent: Instance, origin: Vector3, name: string): Mo
 	lane.CanQuery = false
 
 	local walls = {
-		{ CFrame.new(origin + Vector3.new(0, 0, -length / 2)), width },
+		{ cframe = CFrame.new(origin + Vector3.new(0, 0, -length / 2)), length = width },
 		{
-			CFrame.new(origin + Vector3.new(0, 0, length / 2)) * CFrame.Angles(0, math.pi, 0),
-			width,
+			cframe = CFrame.new(origin + Vector3.new(0, 0, length / 2))
+				* CFrame.Angles(0, math.pi, 0),
+			length = width,
 		},
 		{
-			CFrame.new(origin + Vector3.new(width / 2, 0, 0)) * CFrame.Angles(0, -math.pi / 2, 0),
-			length,
+			cframe = CFrame.new(origin + Vector3.new(width / 2, 0, 0))
+				* CFrame.Angles(0, -math.pi / 2, 0),
+			length = length,
 		},
 		{
-			CFrame.new(origin + Vector3.new(-width / 2, 0, 0)) * CFrame.Angles(0, math.pi / 2, 0),
-			length,
+			cframe = CFrame.new(origin + Vector3.new(-width / 2, 0, 0))
+				* CFrame.Angles(0, math.pi / 2, 0),
+			length = length,
 		},
 	}
 	for _, wall in walls do
-		local base: CFrame = wall[1]
-		local wallLength: number = wall[2]
+		local base = wall.cframe
+		local wallLength = wall.length
 		Bricks.wall(
 			model,
 			base,

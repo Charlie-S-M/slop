@@ -9,6 +9,7 @@ const Biomes = require("./Biomes")
 const Guns = require("./Guns")
 const Ores = require("./Ores")
 const Rarity = require("./Rarity")
+const Types = require("./Types")
 const Upgrades = require("./Upgrades")
 
 type OreDef = Ores.OreDef
@@ -63,13 +64,14 @@ Balance.STRIKE_WINDOWS = {
 	{ within = 0.32, accuracy = 0.45, label = "GOOD" },
 }
 -- The lowest average accuracy each grade needs, best grade first.
-Balance.GRADE_THRESHOLDS = {
+const GRADE_THRESHOLDS: { { grade: Types.Grade, minimum: number } } = {
 	{ grade = "S", minimum = 0.9 },
 	{ grade = "A", minimum = 0.7 },
 	{ grade = "B", minimum = 0.5 },
 	{ grade = "C", minimum = 0.3 },
 	{ grade = "D", minimum = -math.huge },
 }
+Balance.GRADE_THRESHOLDS = GRADE_THRESHOLDS
 Balance.GRADE_MULTIPLIERS = {
 	S = { power = 1.3, speed = 1.15 },
 	A = { power = 1.15, speed = 1.07 },

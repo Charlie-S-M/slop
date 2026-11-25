@@ -45,7 +45,9 @@ local suggestedLabel: TextLabel
 local backButton: TextButton
 local badges: { [string]: Frame } = {}
 
-const MENU_BUTTONS = {
+type MenuButton = { name: string, glyph: string, color: Color3, key: Enum.KeyCode? }
+
+const MENU_BUTTONS: { MenuButton } = {
 	{
 		name = "Backpack",
 		glyph = "🎒",

@@ -365,10 +365,11 @@ function Kit.countTo(
 	if not entry then
 		local value = Instance.new("NumberValue")
 		value.Value = target
-		entry = { value = value, tween = nil, format = format }
-		counters[label] = entry
+		local created = { value = value, tween = nil, format = format }
+		entry = created
+		counters[label] = created
 		value.Changed:Connect(function(current)
-			label.Text = entry.format(current)
+			label.Text = created.format(current)
 		end)
 		label.Destroying:Connect(function()
 			counters[label] = nil

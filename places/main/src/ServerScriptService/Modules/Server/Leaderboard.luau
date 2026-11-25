@@ -21,11 +21,15 @@ local function boardGui(): Instance?
 end
 
 local function ensureStats(player: Player): (StringValue, IntValue)
-	local folder = player:FindFirstChild("leaderstats")
-	if not folder then
-		folder = Instance.new("Folder")
-		folder.Name = "leaderstats"
-		folder.Parent = player
+	local folder: Instance
+	local existing = player:FindFirstChild("leaderstats")
+	if existing then
+		folder = existing
+	else
+		local created = Instance.new("Folder")
+		created.Name = "leaderstats"
+		created.Parent = player
+		folder = created
 	end
 	local power = folder:FindFirstChild("Power") :: StringValue?
 	if not power then

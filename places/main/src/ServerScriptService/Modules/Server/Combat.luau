@@ -54,8 +54,9 @@ local function spendAmmo(player: Player, uid: string, stats: Guns.KindStats): bo
 	local now = os.clock()
 	local state = ammoStates[player]
 	if not state or state.uid ~= uid then
-		state = { ammo = stats.magazine, reloadUntil = 0, uid = uid }
-		ammoStates[player] = state
+		local fresh = { ammo = stats.magazine, reloadUntil = 0, uid = uid }
+		ammoStates[player] = fresh
+		state = fresh
 	end
 	-- A little slack keeps lag from eating legitimate shots right after a reload.
 	if now < state.reloadUntil - 0.15 then

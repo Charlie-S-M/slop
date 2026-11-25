@@ -186,14 +186,14 @@ local function perimeter(parent: Instance)
 	local halfZ = PLAZA_Z / 2
 	local sides = {
 		-- North wall: faces the plaza (+Z).
-		{ CFrame.new(0, 0, -halfZ), PLAZA_X },
-		{ CFrame.new(0, 0, halfZ) * CFrame.Angles(0, math.pi, 0), PLAZA_X },
-		{ CFrame.new(halfX, 0, 0) * CFrame.Angles(0, -math.pi / 2, 0), PLAZA_Z },
-		{ CFrame.new(-halfX, 0, 0) * CFrame.Angles(0, math.pi / 2, 0), PLAZA_Z },
+		{ cframe = CFrame.new(0, 0, -halfZ), length = PLAZA_X },
+		{ cframe = CFrame.new(0, 0, halfZ) * CFrame.Angles(0, math.pi, 0), length = PLAZA_X },
+		{ cframe = CFrame.new(halfX, 0, 0) * CFrame.Angles(0, -math.pi / 2, 0), length = PLAZA_Z },
+		{ cframe = CFrame.new(-halfX, 0, 0) * CFrame.Angles(0, math.pi / 2, 0), length = PLAZA_Z },
 	}
 	for _, side in sides do
-		local base: CFrame = side[1]
-		local length: number = side[2]
+		local base = side.cframe
+		local length = side.length
 		Bricks.wall(
 			model,
 			base,
@@ -308,19 +308,19 @@ local function trainingGrounds(parent: Instance)
 			})
 		end
 		local rings = {
-			{ 13, rgb(240, 240, 245) },
-			{ 10.4, rgb(230, 50, 55) },
-			{ 7.8, rgb(240, 240, 245) },
-			{ 5.2, rgb(230, 50, 55) },
-			{ 2.6, GOLD },
+			{ diameter = 13, color = rgb(240, 240, 245) },
+			{ diameter = 10.4, color = rgb(230, 50, 55) },
+			{ diameter = 7.8, color = rgb(240, 240, 245) },
+			{ diameter = 5.2, color = rgb(230, 50, 55) },
+			{ diameter = 2.6, color = GOLD },
 		}
 		for ringIndex, ring in rings do
 			local disc = Bricks.part(target, {
 				name = if ringIndex == 1 then "Board" else "Ring",
-				size = Vector3.new(0.6 + ringIndex * 0.12, ring[1], ring[1]),
+				size = Vector3.new(0.6 + ringIndex * 0.12, ring.diameter, ring.diameter),
 				cframe = CFrame.new(boardCenter + Vector3.new(0, 0, ringIndex * 0.06))
 					* CFrame.Angles(0, math.rad(90), 0),
-				color = ring[2],
+				color = ring.color,
 				shape = Enum.PartType.Cylinder,
 			})
 			disc:SetAttribute("Zone", index)

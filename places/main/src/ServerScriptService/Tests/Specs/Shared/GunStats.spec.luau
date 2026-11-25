@@ -36,7 +36,7 @@ describe("GunStats.gradeFor", function()
 	end)
 
 	it("treats bad accuracies as misses", function()
-		expect(GunStats.gradeFor({ 0 / 0, -3, math.huge, "x" } :: any)).toBe("D")
+		expect(GunStats.gradeFor({ 0 / 0, -3, math.huge, "x" :: any })).toBe("D")
 		expect(GunStats.gradeFor({})).toBe("D")
 		expect(GunStats.gradeFor({ 1, 1, 1, 1, 1, 1 })).toBe("S")
 	end)
