@@ -2,6 +2,7 @@
 
 -- The index: every ore and gun in the game, with the ones you haven't found shown as silhouettes.
 
+const Biomes = require("@game/ReplicatedStorage/Shared/Biomes")
 const Guns = require("@game/ReplicatedStorage/Shared/Guns")
 const Ores = require("@game/ReplicatedStorage/Shared/Ores")
 const Rarity = require("@game/ReplicatedStorage/Shared/Rarity")
@@ -23,7 +24,8 @@ local function entry(
 	rarityTier: number,
 	found: boolean,
 	name: string,
-	fill: (ViewportFrame) -> ()
+	fill: (ViewportFrame) -> (),
+	note: string?
 )
 	local rarity = Rarity.get(rarityTier)
 	local card = Kit.new("Frame", {
@@ -57,9 +59,10 @@ local function entry(
 		Parent = card,
 	})
 	Kit.text({
-		Text = rarity.name,
-		Size = UDim2.fromScale(0.8, 0.13),
-		Position = UDim2.fromScale(0.1, 0.83),
+		-- Where to get it is shown even before it's found, so the Index doubles as a drop guide.
+		Text = if note then `{rarity.name} · {note}` else rarity.name,
+		Size = UDim2.fromScale(0.92, 0.13),
+		Position = UDim2.fromScale(0.04, 0.83),
 		TextColor3 = rarity.color,
 		Stroke = 1.5,
 		Parent = card,
@@ -81,18 +84,20 @@ local function refresh()
 		for order, def in Guns.List do
 			local has = profile.gunIndex[def.id] == true
 			found += if has then 1 else 0
+			local base = if def.evolvesFrom then Guns.get(def.evolvesFrom) else nil
 			entry(order, def.rarity, has, def.name, function(viewport)
 				Preview.gun(viewport, def.id)
-			end)
+			end, if base then `Evolve {base.name}` else nil)
 		end
 		counter.Text = `Found {found} / {#Guns.List} guns`
 	else
 		for order, ore in Ores.List do
 			local has = profile.oreIndex[ore.id] == true
 			found += if has then 1 else 0
+			local biome = Biomes.List[ore.biome]
 			entry(order, ore.rarity, has, ore.name, function(viewport)
 				Preview.ore(viewport, ore.id)
-			end)
+			end, if biome then biome.name else nil)
 		end
 		counter.Text = `Found {found} / {#Ores.List} ores`
 	end

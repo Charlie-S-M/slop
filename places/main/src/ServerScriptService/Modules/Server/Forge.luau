@@ -351,12 +351,59 @@ local function onEvolve(player: Player, uid: unknown)
 	evolveRemote:FireClient(player, { item = evolved })
 end
 
+--[[
+	Tempers an owned armor piece for one Starshard and coins: it blocks TEMPER_MULTIPLIER times as
+	much, once. Checks run before anything is spent, and the Starshard goes only once coins have.
+]]
+local function onTemper(player: Player, uid: unknown)
+	if not RateLimit.allow(player, "Temper", 1, 2) or player:GetAttribute("InRun") then
+		return
+	end
+	if typeof(uid) ~= "string" or #uid == 0 or #uid > 40 then
+		return
+	end
+	local profile = PlayerData.get(player)
+	if not profile then
+		return
+	end
+	if not nearAnvil(player) then
+		notify(player, "Head to the forge to temper armor!")
+		return
+	end
+	local index: number? = nil
+	for i, item in profile.armor do
+		if item.uid == uid then
+			index = i
+			break
+		end
+	end
+	local item = if index then profile.armor[index] else nil
+	local def = item and Armor.get(item.id)
+	if not index or not item or not def or not ArmorStats.canTemper(item) then
+		return
+	end
+	if (profile.materials.Starshard or 0) < 1 then
+		notify(player, "You need a Starshard from the Aurora Sentinel!")
+		return
+	end
+	if not PlayerData.spendCoins(player, Balance.temperCost(def.rarity)) then
+		notify(player, "Not enough coins to temper that piece!")
+		return
+	end
+	profile.materials.Starshard -= 1
+	profile.armor[index] = ArmorStats.temper(item)
+	PlayerData.markState(player)
+	Loadout.refreshArmor(player)
+	notify(player, `{def.name} tempered! It blocks more now.`, Color3.fromRGB(150, 230, 255))
+end
+
 function Forge:Start()
 	notifyRemote = Net.event("Notify")
 	startRemote = Net.event("ForgeStart")
 	resultRemote = Net.event("ForgeResult")
 	Net.event("Forge").OnServerEvent:Connect(onForge)
 	Net.event("ForgeArmor").OnServerEvent:Connect(onForgeArmor)
+	Net.event("TemperArmor").OnServerEvent:Connect(onTemper)
 	Net.event("ForgeFinish").OnServerEvent:Connect(onForgeFinish)
 	evolveRemote = Net.event("EvolveResult")
 	Net.event("Evolve").OnServerEvent:Connect(onEvolve)

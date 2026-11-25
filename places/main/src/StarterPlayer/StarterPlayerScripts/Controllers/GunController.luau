@@ -22,6 +22,7 @@ const ClientState = require("./ClientState")
 const Hud = require("./Hud")
 const Kit = require("./UI/Kit")
 const Menus = require("./Menus")
+const TrainingDummy = require("./TrainingDummy")
 
 const RANGE = 400
 const AUTO_RANGE = 170
@@ -533,6 +534,12 @@ local function fire(def: Guns.GunDef, stats: Guns.KindStats, autoPart: BasePart?
 				hits[part] = (hits[part] or 0) + 1
 				hitPositions[part] = result.Position
 				styledImpact(style, result.Position, color, pelletScale)
+			elseif TrainingDummy.isDummy(part) then
+				styledImpact(style, result.Position, color, pelletScale)
+				TrainingDummy.hit(
+					ClientState.shotDamage() / math.max(1, stats.pellets),
+					result.Position
+				)
 			else
 				impact(result.Position, Color3.fromRGB(255, 240, 200), 0.8)
 			end

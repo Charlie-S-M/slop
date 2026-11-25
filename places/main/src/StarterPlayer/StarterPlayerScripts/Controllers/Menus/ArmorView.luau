@@ -32,6 +32,7 @@ local detailStats: TextLabel
 local equipButton: TextButton
 local lockButton: TextButton
 local sellButton: TextButton
+local temperButton: TextButton
 local selectedUid: string? = nil
 
 local function findItem(uid: string?): Types.ArmorItem?
@@ -76,10 +77,23 @@ local function refreshDetail()
 			math.abs(item.defense - worn.defense)
 		)} vs worn`
 		else `+{Format.percent(item.defense)} (slot empty)`
+	local temperLine = if item.tempered
+		then "✨ Tempered"
+		else `✨ Temper: +{Format.percent(item.defense * (Balance.TEMPER_MULTIPLIER - 1))} for 1 Starshard + 💰{Format.abbreviate(
+			Balance.temperCost(def.rarity)
+		)} (have {profile.materials.Starshard or 0})`
 	detailStats.Text =
 		`{rarity.name} {def.slot}  ·  Grade {item.grade}\n🛡️ Blocks {Format.percent(
 			item.defense
-		)} of each hit\n{compare}`
+		)} of each hit\n{compare}\n{temperLine}`
+	temperButton.Visible = ArmorStats.canTemper(item)
+	local canTemper = (profile.materials.Starshard or 0) >= 1
+		and profile.coins >= Balance.temperCost(def.rarity)
+	if canTemper then
+		Kit.setButtonColor(temperButton, Kit.Colors.Blue, Kit.Colors.BlueDark)
+	else
+		Kit.setButtonColor(temperButton, Kit.Colors.Grey, Kit.Colors.GreyDark)
+	end
 	Kit.setButtonText(equipButton, if wearing then "Unequip" else "Equip")
 	Kit.setButtonText(lockButton, if item.locked then "🔒 Locked" else "🔓 Lock")
 	local price = Balance.armorSellPrice(item.worth or 0)
@@ -281,12 +295,27 @@ function ArmorView.build(parent: Instance): Frame
 	})
 	detailStats = Kit.text({
 		Text = "",
-		Size = UDim2.fromScale(0.9, 0.3),
-		Position = UDim2.fromScale(0.05, 0.48),
+		Size = UDim2.fromScale(0.9, 0.24),
+		Position = UDim2.fromScale(0.05, 0.46),
+		TextWrapped = true,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextYAlignment = Enum.TextYAlignment.Top,
 		Stroke = 2,
 		Parent = detail,
+	})
+	temperButton = Kit.button({
+		name = "Temper",
+		color = Kit.Colors.Blue,
+		dark = Kit.Colors.BlueDark,
+		size = UDim2.fromScale(0.9, 0.07),
+		position = UDim2.fromScale(0.05, 0.71),
+		text = "✨ Temper",
+		parent = detail,
+		onClick = function()
+			if selectedUid then
+				Net.event("TemperArmor"):FireServer(selectedUid)
+			end
+		end,
 	})
 	equipButton = Kit.button({
 		name = "Equip",
