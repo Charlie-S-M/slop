@@ -4,6 +4,8 @@
 
 const RunService = game:GetService("RunService")
 
+const Armor = require("@game/ReplicatedStorage/Shared/Armor")
+const ArmorBuilder = require("@game/ReplicatedStorage/Shared/ArmorBuilder")
 const GunBuilder = require("@game/ReplicatedStorage/Shared/GunBuilder")
 const Guns = require("@game/ReplicatedStorage/Shared/Guns")
 const OreBuilder = require("@game/ReplicatedStorage/Shared/OreBuilder")
@@ -75,6 +77,16 @@ function Preview.gun(viewport: ViewportFrame, gunId: string, spin: number?)
 		CFrame.Angles(0, math.rad(-90), 0) * CFrame.Angles(math.rad(-8), 0, math.rad(12)),
 		spin
 	)
+end
+
+function Preview.armor(viewport: ViewportFrame, armorId: string, spin: number?)
+	viewport:ClearAllChildren()
+	spinning[viewport] = nil
+	local def = Armor.get(armorId)
+	if not def then
+		return
+	end
+	frame(viewport, ArmorBuilder.build(def), CFrame.Angles(math.rad(12), math.rad(200), 0), spin)
 end
 
 function Preview.ore(viewport: ViewportFrame, oreId: string, spin: number?)
