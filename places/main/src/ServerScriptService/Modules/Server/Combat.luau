@@ -125,7 +125,9 @@ local function onTraining(
 		kind,
 		zoneDef.multiplier,
 		profile.upgrades.Training or 0
-	) * PetStats.multiplier(profile.pets, profile.equippedPets, "Training")
+	) * PetStats.multiplier(profile.pets, profile.equippedPets, "Training") * Balance.towerBonus(
+		profile.towerBest
+	)
 	PlayerData.addPower(player, gain)
 	PlayerData.addXp(player, 1)
 	trainFx:FireClient(player, gain, aim)

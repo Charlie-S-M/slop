@@ -223,6 +223,51 @@ local function refreshGauntlet()
 			child:Destroy()
 		end
 	end
+	-- The Infinite Tower sits at the top of the list.
+	local unlocked = Balance.towerUnlocked(profile.power)
+	local startFloor = Balance.towerStartFloor(profile.towerBest)
+	local tower = Kit.button({
+		name = "Tower",
+		color = if unlocked then Color3.fromRGB(110, 80, 200) else Kit.Colors.GreyDark,
+		dark = if unlocked then Color3.fromRGB(70, 45, 140) else Kit.Colors.Ink,
+		size = UDim2.new(1, -10, 0, 84),
+		parent = stageList,
+		onClick = function()
+			if Balance.towerUnlocked(profile.power) then
+				Kit.sound(Kit.Sounds.Teleport, 0.5)
+				Net.event("EnterTower"):FireServer()
+				Menus.close()
+			end
+		end,
+	})
+	tower.LayoutOrder = 0
+	local towerFace = tower:FindFirstChild("Face") :: Frame
+	Kit.text({
+		Text = "🗼 Infinite Tower",
+		Size = UDim2.fromScale(0.6, 0.5),
+		Position = UDim2.fromScale(0.04, 0.08),
+		TextXAlignment = Enum.TextXAlignment.Left,
+		ZIndex = 3,
+		Stroke = 3,
+		Parent = towerFace,
+	})
+	Kit.text({
+		Text = if unlocked
+			then `Best floor {profile.towerBest}  ·  Bonus ×{string.format(
+				"%.1f",
+				Balance.towerBonus(profile.towerBest)
+			)}  ·  Enter at floor {startFloor}`
+			else `Opens at ⚡ {Format.abbreviate(Balance.TOWER_UNLOCK_POWER)} Power ({Format.abbreviate(
+				math.max(0, Balance.TOWER_UNLOCK_POWER - profile.power)
+			)} to go)`,
+		Size = UDim2.fromScale(0.92, 0.34),
+		Position = UDim2.fromScale(0.04, 0.58),
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Color3.fromRGB(220, 210, 255),
+		ZIndex = 3,
+		Stroke = 2,
+		Parent = towerFace,
+	})
 	for order, stage in Balance.checkpoints(profile.bestStage) do
 		local biome = Biomes.forStage(stage)
 		local ascension = Biomes.ascension(stage)

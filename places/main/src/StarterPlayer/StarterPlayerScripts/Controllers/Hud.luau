@@ -492,7 +492,10 @@ local function refreshRun(run: any)
 		return
 	end
 	local biome = Biomes.List[run.biome or 1]
-	stageLabel.Text = if run.isBoss then `BOSS {run.stage}` else `STAGE {run.stage}`
+	stageLabel.Text = if run.tower and run.floor
+		then (if run.isBoss then `BOSS FLOOR {run.floor}` else `FLOOR {run.floor}`)
+		elseif run.isBoss then `BOSS {run.stage}`
+		else `STAGE {run.stage}`
 	stageLabel.TextColor3 = if biome
 		then biome.glow:Lerp(Color3.new(1, 1, 1), 0.35)
 		else Color3.new(1, 1, 1)

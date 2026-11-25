@@ -318,6 +318,35 @@ Balance.ARMOR_ROLL_MAX = 1.1
 Balance.ARMOR_MAX_BLOCK = 0.75
 Balance.MAX_ARMOR = 60
 
+-- The Infinite Tower: unlocks at 1B Power. Floor N plays as stage TOWER_STAGE_OFFSET + N, and every
+-- TOWER_CHECKPOINT floors cleared is a checkpoint that adds TOWER_BONUS_STEP to training and coins.
+Balance.TOWER_UNLOCK_POWER = 1e9
+Balance.TOWER_STAGE_OFFSET = 70
+Balance.TOWER_CHECKPOINT = 10
+Balance.TOWER_BONUS_STEP = 0.1
+
+function Balance.towerUnlocked(power: number): boolean
+	return power >= Balance.TOWER_UNLOCK_POWER
+end
+
+function Balance.towerStage(floor: number): number
+	return Balance.TOWER_STAGE_OFFSET + floor
+end
+
+function Balance.towerFloor(stage: number): number
+	return stage - Balance.TOWER_STAGE_OFFSET
+end
+
+-- The floor a Tower run starts on: the one after the last checkpoint passed.
+function Balance.towerStartFloor(best: number): number
+	return math.floor(best / Balance.TOWER_CHECKPOINT) * Balance.TOWER_CHECKPOINT + 1
+end
+
+-- The permanent multiplier on training Power and kill coins from Tower checkpoints.
+function Balance.towerBonus(best: number): number
+	return 1 + Balance.TOWER_BONUS_STEP * math.floor(best / Balance.TOWER_CHECKPOINT)
+end
+
 -- Pets: how many can be equipped and owned, and the cap on ore drop chance with pet bonuses.
 Balance.PET_SLOTS = 3
 Balance.MAX_PETS = 50

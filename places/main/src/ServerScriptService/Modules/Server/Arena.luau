@@ -74,6 +74,8 @@ type Run = {
 	connections: { RBXScriptConnection },
 	lastBagNotice: number,
 	bossName: string?,
+	-- A Tower run: stages are floors (stage - TOWER_STAGE_OFFSET) and clears raise towerBest.
+	tower: boolean,
 }
 
 const MAX_SLOTS = 16
@@ -134,6 +136,8 @@ local function sendRunInfo(run: Run, cleared: boolean?)
 		isBoss = Balance.isBossStage(run.stage),
 		suggested = Balance.suggestedDamage(run.stage),
 		bossName = run.bossName,
+		tower = run.tower,
+		floor = if run.tower then Balance.towerFloor(run.stage) else nil,
 		cleared = cleared == true,
 		state = run.state,
 	})
@@ -159,9 +163,10 @@ local function setStageSign(run: Run)
 	local gui = sign and sign:FindFirstChild("Gui")
 	local label = gui and gui:FindFirstChild("Stage")
 	if label and label:IsA("TextLabel") then
-		label.Text = if Balance.isBossStage(run.stage)
-			then `BOSS · STAGE {run.stage}`
+		local name = if run.tower
+			then `FLOOR {Balance.towerFloor(run.stage)}`
 			else `STAGE {run.stage}`
+		label.Text = if Balance.isBossStage(run.stage) then `BOSS · {name}` else name
 	end
 end
 
@@ -388,6 +393,7 @@ local function killEnemy(run: Run, enemy: Enemy)
 			* coinBoost
 			* (if enemy.isBoss then 6 else 1)
 			* (if enemy.isMini then 0.3 else 1)
+			* Balance.towerBonus(profile.towerBest)
 		local xp = Balance.enemyXp(run.stage) * (if enemy.isBoss then 5 else 1)
 		PlayerData.addCoins(player, coins)
 		PlayerData.addXp(player, xp)
@@ -489,7 +495,24 @@ end
 local function onStageCleared(run: Run)
 	run.state = "break"
 	local profile = PlayerData.get(run.player)
-	if profile and run.stage > profile.bestStage then
+	if profile and run.tower then
+		local floor = Balance.towerFloor(run.stage)
+		if floor > profile.towerBest then
+			local before = Balance.towerBonus(profile.towerBest)
+			profile.towerBest = floor
+			PlayerData.markState(run.player)
+			if Balance.towerBonus(floor) > before then
+				notify(
+					run.player,
+					`Tower checkpoint! Training and coins are now ×{string.format(
+						"%.1f",
+						Balance.towerBonus(floor)
+					)} for good.`,
+					Color3.fromRGB(150, 230, 255)
+				)
+			end
+		end
+	elseif profile and run.stage > profile.bestStage then
 		profile.bestStage = run.stage
 		PlayerData.markState(run.player)
 	end
@@ -513,7 +536,7 @@ local function freeSlot(): number?
 	return nil
 end
 
-local function startRun(player: Player, startStage: number)
+local function startRun(player: Player, startStage: number, tower: boolean?)
 	if runs[player] then
 		return
 	end
@@ -553,6 +576,7 @@ local function startRun(player: Player, startStage: number)
 		connections = {},
 		lastBagNotice = 0,
 		bossName = nil,
+		tower = tower == true,
 	}
 	runs[player] = run
 	player:SetAttribute("InRun", true)
@@ -872,6 +896,21 @@ function Arena:Start()
 			return
 		end
 		startRun(player, stage)
+	end)
+
+	Net.event("EnterTower").OnServerEvent:Connect(function(player)
+		if not RateLimit.allow(player, "EnterArena", 0.5, 2) then
+			return
+		end
+		local profile = PlayerData.get(player)
+		if not profile then
+			return
+		end
+		if not Balance.towerUnlocked(profile.power) then
+			notify(player, "The Tower opens at 1B Power!")
+			return
+		end
+		startRun(player, Balance.towerStage(Balance.towerStartFloor(profile.towerBest)), true)
 	end)
 
 	Net.event("LeaveArena").OnServerEvent:Connect(function(player)

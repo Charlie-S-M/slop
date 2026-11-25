@@ -30,6 +30,7 @@ export type EventName =
 	| "ReleasePet"
 	| "LockPet"
 	| "TemperArmor"
+	| "EnterTower"
 	| "BuyUpgrade"
 	| "Rebirth"
 	| "ClaimDaily"
@@ -71,6 +72,7 @@ const EVENTS: { EventName } = {
 	"ReleasePet",
 	"LockPet",
 	"TemperArmor",
+	"EnterTower",
 	"Hatched",
 	"BuyUpgrade",
 	"Rebirth",

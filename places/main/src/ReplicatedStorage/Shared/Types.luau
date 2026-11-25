@@ -82,6 +82,8 @@ export type Profile = {
 	-- Hatched pets, and the uids following the player (at most Balance.PET_SLOTS).
 	pets: { PetItem },
 	equippedPets: { string },
+	-- The highest Infinite Tower floor cleared.
+	towerBest: number,
 }
 
 -- The stats that change many times a second, sent on their own so the full state stays quiet.
@@ -102,6 +104,9 @@ export type RunInfo = {
 	isBoss: boolean,
 	suggested: number,
 	bossName: string?,
+	-- Set in the Infinite Tower, where stages are shown as floors.
+	tower: boolean?,
+	floor: number?,
 }
 
 return {}

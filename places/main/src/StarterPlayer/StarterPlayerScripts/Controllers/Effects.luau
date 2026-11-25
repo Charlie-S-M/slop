@@ -628,7 +628,9 @@ function Effects:Start()
 				"CLEAR!",
 				Color3.fromRGB(170, 255, 140),
 				Color3.fromRGB(60, 200, 80),
-				`Stage {run.stage + 1} next`
+				if run.tower and run.floor
+					then `Floor {run.floor + 1} next`
+					else `Stage {run.stage + 1} next`
 			)
 		elseif run.active and run.state == "fighting" and run.stage ~= lastStage then
 			lastStage = run.stage
@@ -638,7 +640,7 @@ function Effects:Start()
 					`BOSS: {run.bossName or "???"}`,
 					Color3.fromRGB(255, 150, 150),
 					Color3.fromRGB(220, 40, 60),
-					`Stage {run.stage}`
+					if run.tower and run.floor then `Floor {run.floor}` else `Stage {run.stage}`
 				)
 			end
 		elseif not run.active then
