@@ -14,20 +14,13 @@ conversation. Update the **Status** column and **Now** section whenever an item 
   - It adds impact frames in `Controllers/Cutscene/ImpactFrames.luau`. Armor and chests reuse them
     by calling `ImpactFrames.play(tier, model, screen, world, alive)`, where `alive()` returns
     false once the caller's cutscene is gone.
-- **Item 3, armor, is in progress** on branch `feat/armor`, stacked on item 2. Tasks 1–3 are done. Follow
-  `docs/superpowers/plans/2026-11-25-armor.md`.
-  - Done: Task 1, the catalog (`Shared/Armor.luau`) and stats (`Shared/ArmorStats.luau`:
-    `roll`, `makeItem`, `equippedIn`, `blocked`), plus `Balance.ARMOR_*`,
-    `Balance.armorSellPrice(defense, rarity)`, and `Types.ArmorItem` / `ArmorSlot`. 58 specs
-    pass.
-  - Done: Task 2. Saves are at version 4, with `armor` and `equippedArmor`. `PendingForge.slot` marks an armor forge, and `gunId` holds the armor id. The `ForgeArmor(slot, request)` remote shares `startForge` with `Forge`. `ForgeResult` now sends `{ item?, armor?, new, better }`. The client still expects `item`, so the cutscene must handle `armor` before the UI can fire `ForgeArmor` (Task 4).
-  - Done: Task 3. `Arena.damagePlayer` scales hits by `1 - blocked`. `Shared/ArmorBuilder.luau` has `build(def)` for display models and `attach(character, def)`, which welds the pieces into a `character.Armor` folder (R15 and R6). `Loadout.refreshArmor` runs on spawn and on equip. `Economy` handles `EquipArmor(uid)`, `UnequipArmor(slot)`, `LockArmor(uid)`, and `SellArmor(uid)`; selling refuses worn or locked pieces. All of this was playtested.
-  - Next: Task 4. Add the Forge tab target picker (Gun, Helmet, Chestplate, Boots); an armor target fires `ForgeArmor(slot, ores)`. `ForgeCutscene.play` must handle `start.slot`: build the piece with `ArmorBuilder.build(Armor.get(start.gunId))` instead of `GunBuilder`. `reveal` must handle `result.armor` with a Defense card and `ImpactFrames` for rarity 5 and up. Then Task 5 is the Backpack Armor tab, and Task 6 is the review.
-  - `ArmorStats.blocked(armor, equipped)` takes the list and the slot-to-uid map, not the
-    profile, so specs can call it without one.
-- `feat/pew-incremental` is PR #1 (Charlie-S-M/slop#1) with Auto-fix on. Merging it to `main`
-  publishes to staging. Later branches stack on it; rebase them after it merges.
-- Nothing past PR #1 is pushed.
+- **Item 3, armor, is done** (branch `feat/armor`). It was reviewed, and the Important finding, a sell-price coin loop, is fixed: a piece records the sell value of its ores in `worth` and sells for 60% of it.
+- **Item 4, pets, is done** on branch `feat/pets`, stacked on armor:
+  - eggs bought in the Pets menu, three pets equipped at most;
+  - Training, Damage, and Ores bonuses applied in `Combat` and `Arena` through `PetStats.multiplier`;
+  - pets drawn locally by `PetFollow`.
+- **Item 5 is next:** stages 71–80 and collection goals, on a new branch stacked on `feat/pets`.
+- The test profile in Studio keeps three hatched pets and a Copperplate Chestplate. Its coins were restored after testing.
 
 ## Roadmap
 
@@ -37,9 +30,9 @@ The person set this order. Names, drop rates, and growth numbers are proposals t
 |---|------|--------|
 | 1 | Glassfall Foundry (stages 61–70) and evolving Legendary+ guns | Done, PR #1 |
 | 2 | Higher-tier guns and Legendary+ effects | Done, `feat/top-tier-guns-and-effects` |
-| 3 | Armor at the forge | In progress, `feat/armor` (Tasks 1–3 of 6 done) |
-| 4 | Pets | Not started |
-| 5 | Stages 71–80 and collection goals | Not started |
+| 3 | Armor at the forge | Done, `feat/armor` |
+| 4 | Pets | Done, `feat/pets` |
+| 5 | Stages 71–80 and collection goals | In progress |
 | 6 | Infinite Tower at 1B Power | Not started |
 | 7 | Attachments and boss chests | Not started |
 | 8 | Upgrade caps ×3–×4 | Not started |
