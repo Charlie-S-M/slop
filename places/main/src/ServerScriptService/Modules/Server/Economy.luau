@@ -4,6 +4,7 @@
 -- arguments and prices on the server. Forging lives in Forge.
 
 const Balance = require("@game/ReplicatedStorage/Shared/Balance")
+const Biomes = require("@game/ReplicatedStorage/Shared/Biomes")
 const Guns = require("@game/ReplicatedStorage/Shared/Guns")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
 const Ores = require("@game/ReplicatedStorage/Shared/Ores")
@@ -196,8 +197,7 @@ local function onClaimDaily(player: Player)
 		math.floor((150 + Balance.enemyCoins(math.max(1, profile.bestStage)) * 25) * streakBonus)
 	PlayerData.addCoins(player, coins)
 	-- Plus a few ores from the best biome the player has reached.
-	local biome = math.clamp(math.floor(profile.bestStage / 10) + 1, 1, 6)
-	local pool = Ores.forBiome(biome)
+	local pool = Ores.forBiome(Biomes.bestReached(profile.bestStage))
 	local given = 0
 	local capacity = Upgrades.value("BagSize", profile.upgrades.BagSize or 0)
 	for _ = 1, 3 do

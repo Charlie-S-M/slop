@@ -99,3 +99,15 @@ describe("Glassfall Foundry", function()
 		end
 	end)
 end)
+
+describe("daily reward ores", function()
+	it("come from the best biome reached, the Foundry included", function()
+		expect(Biomes.bestReached(0)).toBe(1)
+		expect(Biomes.bestReached(55)).toBe(6)
+		expect(Biomes.bestReached(65)).toBe(7)
+	end)
+
+	it("stay on the last biome through Ascensions", function()
+		expect(Biomes.bestReached(250)).toBe(Biomes.Count)
+	end)
+end)

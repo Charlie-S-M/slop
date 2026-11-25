@@ -513,4 +513,9 @@ function Biomes.ascension(stage: number): number
 	return math.floor((stage - 1) / (Biomes.STAGES_PER_BIOME * #LIST))
 end
 
+-- The furthest biome a player with this best stage has reached. Ascensions stay on the last one.
+function Biomes.bestReached(bestStage: number): number
+	return math.clamp(math.floor(bestStage / Biomes.STAGES_PER_BIOME) + 1, 1, #LIST)
+end
+
 return Biomes
