@@ -37,7 +37,7 @@ end
 -- The share of each hit the worn pieces block together, capped at ARMOR_MAX_BLOCK.
 function ArmorStats.blocked(armor: { Types.ArmorItem }, equipped: { [string]: string }): number
 	local total = 0
-	for _, slot in Armor.SLOTS do
+	for _, slot: Types.ArmorSlot in Armor.SLOTS do
 		local item = ArmorStats.equippedIn(armor, equipped, slot)
 		if item then
 			total += item.defense

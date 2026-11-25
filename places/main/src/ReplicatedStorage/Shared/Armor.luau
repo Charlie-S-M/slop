@@ -39,7 +39,7 @@ const BY_ID: { [string]: ArmorDef } = {}
 const BY_SLOT: { [string]: { [number]: ArmorDef } } = {}
 
 for rarity, set in SETS do
-	for _, slot in SLOTS do
+	for _, slot: Types.ArmorSlot in SLOTS do
 		local def: ArmorDef = {
 			id = set.name .. slot,
 			name = `{set.name} {slot}`,

@@ -46,7 +46,7 @@ describe("armor defense", function()
 	it("keeps the best possible set at or under the cap", function()
 		local armor = {}
 		local equipped = {}
-		for _, slot in Armor.SLOTS do
+		for _, slot: Types.ArmorSlot in Armor.SLOTS do
 			local def = Armor.forSlot(slot, 8)
 			table.insert(armor, piece(def.id, ArmorStats.roll(def, "S", Balance.ARMOR_ROLL_MAX)))
 			equipped[slot] = def.id
