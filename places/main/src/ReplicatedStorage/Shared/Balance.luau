@@ -299,6 +299,11 @@ Balance.ARMOR_ROLL_MAX = 1.1
 Balance.ARMOR_MAX_BLOCK = 0.75
 Balance.MAX_ARMOR = 60
 
+-- Pets: how many can be equipped and owned, and the cap on ore drop chance with pet bonuses.
+Balance.PET_SLOTS = 3
+Balance.MAX_PETS = 50
+Balance.MAX_ORE_DROP_CHANCE = 0.95
+
 -- The forge reaches the Eternal tier only when the mix has one of these ores, so Godly ores alone
 -- can't roll it.
 Balance.ETERNAL_TIER = 8
