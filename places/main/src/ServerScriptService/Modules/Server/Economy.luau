@@ -164,8 +164,7 @@ local function onSellArmor(player: Player, uid: unknown)
 			return
 		end
 	end
-	local def = Armor.get(item.id)
-	local price = Balance.armorSellPrice(item.defense, if def then def.rarity else 1)
+	local price = Balance.armorSellPrice(item.worth or 0)
 	table.remove(profile.armor, index)
 	PlayerData.addCoins(player, price)
 	PlayerData.markState(player)

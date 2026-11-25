@@ -72,11 +72,13 @@ describe("armor defense", function()
 		expect(ArmorStats.blocked(armor, equipped)).toBe(Balance.ARMOR_MAX_BLOCK)
 	end)
 
-	it("sells for more at higher rarity and defense", function()
-		local low = Balance.armorSellPrice(0.02, 1)
-		local high = Balance.armorSellPrice(0.2, 6)
-		expect(low >= 5).toBe(true)
-		expect(high > low).toBe(true)
+	it("never sells for more than the ores it was forged from", function()
+		for _, worth in { 10, 1000, 1e9 } do
+			local price = Balance.armorSellPrice(worth)
+			expect(price < worth).toBe(true)
+			expect(price > 0).toBe(true)
+		end
+		expect(Balance.armorSellPrice(0)).toBe(1)
 	end)
 
 	it("ignores equipped uids it can't find and pieces in the wrong slot", function()

@@ -395,10 +395,10 @@ function Balance.oreSellPrice(ore: OreDef, coinBoostLevel: number): number
 	return math.max(1, math.floor(base * Upgrades.value("CoinBoost", coinBoostLevel)))
 end
 
--- Armor sells like a mid-biome haul for its rarity, scaled by how much it blocks.
-function Balance.armorSellPrice(defense: number, rarity: number): number
-	local stage = math.max(1, (math.clamp(rarity, 1, 7) - 1) * Biomes.STAGES_PER_BIOME + 5)
-	return math.floor(math.max(5, Balance.enemyCoins(stage) * (2 + defense * 40)))
+-- Armor sells for part of what its ores were worth, so forging and selling armor never makes coins
+-- the ores alone wouldn't.
+function Balance.armorSellPrice(worth: number): number
+	return math.max(1, math.floor(worth * 0.6))
 end
 
 function Balance.gunSellPrice(power: number, rarity: number): number

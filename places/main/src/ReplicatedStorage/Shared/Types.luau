@@ -28,6 +28,8 @@ export type ArmorItem = {
 	defense: number,
 	grade: Grade,
 	locked: boolean?,
+	-- What the ores it was forged from would have sold for; its own sell price comes from this.
+	worth: number?,
 }
 
 -- A forge the server has rolled but the player hasn't finished hammering yet.

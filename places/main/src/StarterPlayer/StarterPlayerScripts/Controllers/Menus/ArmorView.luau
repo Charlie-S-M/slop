@@ -82,7 +82,7 @@ local function refreshDetail()
 		)} of each hit\n{compare}`
 	Kit.setButtonText(equipButton, if wearing then "Unequip" else "Equip")
 	Kit.setButtonText(lockButton, if item.locked then "🔒 Locked" else "🔓 Lock")
-	local price = Balance.armorSellPrice(item.defense, def.rarity)
+	local price = Balance.armorSellPrice(item.worth or 0)
 	local canSell = not item.locked and not wearing
 	Kit.setButtonText(
 		sellButton,

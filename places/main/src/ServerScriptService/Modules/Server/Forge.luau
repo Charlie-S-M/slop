@@ -84,6 +84,14 @@ local function finishArmor(
 	end
 	local roll = random:NextNumber(Balance.ARMOR_ROLL_MIN, Balance.ARMOR_ROLL_MAX)
 	local piece = ArmorStats.makeItem(PlayerData.newGunUid(profile), def, grade, roll)
+	local worth = 0
+	for _, oreId in pending.oreIds do
+		local ore = Ores.get(oreId)
+		if ore then
+			worth += Balance.oreSellPrice(ore, 0)
+		end
+	end
+	piece.worth = worth
 	local worn = ArmorStats.equippedIn(profile.armor, profile.equippedArmor, slot)
 	local isNew = true
 	for _, owned in profile.armor do
