@@ -1,0 +1,871 @@
+--!strict
+
+--[[
+	The Gauntlet. Each player who steps through the portal gets a private arena far from the lobby
+	and fights stage after stage of enemies that grow bigger, tougher, and harder-hitting. Enemies
+	are anchored models the server moves itself; clients only animate and decorate them.
+
+	A run ends when the player leaves (keeping their ores) or dies (losing every ore in the bag).
+]]
+
+const Players = game:GetService("Players")
+const RunService = game:GetService("RunService")
+
+const Balance = require("@game/ReplicatedStorage/Shared/Balance")
+const Biomes = require("@game/ReplicatedStorage/Shared/Biomes")
+const Net = require("@game/ReplicatedStorage/Shared/Net")
+const OreBuilder = require("@game/ReplicatedStorage/Shared/OreBuilder")
+const Ores = require("@game/ReplicatedStorage/Shared/Ores")
+const Rarity = require("@game/ReplicatedStorage/Shared/Rarity")
+const Upgrades = require("@game/ReplicatedStorage/Shared/Upgrades")
+const ArenaBuilder = require("./World/ArenaBuilder")
+const EnemyBuilder = require("./World/EnemyBuilder")
+const PlayerData = require("./PlayerData")
+const RateLimit = require("./RateLimit")
+
+type EnemyDef = Biomes.EnemyDef
+
+export type Enemy = {
+	id: number,
+	def: EnemyDef,
+	model: Model,
+	root: BasePart,
+	health: number,
+	maxHealth: number,
+	damage: number,
+	speed: number,
+	scale: number,
+	isBoss: boolean,
+	isMini: boolean,
+	-- Feet position on the arena floor.
+	position: Vector3,
+	yaw: number,
+	rootHeight: number,
+	reach: number,
+	radius: number,
+	lastAttack: number,
+	nextRanged: number,
+	alive: boolean,
+	strafe: number,
+}
+
+type Pickup = {
+	ore: Ores.OreDef,
+	model: Model,
+	position: Vector3,
+	born: number,
+}
+
+type Run = {
+	player: Player,
+	slot: number,
+	arena: Model,
+	origin: Vector3,
+	stage: number,
+	biome: Biomes.BiomeDef,
+	enemies: { Enemy },
+	pickups: { Pickup },
+	state: "starting" | "fighting" | "break" | "ended",
+	totalEnemies: number,
+	container: Folder,
+	connections: { RBXScriptConnection },
+	lastBagNotice: number,
+	bossName: string?,
+}
+
+const MAX_SLOTS = 16
+const SLOT_SPACING = 420
+const ARENA_BASE = Vector3.new(4000, 0, 0)
+const LOBBY_RETURN = CFrame.new(0, 4, 108) * CFrame.Angles(0, 0, 0)
+const PROJECTILE_SPEED = 60
+const MAX_PICKUPS = 70
+const MELEE_COOLDOWN = 1.25
+
+local Arena = {}
+
+local runs: { [Player]: Run } = {}
+local arenas: { [number]: Model } = {}
+local slotOwners: { [number]: Player } = {}
+local nextEnemyId = 0
+local random = Random.new()
+
+local runRemote: RemoteEvent
+local attackRemote: RemoteEvent
+local rewardRemote: RemoteEvent
+local notifyRemote: RemoteEvent
+
+local arenasFolder: Folder
+
+------------------------------------------------------------------------------------------------
+-- Helpers
+------------------------------------------------------------------------------------------------
+
+local function rootOf(player: Player): BasePart?
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	return if root and root:IsA("BasePart") then root else nil
+end
+
+local function humanoidOf(player: Player): Humanoid?
+	local character = player.Character
+	return character and character:FindFirstChildOfClass("Humanoid")
+end
+
+local function notify(player: Player, text: string, color: Color3?)
+	notifyRemote:FireClient(player, text, color)
+end
+
+local function sendRunInfo(run: Run, cleared: boolean?)
+	local alive = 0
+	for _, enemy in run.enemies do
+		if enemy.alive then
+			alive += 1
+		end
+	end
+	runRemote:FireClient(run.player, {
+		active = run.state ~= "ended",
+		stage = run.stage,
+		biome = run.biome.index,
+		enemiesLeft = alive,
+		enemiesTotal = run.totalEnemies,
+		isBoss = Balance.isBossStage(run.stage),
+		suggested = Balance.suggestedDamage(run.stage),
+		bossName = run.bossName,
+		cleared = cleared == true,
+		state = run.state,
+	})
+end
+
+local function weightedPick<T>(items: { T }, weights: { number }): T
+	local total = 0
+	for index = 1, #items do
+		total += weights[index] or 1
+	end
+	local roll = random:NextNumber() * total
+	for index, item in items do
+		roll -= weights[index] or 1
+		if roll <= 0 then
+			return item
+		end
+	end
+	return items[#items]
+end
+
+local function setStageSign(run: Run)
+	local sign = run.arena:FindFirstChild("StageSign")
+	local gui = sign and sign:FindFirstChild("Gui")
+	local label = gui and gui:FindFirstChild("Stage")
+	if label and label:IsA("TextLabel") then
+		label.Text = if Balance.isBossStage(run.stage)
+			then `BOSS · STAGE {run.stage}`
+			else `STAGE {run.stage}`
+	end
+end
+
+------------------------------------------------------------------------------------------------
+-- Enemies
+------------------------------------------------------------------------------------------------
+
+local function spawnEnemy(
+	run: Run,
+	def: EnemyDef,
+	isBoss: boolean,
+	isMini: boolean,
+	position: Vector3?
+)
+	local stage = run.stage
+	local scale = Balance.enemyScale(stage, isBoss)
+	if isMini then
+		scale *= 0.55
+	end
+	local health = Balance.enemyHealth(stage) * def.hpMultiplier
+	if isBoss then
+		health *= Balance.bossHealthMultiplier()
+	end
+	if isMini then
+		health *= 0.25
+	end
+	local damage = Balance.enemyDamage(stage)
+	if isBoss then
+		damage *= 2.5
+	elseif def.behavior == "Ranged" then
+		-- Ranged enemies hit from anywhere, so each shot is lighter.
+		damage *= 0.6
+	elseif def.behavior == "Tank" then
+		damage *= 1.4
+	elseif def.behavior == "Fast" then
+		damage *= 0.7
+	end
+
+	local model = EnemyBuilder.build(def, scale, isBoss)
+	local root = model.PrimaryPart :: BasePart
+	nextEnemyId += 1
+	local spawnAt = position
+		or run.origin
+			+ Vector3.new(
+				random:NextNumber(ArenaBuilder.SPAWN_MIN.X, ArenaBuilder.SPAWN_MAX.X),
+				0,
+				random:NextNumber(ArenaBuilder.SPAWN_MIN.Z, ArenaBuilder.SPAWN_MAX.Z)
+			)
+	if isBoss then
+		spawnAt = run.origin + Vector3.new(0, 0, ArenaBuilder.SPAWN_MIN.Z + 20)
+	end
+	local rootHeight = EnemyBuilder.rootHeight(model)
+	local enemy: Enemy = {
+		id = nextEnemyId,
+		def = def,
+		model = model,
+		root = root,
+		health = health,
+		maxHealth = health,
+		damage = damage,
+		speed = def.speed * (1 + (scale - 1) * 0.22),
+		scale = scale,
+		isBoss = isBoss,
+		isMini = isMini,
+		position = spawnAt,
+		yaw = math.pi,
+		rootHeight = rootHeight,
+		reach = root.Size.Z / 2 + 3.5,
+		radius = math.max(root.Size.X, root.Size.Z) / 2,
+		lastAttack = os.clock(),
+		nextRanged = os.clock() + random:NextNumber(1.5, 3),
+		alive = true,
+		strafe = if random:NextNumber() < 0.5 then -1 else 1,
+	}
+	model:SetAttribute("EnemyId", enemy.id)
+	model:SetAttribute("Health", health)
+	model:SetAttribute("MaxHealth", health)
+	model:SetAttribute("Scale", scale)
+	model:SetAttribute("Behavior", def.behavior)
+	model:SetAttribute("Owner", run.player.UserId)
+	model:PivotTo(
+		CFrame.new(spawnAt + Vector3.new(0, rootHeight, 0)) * CFrame.Angles(0, enemy.yaw, 0)
+	)
+	model.Parent = run.container
+	table.insert(run.enemies, enemy)
+	return enemy
+end
+
+local function spawnStage(run: Run)
+	local stage = run.stage
+	local biome = run.biome
+	local count = Balance.enemyCount(stage)
+	run.enemies = {}
+	run.bossName = nil
+	if Balance.isBossStage(stage) then
+		local boss = spawnEnemy(run, biome.boss, true, false, nil)
+		run.bossName = biome.boss.name
+		boss.model:SetAttribute("DisplayName", biome.boss.name)
+		count -= 1
+	end
+	for _ = 1, count do
+		local def = weightedPick(biome.enemies, { 5, 3, 2 })
+		spawnEnemy(run, def, false, false, nil)
+	end
+	run.totalEnemies = #run.enemies
+	run.state = "fighting"
+	setStageSign(run)
+	sendRunInfo(run)
+end
+
+local function dropOres(run: Run, enemy: Enemy)
+	local drops = 0
+	if enemy.isBoss then
+		drops = Balance.BOSS_ORE_DROPS
+	elseif not enemy.isMini and random:NextNumber() < Balance.ORE_DROP_CHANCE then
+		drops = 1
+	end
+	local pool = Ores.forBiome(run.biome.index)
+	if #pool == 0 then
+		return
+	end
+	local weights = if enemy.isBoss then Ores.BOSS_WEIGHTS else Ores.NORMAL_WEIGHTS
+	for _ = 1, drops do
+		local ore = weightedPick(pool, weights)
+		local offset = Vector3.new(random:NextNumber(-4, 4), 0, random:NextNumber(-4, 4))
+			* (if enemy.isBoss then 2 else 1)
+		local position = Vector3.new(enemy.position.X, run.origin.Y + 1.6, enemy.position.Z)
+			+ offset
+		local model = OreBuilder.build(ore)
+		model:ScaleTo(1.5)
+		model:SetAttribute("OreId", ore.id)
+		model:SetAttribute("OrePickup", true)
+		model:PivotTo(CFrame.new(position))
+		local tag = Instance.new("BillboardGui")
+		tag.Name = "Tag"
+		tag.Size = UDim2.fromScale(6, 1.4)
+		tag.StudsOffsetWorldSpace = Vector3.new(0, 2.4, 0)
+		tag.MaxDistance = 90
+		tag.LightInfluence = 0
+		tag.Parent = model.PrimaryPart
+		local label = Instance.new("TextLabel")
+		label.BackgroundTransparency = 1
+		label.Size = UDim2.fromScale(1, 1)
+		label.FontFace = Font.new("rbxasset://fonts/families/FredokaOne.json", Enum.FontWeight.Bold)
+		label.TextScaled = true
+		label.Text = ore.name
+		label.TextColor3 = Rarity.get(ore.rarity).color:Lerp(Color3.new(1, 1, 1), 0.25)
+		label.Parent = tag
+		local stroke = Instance.new("UIStroke")
+		stroke.Thickness = 2
+		stroke.Color = Color3.fromRGB(20, 20, 30)
+		stroke.Parent = label
+		if ore.rarity >= 3 then
+			local beam = Instance.new("PointLight")
+			beam.Color = Rarity.get(ore.rarity).color
+			beam.Range = 8
+			beam.Brightness = 1.5
+			beam.Parent = model.PrimaryPart
+		end
+		model.Parent = run.container
+		table.insert(
+			run.pickups,
+			{ ore = ore, model = model, position = position, born = os.clock() }
+		)
+		if #run.pickups > MAX_PICKUPS then
+			local oldest = table.remove(run.pickups, 1)
+			if oldest then
+				oldest.model:Destroy()
+			end
+		end
+	end
+end
+
+local function killEnemy(run: Run, enemy: Enemy)
+	if not enemy.alive then
+		return
+	end
+	enemy.alive = false
+	enemy.model:SetAttribute("Health", 0)
+	enemy.model:SetAttribute("Dead", true)
+	local index = table.find(run.enemies, enemy)
+	if index then
+		table.remove(run.enemies, index)
+	end
+	local player = run.player
+	local profile = PlayerData.get(player)
+	if profile then
+		local coinBoost = Upgrades.value("CoinBoost", profile.upgrades.CoinBoost or 0)
+		local coins = Balance.enemyCoins(run.stage)
+			* coinBoost
+			* (if enemy.isBoss then 6 else 1)
+			* (if enemy.isMini then 0.3 else 1)
+		local xp = Balance.enemyXp(run.stage) * (if enemy.isBoss then 5 else 1)
+		PlayerData.addCoins(player, coins)
+		PlayerData.addXp(player, xp)
+		profile.kills += 1
+		rewardRemote:FireClient(player, {
+			kind = "kill",
+			coins = math.floor(coins),
+			xp = xp,
+			position = enemy.position + Vector3.new(0, enemy.rootHeight * 2, 0),
+			boss = enemy.isBoss,
+			name = enemy.def.name,
+		})
+	end
+	dropOres(run, enemy)
+	if enemy.def.behavior == "Splitter" and not enemy.isMini then
+		for side = -1, 1, 2 do
+			local mini = spawnEnemy(
+				run,
+				enemy.def,
+				false,
+				true,
+				enemy.position + Vector3.new(side * enemy.radius, 0, 0)
+			)
+			run.totalEnemies += 1
+			mini.model:SetAttribute("DisplayName", `Mini {enemy.def.name}`)
+		end
+	end
+	local model = enemy.model
+	task.delay(0.7, function()
+		model:Destroy()
+	end)
+	sendRunInfo(run)
+end
+
+------------------------------------------------------------------------------------------------
+-- Runs
+------------------------------------------------------------------------------------------------
+
+local function arenaForSlot(slot: number): Model
+	local existing = arenas[slot]
+	if existing and existing.Parent then
+		return existing
+	end
+	local origin = ARENA_BASE + Vector3.new(0, 0, (slot - 1) * SLOT_SPACING)
+	local arena = ArenaBuilder.build(arenasFolder, origin, `Arena{slot}`)
+	arenas[slot] = arena
+	return arena
+end
+
+local function clearRunObjects(run: Run)
+	for _, enemy in run.enemies do
+		enemy.alive = false
+	end
+	run.enemies = {}
+	run.pickups = {}
+	run.container:ClearAllChildren()
+end
+
+local function endRun(run: Run, returnToLobby: boolean)
+	if run.state == "ended" then
+		return
+	end
+	run.state = "ended"
+	for _, connection in run.connections do
+		connection:Disconnect()
+	end
+	clearRunObjects(run)
+	run.container:Destroy()
+	runs[run.player] = nil
+	slotOwners[run.slot] = nil
+	run.player:SetAttribute("InRun", false)
+	run.player:SetAttribute("Stage", nil)
+	if run.player.Parent then
+		runRemote:FireClient(run.player, { active = false, stage = run.stage })
+	end
+	if returnToLobby then
+		local character = run.player.Character
+		if character then
+			character:PivotTo(LOBBY_RETURN)
+		end
+	end
+end
+
+local function startNextStage(run: Run)
+	if run.state == "ended" then
+		return
+	end
+	local previousBiome = run.biome
+	run.biome = Biomes.forStage(run.stage)
+	if run.biome ~= previousBiome then
+		ArenaBuilder.theme(run.arena, run.biome)
+	end
+	spawnStage(run)
+end
+
+local function onStageCleared(run: Run)
+	run.state = "break"
+	local profile = PlayerData.get(run.player)
+	if profile and run.stage > profile.bestStage then
+		profile.bestStage = run.stage
+		PlayerData.markState(run.player)
+	end
+	sendRunInfo(run, true)
+	task.delay(Balance.STAGE_BREAK_SECONDS, function()
+		if run.state ~= "break" then
+			return
+		end
+		run.stage += 1
+		run.player:SetAttribute("Stage", run.stage)
+		startNextStage(run)
+	end)
+end
+
+local function freeSlot(): number?
+	for slot = 1, MAX_SLOTS do
+		if not slotOwners[slot] then
+			return slot
+		end
+	end
+	return nil
+end
+
+local function startRun(player: Player, startStage: number)
+	if runs[player] then
+		return
+	end
+	local root = rootOf(player)
+	local humanoid = humanoidOf(player)
+	if not root or not humanoid or humanoid.Health <= 0 then
+		return
+	end
+	local slot = freeSlot()
+	if not slot then
+		notify(player, "All arenas are busy. Try again in a moment!")
+		return
+	end
+	slotOwners[slot] = player
+	local arena = arenaForSlot(slot)
+	local origin = Vector3.new(
+		arena:GetAttribute("OriginX") :: number,
+		arena:GetAttribute("OriginY") :: number,
+		arena:GetAttribute("OriginZ") :: number
+	)
+	local container = Instance.new("Folder")
+	container.Name = `Run_{player.UserId}`
+	container.Parent = arena
+
+	local run: Run = {
+		player = player,
+		slot = slot,
+		arena = arena,
+		origin = origin,
+		stage = startStage,
+		biome = Biomes.forStage(startStage),
+		enemies = {},
+		pickups = {},
+		state = "starting",
+		totalEnemies = 0,
+		container = container,
+		connections = {},
+		lastBagNotice = 0,
+		bossName = nil,
+	}
+	runs[player] = run
+	player:SetAttribute("InRun", true)
+	player:SetAttribute("Stage", startStage)
+	ArenaBuilder.theme(arena, run.biome)
+	setStageSign(run)
+
+	table.insert(
+		run.connections,
+		humanoid.Died:Connect(function()
+			local profile = PlayerData.get(player)
+			if profile then
+				local lost = PlayerData.bagCount(profile)
+				profile.bag = {}
+				PlayerData.markState(player)
+				if lost > 0 then
+					notify(
+						player,
+						`You were defeated and dropped {lost} ores!`,
+						Color3.fromRGB(255, 90, 90)
+					)
+				else
+					notify(player, "You were defeated!", Color3.fromRGB(255, 90, 90))
+				end
+			end
+			endRun(run, false)
+		end)
+	)
+
+	local character = player.Character
+	if character then
+		character:PivotTo(CFrame.new(origin + ArenaBuilder.PLAYER_START))
+	end
+	sendRunInfo(run)
+	task.delay(2, function()
+		if run.state == "starting" then
+			startNextStage(run)
+		end
+	end)
+end
+
+------------------------------------------------------------------------------------------------
+-- Simulation
+------------------------------------------------------------------------------------------------
+
+local function damagePlayer(run: Run, amount: number)
+	local humanoid = humanoidOf(run.player)
+	if humanoid and humanoid.Health > 0 then
+		humanoid:TakeDamage(amount)
+	end
+end
+
+local function launchProjectile(run: Run, enemy: Enemy, targetPosition: Vector3)
+	local from = enemy.position + Vector3.new(0, enemy.rootHeight * 1.3, 0)
+	local distance = (targetPosition - from).Magnitude
+	local travel = distance / PROJECTILE_SPEED
+	attackRemote:FireClient(run.player, {
+		kind = "projectile",
+		from = from,
+		to = targetPosition,
+		time = travel,
+		color = enemy.def.accent,
+		size = math.clamp(1 + enemy.scale * 0.25, 1, 5),
+	})
+	local hitRadius = 3.5 + math.min(enemy.scale, 6) * 0.4
+	task.delay(travel, function()
+		if run.state ~= "fighting" and run.state ~= "break" then
+			return
+		end
+		local root = rootOf(run.player)
+		if root and (root.Position - targetPosition).Magnitude <= hitRadius then
+			damagePlayer(run, enemy.damage)
+		end
+	end)
+end
+
+local function stepRun(run: Run, dt: number, now: number, roots: { BasePart }, cframes: { CFrame })
+	if run.state ~= "fighting" and run.state ~= "break" then
+		return
+	end
+	local playerRoot = rootOf(run.player)
+	if not playerRoot then
+		return
+	end
+	local target = playerRoot.Position
+	local flatTarget = Vector3.new(target.X, run.origin.Y, target.Z)
+	local halfWidth = ArenaBuilder.WIDTH / 2 - 3
+	local halfLength = ArenaBuilder.LENGTH / 2 - 3
+
+	for _, enemy in run.enemies do
+		if not enemy.alive then
+			continue
+		end
+		local toPlayer = flatTarget - enemy.position
+		local distance = toPlayer.Magnitude
+		local direction = if distance > 0.01 then toPlayer / distance else Vector3.zero
+		local move = Vector3.zero
+		local behavior = enemy.def.behavior
+		local isRanged = behavior == "Ranged"
+		if isRanged then
+			if distance > 46 + enemy.radius then
+				move = direction
+			elseif distance < 26 + enemy.radius then
+				move = -direction
+			else
+				move = Vector3.new(-direction.Z, 0, direction.X) * enemy.strafe * 0.6
+			end
+		elseif distance > enemy.reach then
+			move = direction
+		end
+
+		-- Keep enemies from stacking inside each other.
+		for _, other in run.enemies do
+			if other ~= enemy and other.alive then
+				local apart = enemy.position - other.position
+				local gap = apart.Magnitude
+				local minimum = enemy.radius + other.radius
+				if gap > 0.01 and gap < minimum then
+					move += apart / gap * (1 - gap / minimum) * 1.5
+				end
+			end
+		end
+
+		if move.Magnitude > 1 then
+			move = move.Unit
+		end
+		local newPosition = enemy.position + move * enemy.speed * dt
+		local local_ = newPosition - run.origin
+		newPosition = run.origin
+			+ Vector3.new(
+				math.clamp(local_.X, -halfWidth, halfWidth),
+				0,
+				math.clamp(local_.Z, -halfLength, halfLength)
+			)
+		enemy.position = newPosition
+		if distance > 0.5 then
+			enemy.yaw = math.atan2(-direction.X, -direction.Z)
+		end
+
+		local hover = 0
+		if enemy.def.shape == "Floater" then
+			hover = (2.5 + math.sin(now * 2 + enemy.id) * 0.8) * enemy.scale
+		end
+		table.insert(roots, enemy.root)
+		table.insert(
+			cframes,
+			CFrame.new(newPosition + Vector3.new(0, enemy.rootHeight + hover, 0))
+				* CFrame.Angles(0, enemy.yaw, 0)
+		)
+
+		if run.state ~= "fighting" then
+			continue
+		end
+		if isRanged then
+			if now >= enemy.nextRanged and distance < 140 then
+				enemy.nextRanged = now
+					+ (if enemy.isBoss then 1.5 else 2.6)
+					+ random:NextNumber(0, 0.6)
+				launchProjectile(run, enemy, target)
+				if enemy.isBoss then
+					-- Bosses throw a spread of three.
+					local side = Vector3.new(-direction.Z, 0, direction.X)
+					launchProjectile(run, enemy, target + side * 9)
+					launchProjectile(run, enemy, target - side * 9)
+				end
+			end
+		elseif distance <= enemy.reach + 1 and now - enemy.lastAttack >= MELEE_COOLDOWN then
+			enemy.lastAttack = now
+			attackRemote:FireClient(run.player, { kind = "melee", enemy = enemy.model })
+			damagePlayer(run, enemy.damage)
+		end
+	end
+end
+
+local function collectPickups(run: Run)
+	if run.state == "ended" then
+		return
+	end
+	local root = rootOf(run.player)
+	local profile = PlayerData.get(run.player)
+	if not root or not profile then
+		return
+	end
+	local radius = Upgrades.value("Magnet", profile.upgrades.Magnet or 0)
+	local capacity = Upgrades.value("BagSize", profile.upgrades.BagSize or 0)
+	local index = 1
+	while index <= #run.pickups do
+		local pickup = run.pickups[index]
+		if (pickup.position - root.Position).Magnitude <= radius then
+			if PlayerData.bagCount(profile) >= capacity then
+				local now = os.clock()
+				if now - run.lastBagNotice > 4 then
+					run.lastBagNotice = now
+					notify(
+						run.player,
+						"Your ore bag is full! Head back to forge or sell.",
+						Color3.fromRGB(255, 200, 60)
+					)
+				end
+				break
+			end
+			table.remove(run.pickups, index)
+			profile.bag[pickup.ore.id] = (profile.bag[pickup.ore.id] or 0) + 1
+			local isNew = not profile.oreIndex[pickup.ore.id]
+			profile.oreIndex[pickup.ore.id] = true
+			PlayerData.markState(run.player)
+			rewardRemote:FireClient(run.player, {
+				kind = "ore",
+				oreId = pickup.ore.id,
+				position = pickup.position,
+				new = isNew,
+			})
+			pickup.model:Destroy()
+		else
+			index += 1
+		end
+	end
+end
+
+------------------------------------------------------------------------------------------------
+-- Public API for Combat
+------------------------------------------------------------------------------------------------
+
+function Arena.runOf(player: Player): Run?
+	return runs[player]
+end
+
+-- Finds the living enemy in this player's run that a hit instance belongs to.
+function Arena.enemyFromInstance(player: Player, instance: Instance): Enemy?
+	local run = runs[player]
+	if not run or not instance:IsDescendantOf(run.container) then
+		return nil
+	end
+	local current: Instance? = instance
+	while current and current ~= run.container do
+		if current:IsA("Model") and current:GetAttribute("EnemyId") ~= nil then
+			local id = current:GetAttribute("EnemyId")
+			for _, enemy in run.enemies do
+				if enemy.id == id and enemy.alive then
+					return enemy
+				end
+			end
+			return nil
+		end
+		current = current.Parent
+	end
+	return nil
+end
+
+function Arena.enemiesNear(player: Player, position: Vector3, radius: number): { Enemy }
+	local run = runs[player]
+	local list = {}
+	if not run then
+		return list
+	end
+	for _, enemy in run.enemies do
+		if enemy.alive then
+			local center = enemy.position + Vector3.new(0, enemy.rootHeight, 0)
+			if (center - position).Magnitude <= radius + enemy.radius then
+				table.insert(list, enemy)
+			end
+		end
+	end
+	return list
+end
+
+-- Applies damage to an enemy. Returns true when the hit killed it.
+function Arena.damage(player: Player, enemy: Enemy, amount: number): boolean
+	local run = runs[player]
+	if not run or not enemy.alive or run.state ~= "fighting" then
+		return false
+	end
+	enemy.health -= amount
+	if enemy.health <= 0 then
+		killEnemy(run, enemy)
+		if #run.enemies == 0 and run.state == "fighting" then
+			onStageCleared(run)
+		end
+		return true
+	end
+	enemy.model:SetAttribute("Health", enemy.health)
+	return false
+end
+
+------------------------------------------------------------------------------------------------
+-- Lifecycle
+------------------------------------------------------------------------------------------------
+
+function Arena:Init()
+	arenasFolder = Instance.new("Folder")
+	arenasFolder.Name = "Arenas"
+	arenasFolder.Parent = workspace
+end
+
+function Arena:Start()
+	runRemote = Net.event("Run")
+	attackRemote = Net.event("EnemyAttack")
+	rewardRemote = Net.event("Reward")
+	notifyRemote = Net.event("Notify")
+
+	Net.event("EnterArena").OnServerEvent:Connect(function(player, stage: unknown)
+		if not RateLimit.allow(player, "EnterArena", 0.5, 2) then
+			return
+		end
+		if typeof(stage) ~= "number" or stage ~= stage or stage ~= math.floor(stage) then
+			return
+		end
+		local profile = PlayerData.get(player)
+		if not profile then
+			return
+		end
+		if not table.find(Balance.checkpoints(profile.bestStage), stage) then
+			return
+		end
+		startRun(player, stage)
+	end)
+
+	Net.event("LeaveArena").OnServerEvent:Connect(function(player)
+		if not RateLimit.allow(player, "LeaveArena", 1, 2) then
+			return
+		end
+		local run = runs[player]
+		if run then
+			endRun(run, true)
+		end
+	end)
+
+	Players.PlayerRemoving:Connect(function(player)
+		local run = runs[player]
+		if run then
+			endRun(run, false)
+		end
+	end)
+
+	local pickupTimer = 0
+	RunService.Heartbeat:Connect(function(dt)
+		local now = os.clock()
+		local roots: { BasePart } = {}
+		local cframes: { CFrame } = {}
+		for _, run in runs do
+			stepRun(run, math.min(dt, 0.1), now, roots, cframes)
+		end
+		if #roots > 0 then
+			workspace:BulkMoveTo(roots, cframes, Enum.BulkMoveMode.FireCFrameChanged)
+		end
+		pickupTimer += dt
+		if pickupTimer >= 0.12 then
+			pickupTimer = 0
+			for _, run in runs do
+				collectPickups(run)
+			end
+		end
+	end)
+end
+
+return Arena

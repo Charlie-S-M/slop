@@ -2,6 +2,7 @@
 
 const ModuleLoader = require("@game/ReplicatedStorage/Packages/ModuleLoader")
 
--- Systems are found by their LOAD_MODULE tag, and the loader reads tags only with this setting on.
-ModuleLoader.ChangeSettings({ USE_COLLECTION_SERVICE = true })
-ModuleLoader.Start()
+-- Load this player's own copy of the controllers. Searching by tag would also find the template
+-- copy left in StarterPlayerScripts and load every controller twice.
+ModuleLoader.ChangeSettings({ VERBOSE_LOADING = false })
+ModuleLoader.Start(script.Parent:WaitForChild("Controllers"))
