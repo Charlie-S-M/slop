@@ -28,6 +28,7 @@ export type EventName =
 	| "EquipPet"
 	| "UnequipPet"
 	| "ReleasePet"
+	| "LockPet"
 	| "BuyUpgrade"
 	| "Rebirth"
 	| "ClaimDaily"
@@ -67,6 +68,7 @@ const EVENTS: { EventName } = {
 	"EquipPet",
 	"UnequipPet",
 	"ReleasePet",
+	"LockPet",
 	"Hatched",
 	"BuyUpgrade",
 	"Rebirth",

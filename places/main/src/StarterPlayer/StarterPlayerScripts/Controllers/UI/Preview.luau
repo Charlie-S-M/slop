@@ -10,6 +10,8 @@ const GunBuilder = require("@game/ReplicatedStorage/Shared/GunBuilder")
 const Guns = require("@game/ReplicatedStorage/Shared/Guns")
 const OreBuilder = require("@game/ReplicatedStorage/Shared/OreBuilder")
 const Ores = require("@game/ReplicatedStorage/Shared/Ores")
+const PetBuilder = require("@game/ReplicatedStorage/Shared/PetBuilder")
+const Pets = require("@game/ReplicatedStorage/Shared/Pets")
 
 local Preview = {}
 
@@ -87,6 +89,16 @@ function Preview.armor(viewport: ViewportFrame, armorId: string, spin: number?)
 		return
 	end
 	frame(viewport, ArmorBuilder.build(def), CFrame.Angles(math.rad(12), math.rad(200), 0), spin)
+end
+
+function Preview.pet(viewport: ViewportFrame, petId: string, spin: number?)
+	viewport:ClearAllChildren()
+	spinning[viewport] = nil
+	local def = Pets.get(petId)
+	if not def then
+		return
+	end
+	frame(viewport, PetBuilder.build(def), CFrame.Angles(math.rad(8), math.rad(150), 0), spin)
 end
 
 function Preview.ore(viewport: ViewportFrame, oreId: string, spin: number?)

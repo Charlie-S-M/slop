@@ -61,6 +61,7 @@ const MENU_BUTTONS: { MenuButton } = {
 		key = Enum.KeyCode.U,
 	},
 	{ name = "Index", glyph = "📖", color = Color3.fromRGB(150, 100, 70), key = Enum.KeyCode.I },
+	{ name = "Pets", glyph = "🐾", color = Color3.fromRGB(255, 140, 190), key = Enum.KeyCode.P },
 	{ name = "Rebirth", glyph = "🔄", color = Color3.fromRGB(170, 90, 255), key = nil },
 	{ name = "Daily", glyph = "🎁", color = Color3.fromRGB(70, 200, 90), key = nil },
 	{ name = "Gauntlet", glyph = "⚔️", color = Color3.fromRGB(235, 70, 90), key = nil },
@@ -132,19 +133,19 @@ end
 local function buildMenuGrid()
 	local grid = Kit.new("Frame", {
 		Name = "MenuGrid",
-		Size = UDim2.fromScale(0.13, 0.5),
-		Position = UDim2.fromScale(0.012, 0.5),
+		Size = UDim2.fromScale(0.13, 0.6),
+		Position = UDim2.fromScale(0.012, 0.49),
 		AnchorPoint = Vector2.new(0, 0.5),
 		BackgroundTransparency = 1,
 		Parent = screen,
 	})
 	Kit.new(
 		"UISizeConstraint",
-		{ MaxSize = Vector2.new(210, 330), MinSize = Vector2.new(120, 180), Parent = grid }
+		{ MaxSize = Vector2.new(210, 430), MinSize = Vector2.new(120, 230), Parent = grid }
 	)
 	Kit.new("UIGridLayout", {
-		CellSize = UDim2.fromScale(0.47, 0.31),
-		CellPadding = UDim2.fromScale(0.04, 0.03),
+		CellSize = UDim2.fromScale(0.47, 0.235),
+		CellPadding = UDim2.fromScale(0.04, 0.02),
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Parent = grid,
 	})

@@ -146,6 +146,18 @@ local function onRelease(player: Player, uid: unknown)
 	PlayerData.markState(player)
 end
 
+local function onLock(player: Player, uid: unknown)
+	if not RateLimit.allow(player, "ToggleLock", 5, 6) or not isUid(uid) then
+		return
+	end
+	local profile = PlayerData.get(player)
+	local pet = profile and findPet(profile, uid :: string)
+	if pet then
+		pet.locked = not pet.locked
+		PlayerData.markState(player)
+	end
+end
+
 function PetKeeper:Start()
 	notifyRemote = Net.event("Notify")
 	hatchedRemote = Net.event("Hatched")
@@ -154,6 +166,7 @@ function PetKeeper:Start()
 	Net.event("EquipPet").OnServerEvent:Connect(onEquip)
 	Net.event("UnequipPet").OnServerEvent:Connect(onUnequip)
 	Net.event("ReleasePet").OnServerEvent:Connect(onRelease)
+	Net.event("LockPet").OnServerEvent:Connect(onLock)
 	PlayerData.Loaded:Connect(function(player)
 		PetKeeper.publish(player)
 	end)
