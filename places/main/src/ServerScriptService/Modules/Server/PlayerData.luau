@@ -12,6 +12,7 @@ const Players = game:GetService("Players")
 const RunService = game:GetService("RunService")
 
 const Balance = require("@game/ReplicatedStorage/Shared/Balance")
+const GunStats = require("@game/ReplicatedStorage/Shared/GunStats")
 const Guns = require("@game/ReplicatedStorage/Shared/Guns")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
 const Signal = require("@game/ReplicatedStorage/Shared/Signal")
@@ -20,7 +21,7 @@ const Types = require("@game/ReplicatedStorage/Shared/Types")
 type Profile = Types.Profile
 
 const STORE_NAME = "PewIncremental_v1"
-const CURRENT_VERSION = 1
+const CURRENT_VERSION = 2
 const AUTOSAVE_SECONDS = 60
 -- A lock older than this belongs to a server that died without releasing it.
 const LOCK_STALE_SECONDS = AUTOSAVE_SECONDS * 3
@@ -51,6 +52,17 @@ PlayerData.LeveledUp = Signal.new() :: Signal.Signal<Player, number>
 -- Fires whenever something that affects the character's health, speed, or gun changes.
 PlayerData.LoadoutChanged = Signal.new() :: Signal.Signal<Player>
 
+--[[
+	Handlers run synchronously, in order, right before a leaving player's final save, so a system
+	can settle unfinished work (like a pending forge) into the profile that gets saved. They must
+	not yield.
+]]
+local beforeRelease: { (Player, Profile) -> () } = {}
+
+function PlayerData.onBeforeRelease(handler: (Player, Profile) -> ())
+	table.insert(beforeRelease, handler)
+end
+
 local sessions: { [Player]: Session } = {}
 local store: DataStore? = nil
 
@@ -62,7 +74,17 @@ local function defaultProfile(): Profile
 		rebirths = 0,
 		level = 1,
 		xp = 0,
-		guns = { { uid = "g1", id = Guns.STARTER_ID, power = Guns.STARTER_POWER, locked = true } },
+		guns = {
+			{
+				uid = "g1",
+				id = Guns.STARTER_ID,
+				power = Guns.STARTER_POWER,
+				speed = 1,
+				train = Guns.STARTER_POWER,
+				grade = "B",
+				locked = true,
+			},
+		},
 		equipped = "g1",
 		nextUid = 2,
 		bag = {},
@@ -91,6 +113,14 @@ local function reconcile(saved: any): Profile
 	end
 	if #profile.guns == 0 then
 		profile.guns = defaultProfile().guns
+	end
+	-- Version 2 gave guns Speed, Training Power, and a grade; older guns get them filled in.
+	for index, item in profile.guns do
+		profile.guns[index] = GunStats.migrateGun(item)
+	end
+	-- The default profile has no pending forge, so the copy loop above skips it.
+	if typeof(saved.pendingForge) == "table" and typeof(saved.pendingForge.token) == "string" then
+		profile.pendingForge = saved.pendingForge
 	end
 	profile.version = CURRENT_VERSION
 	return profile
@@ -253,6 +283,12 @@ local function onPlayerRemoving(player: Player)
 	if not session then
 		return
 	end
+	for _, handler in beforeRelease do
+		local ok, err = pcall(handler, player, session.profile)
+		if not ok then
+			warn(`[PlayerData] Before-release handler failed for {player.Name}: {err}`)
+		end
+	end
 	sessions[player] = nil
 	save(player, session, true)
 end
@@ -402,6 +438,9 @@ function PlayerData:Start()
 		local pending = 0
 		for player, session in sessions do
 			pending += 1
+			for _, handler in beforeRelease do
+				pcall(handler, player, session.profile)
+			end
 			task.spawn(function()
 				save(player, session, true)
 				pending -= 1

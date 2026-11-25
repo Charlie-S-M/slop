@@ -9,8 +9,10 @@
 const Players = game:GetService("Players")
 
 const Balance = require("@game/ReplicatedStorage/Shared/Balance")
+const GunStats = require("@game/ReplicatedStorage/Shared/GunStats")
 const Guns = require("@game/ReplicatedStorage/Shared/Guns")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
+const Types = require("@game/ReplicatedStorage/Shared/Types")
 const Arena = require("./Arena")
 const PlayerData = require("./PlayerData")
 const RateLimit = require("./RateLimit")
@@ -29,13 +31,13 @@ local hitFx: UnreliableRemoteEvent
 local shotFx: UnreliableRemoteEvent
 local trainFx: UnreliableRemoteEvent
 
-local function equippedDef(player: Player): (Guns.GunDef?, number, string)
+local function equippedGun(player: Player): (Guns.GunDef?, Types.GunItem?)
 	local profile = PlayerData.get(player)
 	if not profile then
-		return nil, 0, ""
+		return nil, nil
 	end
 	local item = PlayerData.equippedGun(profile)
-	return Guns.get(item.id), item.power, item.uid
+	return Guns.get(item.id), item
 end
 
 -- The player must be holding the gun the profile says is equipped.
@@ -95,7 +97,7 @@ local function onTraining(
 	player: Player,
 	target: Model,
 	root: BasePart,
-	gunPower: number,
+	train: number,
 	kind: Guns.GunKind,
 	aim: Vector3
 )
@@ -117,7 +119,7 @@ local function onTraining(
 		return
 	end
 	local gain =
-		Balance.trainingGain(gunPower, kind, zoneDef.multiplier, profile.upgrades.Training or 0)
+		Balance.trainingGain(train, kind, zoneDef.multiplier, profile.upgrades.Training or 0)
 	PlayerData.addPower(player, gain)
 	PlayerData.addXp(player, 1)
 	trainFx:FireClient(player, gain, aim)
@@ -161,15 +163,15 @@ local function onEnemyHit(
 end
 
 local function onShoot(player: Player, target: unknown, pellets: unknown, aim: unknown)
-	local def, gunPower, uid = equippedDef(player)
-	if not def then
+	local def, item = equippedGun(player)
+	if not def or not item then
 		return
 	end
+	local uid = item.uid
 	local stats = Guns.kindStats(def.kind)
 	-- Allow a quarter more than the gun's rate to absorb network jitter.
-	if
-		not RateLimit.allow(player, "Shoot", stats.fireRate * 1.25, math.max(3, stats.burst + 1))
-	then
+	local fireRate = GunStats.fireRate(def.kind, item.speed)
+	if not RateLimit.allow(player, "Shoot", fireRate * 1.25, math.max(3, stats.burst + 1)) then
 		return
 	end
 	if not holdingGun(player, uid) then
@@ -214,10 +216,10 @@ local function onShoot(player: Player, target: unknown, pellets: unknown, aim: u
 
 	local trainingTarget = findTrainingTarget(target)
 	if trainingTarget then
-		onTraining(player, trainingTarget, root, gunPower, def.kind, aim)
+		onTraining(player, trainingTarget, root, item.train, def.kind, aim)
 		return
 	end
-	onEnemyHit(player, target, count, gunPower, def.kind, aim)
+	onEnemyHit(player, target, count, item.power, def.kind, aim)
 end
 
 function Combat:Start()
@@ -230,9 +232,9 @@ function Combat:Start()
 		if not RateLimit.allow(player, "Reload", 2, 2) then
 			return
 		end
-		local def, _, uid = equippedDef(player)
+		local def, item = equippedGun(player)
 		local state = ammoStates[player]
-		if def and state and state.uid == uid then
+		if def and item and state and state.uid == item.uid then
 			local stats = Guns.kindStats(def.kind)
 			if state.ammo < stats.magazine and os.clock() >= state.reloadUntil then
 				state.ammo = stats.magazine

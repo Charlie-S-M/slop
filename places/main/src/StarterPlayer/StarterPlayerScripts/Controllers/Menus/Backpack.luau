@@ -96,7 +96,7 @@ local function refreshDetail()
 		`🔥 Fire rate: {stats.fireRate}/s`,
 		`📦 Magazine: {stats.magazine}`,
 		`🎯 Training: +{Format.abbreviate(
-			Balance.trainingGain(item.power, def.kind, 1, profile.upgrades.Training or 0)
+			Balance.trainingGain(item.train, def.kind, 1, profile.upgrades.Training or 0)
 		)}/shot`,
 	}, "\n")
 	local isEquipped = item.uid == profile.equipped

@@ -13,6 +13,7 @@ const UserInputService = game:GetService("UserInputService")
 
 const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const GunBuilder = require("@game/ReplicatedStorage/Shared/GunBuilder")
+const GunStats = require("@game/ReplicatedStorage/Shared/GunStats")
 const Guns = require("@game/ReplicatedStorage/Shared/Guns")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
 const Rarity = require("@game/ReplicatedStorage/Shared/Rarity")
@@ -435,7 +436,8 @@ local function step()
 		return
 	end
 	ammo -= 1
-	nextShot = now + 1 / stats.fireRate
+	local item = ClientState.equipped()
+	nextShot = now + 1 / GunStats.fireRate(def.kind, if item then item.speed else 1)
 	if stats.burst > 1 then
 		burstCount += 1
 		if burstCount >= stats.burst then
