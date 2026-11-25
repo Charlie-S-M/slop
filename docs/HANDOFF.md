@@ -28,7 +28,26 @@ conversation. Update the **Status** column and **Now** section whenever an item 
   - `GunStats.effective` applies parts everywhere.
   Its review was still running when this was written.
 - **Item 8 is done** on `feat/upgrade-caps`: caps are ×4 and ×3, with soft caps past the old maximum.
-- **Next:** items 9 and 10, each on a branch stacked on `feat/upgrade-caps`.
+- **The game is 2D now.** Another assistant ("chat") did items 11–16 directly in the Studio place. That work was pulled into the repo in commit 70efda7:
+  - 11: a bird's-eye pixel-art world, drawn by `Controllers/Birdseye.luau` as BillboardGui icons over the 3D parts, which stay for movement and hits;
+  - 12: Tower crystal-defense waves;
+  - 13: combat and pet fixes;
+  - 14: zoom and longer breaks;
+  - 15: Eternal evolutions;
+  - 16: `FarmAnimals.luau`.
+  The forging cutscene stays 3D. If the place is ever edited directly again, pull it into the repo before syncing. `scratchpad/pull.luau` did this by exporting the code containers with the MCP `export_rbxm` and writing each Source back with Lune. Recreate it if the scratchpad is gone.
+- **Done on `feat/hotbar-and-armor-models`, after the 2D pull:**
+  - steady icons (ground-pinned scenery and a high, narrow camera);
+  - avatars hidden through Transparency;
+  - player walk frames;
+  - Aurora Shards for Eternal evolutions;
+  - ×1/×5/×10 upgrade buying;
+  - Toughness up to 1000 levels;
+  - Prestige at rebirth 15 (1.5× damage, +10% forge luck, +25% ores, stacking);
+  - a skip-wait countdown bar for stages and Tower waves.
+- **Next:**
+  - item 9's remainder: Blender armor models for the 3D forge cutscene (the armor brick builder is the fallback);
+  - item 10: a Blender forge for the 3D forging scenes, and removing the lobby's Sell and Equip stations.
 - All branches stack in order: pew-incremental → top-tier → armor → pets → aurora-reach → infinite-tower → attachments → upgrade-caps.
 - The test profile in Studio keeps three hatched pets and a Copperplate Chestplate. Its coins were restored after testing.
 
@@ -46,7 +65,7 @@ The person set this order. Names, drop rates, and growth numbers are proposals t
 | 6 | Infinite Tower at 1B Power | Done, `feat/infinite-tower` |
 | 7 | Attachments and boss chests | Done, `feat/attachments` |
 | 8 | Upgrade caps ×3–×4 | Done, `feat/upgrade-caps` |
-| 9 | Blender armor and an equipment hotbar | Not started |
+| 9 | Blender armor and an equipment hotbar | Hotbar done; Blender armor left |
 | 10 | Blender forge, and remove the sell and equip stations | Not started |
 
 What each item should let a player do:
