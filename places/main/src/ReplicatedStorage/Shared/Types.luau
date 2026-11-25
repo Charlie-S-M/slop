@@ -15,6 +15,8 @@ export type GunItem = {
 	train: number,
 	grade: Grade,
 	locked: boolean?,
+	-- Attachment ids on this gun, by slot.
+	parts: { [string]: string }?,
 }
 
 export type PetItem = { uid: string, id: string, locked: boolean? }
@@ -84,6 +86,8 @@ export type Profile = {
 	equippedPets: { string },
 	-- The highest Infinite Tower floor cleared.
 	towerBest: number,
+	-- Attachments not on a gun, by part id.
+	attachments: { [string]: number },
 }
 
 -- The stats that change many times a second, sent on their own so the full state stays quiet.

@@ -324,6 +324,40 @@ Balance.ARMOR_ROLL_MAX = 1.1
 Balance.ARMOR_MAX_BLOCK = 0.75
 Balance.MAX_ARMOR = 60
 
+-- Boss chests: most give coins (CHEST_COIN_KILLS worth of kills); CHEST_PART_CHANCE give an
+-- attachment whose rarity is rolled on the reel. Part Luck reshapes the reel, never the chance.
+Balance.CHEST_PART_CHANCE = 0.05
+Balance.CHEST_COIN_KILLS = 8
+Balance.REEL_WEIGHTS = { 50, 25, 15, 5, 3.9, 1, 0.1 }
+
+-- The reel's chance for each rarity at a Part Luck value, summing to 1.
+function Balance.reelWeights(luck: number): { number }
+	local weights = {}
+	local total = 0
+	for tier, weight in Balance.REEL_WEIGHTS do
+		local boosted = weight * (if tier >= 3 then 1 + luck * (tier - 2) else 1)
+		weights[tier] = boosted
+		total += boosted
+	end
+	for tier, weight in weights do
+		weights[tier] = weight / total
+	end
+	return weights
+end
+
+-- The rarity the reel lands on for a roll in [0, 1).
+function Balance.reelRarity(roll: number, luck: number): number
+	local running = 0
+	local weights = Balance.reelWeights(luck)
+	for tier, weight in weights do
+		running += weight
+		if roll < running then
+			return tier
+		end
+	end
+	return #weights
+end
+
 -- The Infinite Tower: unlocks at 1B Power. Floor N plays as stage TOWER_STAGE_OFFSET + N, and every
 -- TOWER_CHECKPOINT floors cleared is a checkpoint that adds TOWER_BONUS_STEP to training and coins.
 Balance.TOWER_UNLOCK_POWER = 1e9

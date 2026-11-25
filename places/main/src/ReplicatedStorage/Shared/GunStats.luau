@@ -7,6 +7,7 @@
 	rules to preview and grade strikes.
 ]]
 
+const Attachments = require("./Attachments")
 const Balance = require("./Balance")
 const Guns = require("./Guns")
 const Ores = require("./Ores")
@@ -96,7 +97,28 @@ function GunStats.evolve(item: Types.GunItem, evolvedId: string): Types.GunItem
 		train = item.train * boost.train,
 		grade = item.grade,
 		locked = item.locked,
+		parts = if item.parts then table.clone(item.parts) else nil,
 	}
+end
+
+-- The gun with its attachments applied: Power, Speed, and Training raised by each part in its own
+-- slot. Server and client both read the equipped gun through this, so every number matches.
+function GunStats.effective(item: Types.GunItem): Types.GunItem
+	if not item.parts then
+		return item
+	end
+	local bonus = { power = 0, speed = 0, train = 0 }
+	for slot, id in item.parts do
+		local def = Attachments.get(id)
+		if def and def.slot == slot then
+			bonus[def.stat] += def.bonus
+		end
+	end
+	local copy = table.clone(item)
+	copy.power = item.power * (1 + bonus.power)
+	copy.speed = item.speed * (1 + bonus.speed)
+	copy.train = item.train * (1 + bonus.train)
+	return copy
 end
 
 -- Shots per second for a gun kind at a Speed.

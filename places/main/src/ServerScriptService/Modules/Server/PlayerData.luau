@@ -105,6 +105,7 @@ local function defaultProfile(): Profile
 		pets = {},
 		equippedPets = {},
 		towerBest = 0,
+		attachments = {},
 	}
 end
 
