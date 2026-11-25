@@ -37,6 +37,38 @@ Balance.CHECKPOINT_EVERY = 10
 Balance.ORE_DROP_CHANCE = 0.45
 Balance.BOSS_ORE_DROPS = 4
 Balance.FORGE_SECONDS = 2.6
+
+-- The forging timing game. Each strike's ring shrinks over RING_SECONDS; a click's error is how
+-- far from the ring's end it lands, as a share of RING_SECONDS.
+Balance.STRIKES = 4
+Balance.RING_SECONDS = 1.1
+Balance.STRIKE_WINDOWS = {
+	{ within = 0.08, accuracy = 1, label = "PERFECT" },
+	{ within = 0.18, accuracy = 0.75, label = "GREAT" },
+	{ within = 0.32, accuracy = 0.45, label = "GOOD" },
+}
+-- The lowest average accuracy each grade needs, best grade first.
+Balance.GRADE_THRESHOLDS = {
+	{ grade = "S", minimum = 0.9 },
+	{ grade = "A", minimum = 0.7 },
+	{ grade = "B", minimum = 0.5 },
+	{ grade = "C", minimum = 0.3 },
+	{ grade = "D", minimum = -math.huge },
+}
+Balance.GRADE_MULTIPLIERS = {
+	S = { power = 1.3, speed = 1.15 },
+	A = { power = 1.15, speed = 1.07 },
+	B = { power = 1, speed = 1 },
+	C = { power = 0.85, speed = 0.93 },
+	D = { power = 0.7, speed = 0.85 },
+}
+Balance.SPEED_ROLL_MIN = 0.97
+Balance.SPEED_ROLL_MAX = 1.03
+-- Training Power climbs this much per rarity tier of the ores used, from 1 for Common ores.
+Balance.ORE_TRAINING_GROWTH = 1.25
+-- A finish faster than this can't have played the cutscene; one slower than the timeout is filled in.
+Balance.FORGE_MIN_SECONDS = 3
+Balance.FORGE_TIMEOUT_SECONDS = 60
 Balance.DAILY_COOLDOWN = 20 * 60 * 60
 Balance.STAGE_BREAK_SECONDS = 3
 
@@ -98,15 +130,18 @@ function Balance.shotDamage(
 	return Balance.pelletDamage(power, gunPower, kind, rebirths, level) * stats.pellets
 end
 
--- Power one training shot adds. Each kind earns about the same per second at equal gun power.
+--[[
+	Power one training shot adds, from the gun's Training Power. Each kind earns about the same per
+	second at equal Training Power; a gun's Speed is what makes it train faster.
+]]
 function Balance.trainingGain(
-	gunPower: number,
+	train: number,
 	kind: Guns.GunKind,
 	zoneMultiplier: number,
 	trainingLevel: number
 ): number
 	local stats = Guns.kindStats(kind)
-	local perShot = gunPower * stats.damageScale * stats.pellets
+	local perShot = train * stats.damageScale * stats.pellets
 	return perShot * zoneMultiplier * Upgrades.value("Training", trainingLevel)
 end
 

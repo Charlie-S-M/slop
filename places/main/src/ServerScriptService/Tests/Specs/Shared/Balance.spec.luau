@@ -62,6 +62,12 @@ describe("Balance.pickRarity", function()
 	end)
 end)
 
+describe("Balance.trainingGain", function()
+	it("scales training power by the pad and kind", function()
+		expect(Balance.trainingGain(10, "Pistol", 2, 0)).toBe(20)
+	end)
+end)
+
 describe("stage scaling", function()
 	it("makes every stage tougher and bigger than the one before", function()
 		for stage = 1, 120 do
