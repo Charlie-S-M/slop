@@ -5,14 +5,28 @@ conversation. Update the **Status** column and **Now** section whenever an item 
 
 ## Now
 
-- Item 2 is built on branch `feat/top-tier-guns-and-effects` (stacked on `feat/pew-incremental`),
-  and its final review is in progress. Next up is **item 3, armor**, on a branch stacked on item
-  2's.
-- What item 2 added:
-  - the Eternal tier, gated behind Glasscore, with the Dawnbringer and Everlight Cannon guns;
-  - firing styles in `Shared/ShotStyles.luau`;
-  - impact frames in `Controllers/Cutscene/ImpactFrames.luau`, which armor and chests can reuse
-    by calling `ImpactFrames.play(tier, model, screen, world)`.
+- **Item 2 is done** on branch `feat/top-tier-guns-and-effects`, stacked on `feat/pew-incremental`.
+  It has been reviewed, and its one Important finding (an aborted reveal leaving the shade and
+  card up) is fixed.
+  - It adds the Eternal tier, gated behind Glasscore, with the Dawnbringer and Everlight Cannon
+    guns.
+  - It adds firing styles in `Shared/ShotStyles.luau`.
+  - It adds impact frames in `Controllers/Cutscene/ImpactFrames.luau`. Armor and chests reuse them
+    by calling `ImpactFrames.play(tier, model, screen, world, alive)`, where `alive()` returns
+    false once the caller's cutscene is gone.
+- **Item 3, armor, is in progress** on branch `feat/armor`, stacked on item 2. Follow
+  `docs/superpowers/plans/2026-11-25-armor.md`.
+  - Done: Task 1, the catalog (`Shared/Armor.luau`) and stats (`Shared/ArmorStats.luau`:
+    `roll`, `makeItem`, `equippedIn`, `blocked`), plus `Balance.ARMOR_*`,
+    `Balance.armorSellPrice(defense, rarity)`, and `Types.ArmorItem` / `ArmorSlot`. 58 specs
+    pass.
+  - Next: Task 2. Add `Profile.armor` and `Profile.equippedArmor` (PlayerData version 4), and
+    `PendingForge.armorId?` and `slot?`. Keep `gunId` and set it to the armor id for armor, so
+    saved pending forges still load. Add the `ForgeArmor(slot, request)` remote, and pull the
+    ore-taking out of `Forge.onForge` so both remotes share it. In `finishProfile`, branch on
+    `pending.slot`.
+  - `ArmorStats.blocked(armor, equipped)` takes the list and the slot-to-uid map, not the
+    profile, so specs can call it without one.
 - `feat/pew-incremental` is PR #1 (Charlie-S-M/slop#1) with Auto-fix on. Merging it to `main`
   publishes to staging. Later branches stack on it; rebase them after it merges.
 - Nothing past PR #1 is pushed.
@@ -24,8 +38,8 @@ The person set this order. Names, drop rates, and growth numbers are proposals t
 | # | Item | Status |
 |---|------|--------|
 | 1 | Glassfall Foundry (stages 61–70) and evolving Legendary+ guns | Done, PR #1 |
-| 2 | Higher-tier guns and Legendary+ effects | Built, in review |
-| 3 | Armor at the forge | Not started |
+| 2 | Higher-tier guns and Legendary+ effects | Done, `feat/top-tier-guns-and-effects` |
+| 3 | Armor at the forge | In progress, `feat/armor` (Task 1 of 6 done) |
 | 4 | Pets | Not started |
 | 5 | Stages 71–80 and collection goals | Not started |
 | 6 | Infinite Tower at 1B Power | Not started |
@@ -100,3 +114,8 @@ What each item should let a player do:
 - The material pickup message always says "Glassheart".
 - Ship with "migrate to latest update". Old servers drop `materials` and `bossesDefeated` from
   saves.
+- Item 2 review minors, left as they are:
+  - Ember spark frames stay until the reveal closes instead of being destroyed after their tween.
+  - The Eternal pillar part doesn't set `CanTouch = false`.
+  - `GunBuilder` gives tier 7 a denser corona than tier 8 (`tier == 7` should be `tier >= 7`).
+  - The tween goal tables are typed `{ [string]: any }`.
