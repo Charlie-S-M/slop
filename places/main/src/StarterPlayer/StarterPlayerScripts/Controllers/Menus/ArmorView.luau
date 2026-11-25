@@ -77,18 +77,24 @@ local function refreshDetail()
 			math.abs(item.defense - worn.defense)
 		)} vs worn`
 		else `+{Format.percent(item.defense)} (slot empty)`
+	-- The gain is what the worn set can actually use, so a set at the cap shows no gain.
+	local gain = ArmorStats.temperGain(profile.armor, profile.equippedArmor, item)
+	local gainText = if gain < 0.0001
+		then "no gain (your set is at the 75% cap)"
+		else `+{Format.percent(gain)} blocked`
 	local temperLine = if item.tempered
 		then "✨ Tempered"
-		else `✨ Temper: +{Format.percent(item.defense * (Balance.TEMPER_MULTIPLIER - 1))} for 1 Starshard + 💰{Format.abbreviate(
+		else `✨ Temper: {gainText} for 1 Aurora Shard + 💰{Format.abbreviate(
 			Balance.temperCost(def.rarity)
-		)} (have {profile.materials.Starshard or 0})`
+		)} (have {profile.materials.AuroraShard or 0})`
 	detailStats.Text =
 		`{rarity.name} {def.slot}  ·  Grade {item.grade}\n🛡️ Blocks {Format.percent(
 			item.defense
 		)} of each hit\n{compare}\n{temperLine}`
 	temperButton.Visible = ArmorStats.canTemper(item)
-	local canTemper = (profile.materials.Starshard or 0) >= 1
+	local canTemper = (profile.materials.AuroraShard or 0) >= 1
 		and profile.coins >= Balance.temperCost(def.rarity)
+		and gain >= 0.0001
 	if canTemper then
 		Kit.setButtonColor(temperButton, Kit.Colors.Blue, Kit.Colors.BlueDark)
 	else

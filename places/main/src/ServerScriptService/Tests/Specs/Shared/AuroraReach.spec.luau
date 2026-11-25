@@ -33,8 +33,8 @@ describe("Aurora Reach", function()
 		expect(Balance.forgeOdds({ core, core }, 0).chances[8] > 0).toBe(true)
 	end)
 
-	it("has a Sentinel that drops Starshards like the Warden drops Glasshearts", function()
-		expect(Balance.BOSS_MATERIALS.AuroraSentinel).toBe("Starshard")
+	it("has a Sentinel that drops Aurora Shards like the Warden drops Glasshearts", function()
+		expect(Balance.BOSS_MATERIALS.AuroraSentinel).toBe("AuroraShard")
 		expect(Balance.BOSS_MATERIALS.GlassheartWarden).toBe("Glassheart")
 		expect(Balance.bossMaterialDrop(true, 0.99)).toBe(1)
 		expect(Balance.bossMaterialDrop(false, 0.5)).toBe(0)
@@ -57,5 +57,29 @@ describe("tempering armor", function()
 	it("costs coins worth stage-80 kills by rarity", function()
 		expect(Balance.temperCost(5)).toBe(Balance.enemyCoins(80) * Balance.TEMPER_KILLS[5])
 		expect(Balance.temperCost(8) > Balance.temperCost(1)).toBe(true)
+	end)
+end)
+
+describe("the temper preview", function()
+	it("shows the gain the worn set can actually use under the cap", function()
+		local chest = ArmorStats.makeItem("c", Armor.forSlot("Chestplate", 1), "B", 1)
+		local nearCap =
+			{ chest, { uid = "h", id = "DawnlightHelmet", defense = 0.72, grade = "S" } :: any }
+		local equipped = { Chestplate = "c", Helmet = "h" }
+		local capped = math.min(0.75, 0.72 + chest.defense * Balance.TEMPER_MULTIPLIER)
+			- math.min(0.75, 0.72 + chest.defense)
+		expect(ArmorStats.temperGain(nearCap, equipped, chest)).toBeCloseTo(capped, 4)
+		expect(capped < chest.defense * (Balance.TEMPER_MULTIPLIER - 1)).toBe(true)
+		local spare = ArmorStats.makeItem("s", Armor.forSlot("Boots", 1), "B", 1)
+		table.insert(nearCap, spare)
+		-- A piece that isn't worn shows its own gain.
+		expect(ArmorStats.temperGain(nearCap, equipped, spare)).toBeCloseTo(
+			spare.defense * (Balance.TEMPER_MULTIPLIER - 1),
+			4
+		)
+	end)
+
+	it("names the Aurora Shard apart from the Starshard ore", function()
+		expect(Balance.MATERIAL_NAMES.AuroraShard).toBe("Aurora Shard")
 	end)
 end)

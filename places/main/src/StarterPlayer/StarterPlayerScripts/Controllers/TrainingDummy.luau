@@ -146,9 +146,9 @@ function TrainingDummy:Start()
 						total += hits[index].amount
 					end
 				end
-				if #hits > 0 then
-					dpsLabel.Text = `{Format.abbreviate(total / WINDOW)} DPS`
-				end
+				dpsLabel.Text = if #hits > 0
+					then `{Format.abbreviate(total / WINDOW)} DPS`
+					else "Shoot me to see your DPS"
 			end
 		end
 	end)

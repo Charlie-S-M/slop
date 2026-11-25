@@ -99,14 +99,20 @@ end
 -- The material each boss drops: one on the first kill ever, then at GLASSHEART_REPEAT_CHANCE.
 Balance.BOSS_MATERIALS = {
 	GlassheartWarden = "Glassheart",
-	AuroraSentinel = "Starshard",
+	AuroraSentinel = "AuroraShard",
+} :: { [string]: string }
+
+-- How each material reads on screen.
+Balance.MATERIAL_NAMES = {
+	Glassheart = "Glassheart",
+	AuroraShard = "Aurora Shard",
 } :: { [string]: string }
 
 function Balance.bossMaterialDrop(firstKill: boolean, roll: number): number
 	return Balance.glassheartDrop(firstKill, roll)
 end
 
--- Tempering: one Starshard plus coins makes an armor piece block TEMPER_MULTIPLIER times as much, once.
+-- Tempering: one Aurora Shard plus coins makes an armor piece block TEMPER_MULTIPLIER times as much, once.
 Balance.TEMPER_MULTIPLIER = 1.25
 Balance.TEMPER_KILLS = { 2, 4, 8, 15, 30, 60, 120, 240 }
 

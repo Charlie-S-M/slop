@@ -352,8 +352,8 @@ local function onEvolve(player: Player, uid: unknown)
 end
 
 --[[
-	Tempers an owned armor piece for one Starshard and coins: it blocks TEMPER_MULTIPLIER times as
-	much, once. Checks run before anything is spent, and the Starshard goes only once coins have.
+	Tempers an owned armor piece for one Aurora Shard and coins: it blocks TEMPER_MULTIPLIER times as
+	much, once. Checks run before anything is spent, and the Aurora Shard goes only once coins have.
 ]]
 local function onTemper(player: Player, uid: unknown)
 	if not RateLimit.allow(player, "Temper", 1, 2) or player:GetAttribute("InRun") then
@@ -382,15 +382,19 @@ local function onTemper(player: Player, uid: unknown)
 	if not index or not item or not def or not ArmorStats.canTemper(item) then
 		return
 	end
-	if (profile.materials.Starshard or 0) < 1 then
-		notify(player, "You need a Starshard from the Aurora Sentinel!")
+	if ArmorStats.temperGain(profile.armor, profile.equippedArmor, item) < 0.0001 then
+		notify(player, "Your set is already at the 75% block cap, so tempering would add nothing.")
+		return
+	end
+	if (profile.materials.AuroraShard or 0) < 1 then
+		notify(player, "You need an Aurora Shard from the Aurora Sentinel!")
 		return
 	end
 	if not PlayerData.spendCoins(player, Balance.temperCost(def.rarity)) then
 		notify(player, "Not enough coins to temper that piece!")
 		return
 	end
-	profile.materials.Starshard -= 1
+	profile.materials.AuroraShard -= 1
 	profile.armor[index] = ArmorStats.temper(item)
 	PlayerData.markState(player)
 	Loadout.refreshArmor(player)

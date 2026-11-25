@@ -39,6 +39,33 @@ function ArmorStats.temper(item: Types.ArmorItem): Types.ArmorItem
 	return copy
 end
 
+-- How much tempering `item` would raise the worn set's block, after the cap. A piece that isn't
+-- worn shows its own gain, since that is what it adds once worn.
+function ArmorStats.temperGain(
+	armor: { Types.ArmorItem },
+	equipped: { [string]: string },
+	item: Types.ArmorItem
+): number
+	local own = item.defense * (Balance.TEMPER_MULTIPLIER - 1)
+	local worn = false
+	for _, uid in equipped do
+		if uid == item.uid then
+			worn = true
+		end
+	end
+	if not worn then
+		return own
+	end
+	local before = ArmorStats.blocked(armor, equipped)
+	local tempered = table.clone(armor)
+	for index, piece in tempered do
+		if piece.uid == item.uid then
+			tempered[index] = ArmorStats.temper(piece)
+		end
+	end
+	return ArmorStats.blocked(tempered, equipped) - before
+end
+
 -- The equipped piece in `slot`, if the uid there names an owned piece made for that slot.
 function ArmorStats.equippedIn(
 	armor: { Types.ArmorItem },

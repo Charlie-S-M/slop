@@ -8,6 +8,7 @@
 const Players = game:GetService("Players")
 const TweenService = game:GetService("TweenService")
 
+const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const Format = require("@game/ReplicatedStorage/Shared/Format")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
 const Ores = require("@game/ReplicatedStorage/Shared/Ores")
@@ -489,11 +490,18 @@ local function onReward(info: any)
 	elseif info.kind == "material" then
 		local glow = Color3.fromRGB(255, 150, 200)
 		Kit.sound(Kit.Sounds.Ding, 0.5, 1.3)
-		Effects.worldText(info.position, `+{info.count} {info.id}`, glow, 2.2, 7)
-		if info.id == "Starshard" then
-			Effects.toast(`✨ Starshard found! Temper an armor piece at the forge.`, glow)
+		Effects.worldText(
+			info.position,
+			`+{info.count} {Balance.MATERIAL_NAMES[info.id] or info.id}`,
+			glow,
+			2.2,
+			7
+		)
+		local name = Balance.MATERIAL_NAMES[info.id] or info.id
+		if info.id == "AuroraShard" then
+			Effects.toast(`✨ {name} found! Temper an armor piece at the forge.`, glow)
 		else
-			Effects.toast(`💎 {info.id} found! Evolve a Legendary+ gun at the forge.`, glow)
+			Effects.toast(`💎 {name} found! Evolve a Legendary+ gun at the forge.`, glow)
 		end
 		Effects.confetti({ glow, Color3.fromRGB(140, 230, 240), Color3.new(1, 1, 1) }, 40)
 	elseif info.kind == "coins" then
