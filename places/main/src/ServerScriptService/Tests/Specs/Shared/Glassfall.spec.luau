@@ -7,7 +7,69 @@ const it = JestGlobals.it
 
 const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const Biomes = require("@game/ReplicatedStorage/Shared/Biomes")
+const GunBuilder = require("@game/ReplicatedStorage/Shared/GunBuilder")
+const GunStats = require("@game/ReplicatedStorage/Shared/GunStats")
+const Guns = require("@game/ReplicatedStorage/Shared/Guns")
 const Ores = require("@game/ReplicatedStorage/Shared/Ores")
+
+describe("evolutions", function()
+	it("evolves Solar Flare into Solar Crown", function()
+		local evolved = Guns.evolutionOf("SolarFlare")
+		expect(evolved and evolved.id).toBe("SolarCrown")
+		expect(evolved and evolved.evolvesFrom).toBe("SolarFlare")
+	end)
+
+	it("gives every Legendary+ forge gun an evolution and nothing below", function()
+		for rarity = 1, 7 do
+			for _, def in Guns.pool(rarity) do
+				expect(Guns.evolutionOf(def.id) ~= nil).toBe(rarity >= 5)
+			end
+		end
+	end)
+
+	it("evolved guns do not evolve again and never come out of the forge", function()
+		for _, def in Guns.List do
+			if def.evolvesFrom then
+				expect(Guns.evolutionOf(def.id)).toBeNil()
+				expect(table.find(Guns.pool(def.rarity), def)).toBeNil()
+			end
+		end
+		expect(#Guns.List).toBe(25)
+	end)
+
+	it("charges coins worth stage-70 kills, only from Legendary up", function()
+		expect(Balance.evolveCost(4)).toBeNil()
+		expect(Balance.evolveCost(5)).toBe(Balance.enemyCoins(70) * 10)
+		expect(Balance.evolveCost(7)).toBe(Balance.enemyCoins(70) * 100)
+	end)
+
+	it("evolving keeps uid, grade, lock", function()
+		local item = {
+			uid = "g7",
+			id = "SolarFlare",
+			power = 100,
+			speed = 1,
+			train = 50,
+			grade = "A",
+			locked = true,
+		}
+		local evolved = GunStats.evolve(item :: any, "SolarCrown")
+		expect(evolved.uid).toBe("g7")
+		expect(evolved.id).toBe("SolarCrown")
+		expect(evolved.grade).toBe("A")
+		expect(evolved.locked).toBe(true)
+		expect(evolved.power).toBe(300)
+		expect(evolved.train).toBe(100)
+		expect(math.abs(evolved.speed - 1.1) < 1e-9).toBe(true)
+	end)
+
+	it("builds an evolved gun without a template", function()
+		local def = Guns.get("SolarCrown")
+		assert(def, "missing SolarCrown")
+		local model = GunBuilder.build(def)
+		expect(model:FindFirstChild("Handle") ~= nil).toBe(true)
+	end)
+end)
 
 describe("Glassfall Foundry", function()
 	it("fills stages 61 to 70 and moves the loop to stage 71", function()

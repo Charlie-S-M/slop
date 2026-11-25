@@ -37,6 +37,8 @@ export type GunDef = {
 	body: Color3,
 	accent: Color3,
 	trim: Color3,
+	-- Set on evolved guns: the id of the gun that evolves into this one.
+	evolvesFrom: string?,
 }
 
 const KINDS: { [GunKind]: KindStats } = {
@@ -510,10 +512,82 @@ local collectionIds = {
 	"CosmicAnnihilator",
 	"Starforge",
 }
+--[[
+	Evolved guns: one per Legendary-and-up forge gun. Each keeps its base gun's kind and rarity, is
+	never rolled by the forge, and sits right after its base gun in the list the Index shows.
+]]
+local function evolved(
+	base: string,
+	id: string,
+	name: string,
+	body: Color3,
+	accent: Color3,
+	trim: Color3
+): GunDef
+	local from = nil
+	for _, def in LIST do
+		if def.id == base then
+			from = def
+		end
+	end
+	assert(from, `evolution base {base} is not in the catalog`)
+	local def = gun(id, name, from.rarity, from.kind, body, accent, trim)
+	def.evolvesFrom = base
+	return def
+end
+
+const EVOLUTIONS: { GunDef } = {
+	evolved(
+		"SolarFlare",
+		"SolarCrown",
+		"Solar Crown",
+		rgb(255, 215, 90),
+		rgb(255, 120, 40),
+		rgb(255, 250, 220)
+	),
+	evolved(
+		"TitanHowitzer",
+		"TitanColossus",
+		"Titan Colossus",
+		rgb(60, 66, 80),
+		rgb(255, 210, 60),
+		rgb(255, 120, 40)
+	),
+	evolved(
+		"GildedHandcannon",
+		"GildedSovereign",
+		"Gilded Sovereign",
+		rgb(255, 225, 120),
+		rgb(255, 255, 255),
+		rgb(170, 100, 255)
+	),
+	evolved(
+		"CosmicAnnihilator",
+		"CosmicOblivion",
+		"Cosmic Oblivion",
+		rgb(20, 10, 45),
+		rgb(255, 90, 220),
+		rgb(120, 220, 255)
+	),
+	evolved(
+		"Starforge",
+		"StarforgeAscendant",
+		"Starforge Ascendant",
+		rgb(255, 255, 255),
+		rgb(120, 250, 240),
+		rgb(255, 200, 80)
+	),
+}
+
 const BY_ID: { [string]: GunDef } = {}
 const BY_RARITY: { [number]: { GunDef } } = {}
+const EVOLUTION_OF: { [string]: GunDef } = {}
 for _, def in LIST do
 	BY_ID[def.id] = def
+end
+for _, def in EVOLUTIONS do
+	BY_ID[def.id] = def
+	EVOLUTION_OF[def.evolvesFrom :: string] = def
 end
 local collection: { GunDef } = {}
 for _, id in collectionIds do
@@ -525,6 +599,11 @@ for _, id in collectionIds do
 		BY_RARITY[def.rarity] = pool
 	end
 	table.insert(pool, def)
+	-- The evolution shows next to its base gun but never joins the forge's pools.
+	local evolution = EVOLUTION_OF[id]
+	if evolution then
+		table.insert(collection, evolution)
+	end
 end
 
 local Guns = {}
@@ -541,6 +620,11 @@ end
 
 function Guns.kindStats(kind: GunKind): KindStats
 	return KINDS[kind]
+end
+
+-- The gun this one evolves into, or nil when it can't evolve (below Legendary, or already evolved).
+function Guns.evolutionOf(id: string): GunDef?
+	return EVOLUTION_OF[id]
 end
 
 function Guns.pool(rarity: number): { GunDef }

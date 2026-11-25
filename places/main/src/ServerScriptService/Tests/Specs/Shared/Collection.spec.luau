@@ -3,8 +3,8 @@ local Jest = require("@game/ServerScriptService/Tests/Packages/JestGlobals")
 local Balance = require("@game/ReplicatedStorage/Shared/Balance")
 local Guns = require("@game/ReplicatedStorage/Shared/Guns")
 local Ores = require("@game/ReplicatedStorage/Shared/Ores")
-Jest.it("indexes twenty forgeable guns and resolves retired inventory IDs", function()
-	Jest.expect(#Guns.List).toBe(20)
+Jest.it("indexes twenty forgeable guns plus five evolutions and resolves retired IDs", function()
+	Jest.expect(#Guns.List).toBe(25)
 	for tier, expected in { 5, 4, 3, 3, 3, 1, 1 } do
 		Jest.expect(#Guns.pool(tier)).toBe(expected)
 	end

@@ -85,6 +85,20 @@ function GunStats.finalize(basePower: number, grade: Grade, speedRoll: number): 
 	return power, multipliers.speed * speedRoll
 end
 
+-- The same owned gun after evolving: new catalog id, boosted stats, same uid, grade, and lock.
+function GunStats.evolve(item: Types.GunItem, evolvedId: string): Types.GunItem
+	local boost = Balance.EVOLVE_MULTIPLIERS
+	return {
+		uid = item.uid,
+		id = evolvedId,
+		power = item.power * boost.power,
+		speed = item.speed * boost.speed,
+		train = item.train * boost.train,
+		grade = item.grade,
+		locked = item.locked,
+	}
+end
+
 -- Shots per second for a gun kind at a Speed.
 function GunStats.fireRate(kind: Guns.GunKind, speed: number): number
 	return Guns.kindStats(kind).fireRate * speed

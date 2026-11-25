@@ -41,6 +41,9 @@ Balance.GUN_DAMAGE_TUNING = {
 	TitanHowitzer = 1.04,
 	GildedHandcannon = 1.08,
 }
+-- Evolved guns keep their base gun's tuning.
+Balance.GUN_DAMAGE_TUNING.TitanColossus = Balance.GUN_DAMAGE_TUNING.TitanHowitzer
+Balance.GUN_DAMAGE_TUNING.GildedSovereign = Balance.GUN_DAMAGE_TUNING.GildedHandcannon
 Balance.BASE_DAMAGE = 10
 Balance.MAX_FORGE_ORES = 5
 Balance.MAX_GUNS = 60
@@ -89,6 +92,20 @@ function Balance.glassheartDrop(firstKill: boolean, roll: number): number
 		return 1
 	end
 	return 0
+end
+
+-- Evolving: the coin cost is worth this many stage-70 kills, by rarity, so it keeps pace with the
+-- income of players who can reach the catalyst.
+Balance.EVOLVE_KILLS = { [5] = 10, [6] = 30, [7] = 100 }
+Balance.EVOLVE_MULTIPLIERS = { power = 3, train = 2, speed = 1.1 }
+
+-- Coins to evolve a gun of this rarity, or nil when the rarity can't evolve.
+function Balance.evolveCost(rarity: number): number?
+	local kills = Balance.EVOLVE_KILLS[rarity]
+	if not kills then
+		return nil
+	end
+	return Balance.enemyCoins(70) * kills
 end
 
 Balance.FORGE_MIN_SECONDS = 3
