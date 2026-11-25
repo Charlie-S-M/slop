@@ -35,7 +35,7 @@ conversation. Update the **Status** column and **Now** section whenever an item 
   - 14: zoom and longer breaks;
   - 15: Eternal evolutions;
   - 16: `FarmAnimals.luau`.
-  The forging cutscene stays 3D. If the place is ever edited directly again, pull it into the repo before syncing. `scratchpad/pull.luau` did this by exporting the code containers with the MCP `export_rbxm` and writing each Source back with Lune. Recreate it if the scratchpad is gone.
+  The forging cutscene stays 3D. If the place is ever edited directly again, pull it into the repo before syncing. ``tools/studio-sync/pull.luau` does this by exporting the code containers with the MCP `export_rbxm` and writing each Source back with Lune.
 - **Done on `feat/hotbar-and-armor-models`, after the 2D pull:**
   - steady icons (ground-pinned scenery and a high, narrow camera);
   - avatars hidden through Transparency;
