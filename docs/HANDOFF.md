@@ -5,8 +5,14 @@ conversation. Update the **Status** column and **Now** section whenever an item 
 
 ## Now
 
-- Working on: **item 2, higher-tier guns and Legendary+ effects**, on branch
-  `feat/top-tier-guns-and-effects` (stacked on `feat/pew-incremental`).
+- Item 2 is built on branch `feat/top-tier-guns-and-effects` (stacked on `feat/pew-incremental`),
+  and its final review is in progress. Next up is **item 3, armor**, on a branch stacked on item
+  2's.
+- What item 2 added:
+  - the Eternal tier, gated behind Glasscore, with the Dawnbringer and Everlight Cannon guns;
+  - firing styles in `Shared/ShotStyles.luau`;
+  - impact frames in `Controllers/Cutscene/ImpactFrames.luau`, which armor and chests can reuse
+    by calling `ImpactFrames.play(tier, model, screen, world)`.
 - `feat/pew-incremental` is PR #1 (Charlie-S-M/slop#1) with Auto-fix on. Merging it to `main`
   publishes to staging. Later branches stack on it; rebase them after it merges.
 - Nothing past PR #1 is pushed.
@@ -18,7 +24,7 @@ The person set this order. Names, drop rates, and growth numbers are proposals t
 | # | Item | Status |
 |---|------|--------|
 | 1 | Glassfall Foundry (stages 61–70) and evolving Legendary+ guns | Done, PR #1 |
-| 2 | Higher-tier guns and Legendary+ effects | In progress |
+| 2 | Higher-tier guns and Legendary+ effects | Built, in review |
 | 3 | Armor at the forge | Not started |
 | 4 | Pets | Not started |
 | 5 | Stages 71–80 and collection goals | Not started |
