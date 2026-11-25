@@ -1,11 +1,17 @@
 {
-  "name": "my-game",
+  "name": "pew-incremental",
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
       "Packages": {
         "$path": "../../roblox_packages"
+      },
+      "Shared": {
+        "$path": "src/ReplicatedStorage/Shared"
+      },
+      "ForgeModels": {
+        "$path": "src/ReplicatedStorage/ForgeModels.rbxm"
       }
     },
     "ServerScriptService": {
@@ -24,7 +30,6 @@
       "$properties": {
         "SignalBehavior": "Deferred"
       },
-      "$path": "src/Workspace",
       "$ignoreUnknownInstances": true
     }
   }
