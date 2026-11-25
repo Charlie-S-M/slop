@@ -288,6 +288,17 @@ const FORGE_SPREAD = 0.62
 	and every extra ore and every point of luck pushes the center up, so more ores are always worth
 	adding. A forge can rise at most one rarity above its best ore.
 ]]
+-- Armor. A piece blocks slot share x rarity defense x grade multiplier x roll of each hit; the
+-- equipped pieces add up, capped so armor never makes a player untouchable.
+Balance.ARMOR_SLOT_SHARE = { Helmet = 0.3, Chestplate = 0.5, Boots = 0.2 } :: { [string]: number }
+Balance.ARMOR_RARITY_DEFENSE = { 0.08, 0.13, 0.19, 0.26, 0.34, 0.42, 0.5, 0.58 }
+Balance.ARMOR_GRADE_MULTIPLIER =
+	{ S = 1.15, A = 1.05, B = 1, C = 0.95, D = 0.9 } :: { [string]: number }
+Balance.ARMOR_ROLL_MIN = 0.9
+Balance.ARMOR_ROLL_MAX = 1.1
+Balance.ARMOR_MAX_BLOCK = 0.75
+Balance.MAX_ARMOR = 60
+
 -- The forge reaches the Eternal tier only when the mix has one of these ores, so Godly ores alone
 -- can't roll it.
 Balance.ETERNAL_TIER = 8

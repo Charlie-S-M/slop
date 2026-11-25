@@ -17,6 +17,17 @@ export type GunItem = {
 	locked: boolean?,
 }
 
+export type ArmorSlot = "Helmet" | "Chestplate" | "Boots"
+
+-- One forged armor piece the player owns. `defense` is the share of each hit it blocks.
+export type ArmorItem = {
+	uid: string,
+	id: string,
+	defense: number,
+	grade: Grade,
+	locked: boolean?,
+}
+
 -- A forge the server has rolled but the player hasn't finished hammering yet.
 export type PendingForge = {
 	token: string,
