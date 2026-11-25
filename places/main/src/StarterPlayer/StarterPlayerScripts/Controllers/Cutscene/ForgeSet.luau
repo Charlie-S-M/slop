@@ -80,7 +80,77 @@ local function light(parent: BasePart, color: Color3, range: number, brightness:
 	point.Parent = parent
 end
 
+-- Colors for the Blender smithy's parts, by the role at the start of each part's name.
+const SMITHY_COLORS: { [string]: Color3 } = {
+	Stone = Color3.fromRGB(96, 94, 104),
+	Timber = Color3.fromRGB(86, 56, 36),
+	Wood = Color3.fromRGB(138, 98, 60),
+	Iron = Color3.fromRGB(56, 58, 66),
+	Roof = Color3.fromRGB(110, 48, 36),
+	Ember = Color3.fromRGB(255, 120, 30),
+}
+
+--[[
+	Places the Blender smithy (ReplicatedStorage.ForgeModels.SmithyInterior) as the room: scaled to
+	the set's 88-stud width, standing on the floor, and turned so its hearth is on the back wall
+	(-Z), behind the anvil. Returns false when it hasn't been imported, so the brick room is built.
+]]
+local function placeSmithy(root: Model): boolean
+	local folder = game:GetService("ReplicatedStorage"):FindFirstChild("ForgeModels")
+	local template = folder and folder:FindFirstChild("SmithyInterior")
+	if not template or not template:IsA("Model") then
+		return false
+	end
+	local smithy = template:Clone()
+	local ember: BasePart? = nil
+	for _, part in smithy:GetDescendants() do
+		if part:IsA("BasePart") then
+			part.Anchored = true
+			part.CanCollide = false
+			part.CanQuery = false
+			local role = string.match(part.Name, "^(%a+)") or ""
+			part.Color = SMITHY_COLORS[role] or part.Color
+			if role == "Ember" then
+				part.Material = Enum.Material.Neon
+				ember = part
+			end
+		end
+	end
+	local size = smithy:GetExtentsSize()
+	local wide = math.max(size.X, size.Z)
+	if wide > 0 then
+		smithy:ScaleTo(smithy:GetScale() * 88 / wide)
+	end
+	-- Turn the room so the glowing hearth sits toward -Z, whichever way the import faced it.
+	local box = smithy:GetBoundingBox()
+	local yaw = 0
+	if ember then
+		local toward = ember.Position - box.Position
+		yaw = math.atan2(toward.X, toward.Z) - math.pi
+	end
+	local _, extents = smithy:GetBoundingBox()
+	smithy:PivotTo(
+		CFrame.new(ORIGIN + Vector3.new(0, extents.Y / 2 - 0.4, 0))
+			* CFrame.Angles(0, -yaw, 0)
+			* box.Rotation:Inverse()
+			* box:ToObjectSpace(smithy:GetPivot())
+	)
+	if ember then
+		local glow = Instance.new("PointLight")
+		glow.Color = Color3.fromRGB(255, 140, 60)
+		glow.Range = 40
+		glow.Brightness = 3
+		glow.Parent = ember
+	end
+	smithy.Name = "Smithy"
+	smithy.Parent = root
+	return true
+end
+
 local function buildRoom(root: Model)
+	if placeSmithy(root) then
+		return
+	end
 	local floorColor = rgb(52, 50, 62)
 	block(
 		root,

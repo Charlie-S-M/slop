@@ -79,8 +79,51 @@ end
 
 local ArmorBuilder = {}
 
+-- The Blender piece for a slot (ReplicatedStorage.ForgeModels.Armor<Slot>), recolored for the set:
+-- Body parts take the set's body color, Trim its trim, and Glow lights up in the trim color.
+-- Nil until the model has been imported, and the brick layout below is used instead.
+local function fromTemplate(def: Armor.ArmorDef): Model?
+	local folder = game:GetService("ReplicatedStorage"):FindFirstChild("ForgeModels")
+	local template = folder and folder:FindFirstChild(`Armor{def.slot}`)
+	if not template or not template:IsA("Model") then
+		return nil
+	end
+	local model = template:Clone()
+	model.Name = def.id
+	for _, part in model:GetDescendants() do
+		if part:IsA("BasePart") then
+			part.Anchored = true
+			part.CanCollide = false
+			part.CanQuery = false
+			local role = string.match(part.Name, "^(%a+)")
+			if role == "Glow" then
+				part.Color = def.trim
+				part.Material = Enum.Material.Neon
+			elseif role == "Trim" then
+				part.Color = def.trim
+				part.Material = if def.rarity >= 5
+					then Enum.Material.Neon
+					else Enum.Material.SmoothPlastic
+			else
+				part.Color = def.body
+				part.Material = Enum.Material.SmoothPlastic
+			end
+		end
+	end
+	local size = model:GetExtentsSize()
+	local largest = math.max(size.X, size.Y, size.Z)
+	if largest > 0 then
+		model:ScaleTo(model:GetScale() * 3.2 * Rarity.get(def.rarity).gunScale / largest)
+	end
+	return model
+end
+
 -- A standalone, anchored model of the piece, for the forge cutscene and menus.
 function ArmorBuilder.build(def: Armor.ArmorDef): Model
+	local imported = fromTemplate(def)
+	if imported then
+		return imported
+	end
 	local model = Instance.new("Model")
 	model.Name = def.id
 	local bodySize = DISPLAY_SIZE[def.slot]

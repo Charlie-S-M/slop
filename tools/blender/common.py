@@ -199,3 +199,61 @@ def finish(gun_id):
         bake_space_transform=True,
     )
     print(f"EXPORTED {gun_id}: parts={sorted(objs)} fbx={fbx} png={png}")
+
+
+ROLE_COLORS.update(
+    {
+        "Trim": (0.95, 0.8, 0.35, 1),
+        "Stone": (0.42, 0.42, 0.46, 1),
+        "Timber": (0.36, 0.23, 0.14, 1),
+        "Roof": (0.5, 0.18, 0.12, 1),
+        "Ember": (1.0, 0.42, 0.08, 1),
+        "Iron": (0.22, 0.23, 0.27, 1),
+        "Wood": (0.55, 0.37, 0.2, 1),
+    }
+)
+
+
+def finish_model(name, required=(), resolution=(1000, 700)):
+    """Like finish(), for models that aren't guns: checks `required` roles, renders, exports FBX."""
+    objs = _join_roles()
+    missing = [role for role in required if role not in objs]
+    if missing:
+        raise SystemExit(f"{name}: missing required parts {missing}")
+    os.makedirs(OUT_DIR, exist_ok=True)
+    png = os.path.join(OUT_DIR, f"{name}.png")
+    fbx = os.path.join(OUT_DIR, f"{name}.fbx")
+    scene = bpy.context.scene
+    cam_data = bpy.data.cameras.new("Camera")
+    cam = bpy.data.objects.new("Camera", cam_data)
+    scene.collection.objects.link(cam)
+    scene.camera = cam
+    _frame_camera(objs)
+    scene.render.engine = "BLENDER_WORKBENCH"
+    scene.display.shading.light = "STUDIO"
+    scene.display.shading.color_type = "OBJECT"
+    scene.display.shading.show_cavity = True
+    scene.display.shading.show_object_outline = True
+    scene.render.resolution_x, scene.render.resolution_y = resolution
+    world = bpy.data.worlds.new("World")
+    world.color = (0.08, 0.09, 0.13)
+    scene.world = world
+    for role, obj in objs.items():
+        obj.color = ROLE_COLORS.get(role, (0.8, 0.8, 0.8, 1))
+    scene.render.filepath = png
+    bpy.ops.render.render(write_still=True)
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in objs.values():
+        obj.select_set(True)
+    bpy.ops.export_scene.fbx(
+        filepath=fbx,
+        use_selection=True,
+        object_types={"MESH"},
+        apply_scale_options="FBX_SCALE_ALL",
+        axis_forward="-Z",
+        axis_up="Y",
+        use_mesh_modifiers=True,
+        mesh_smooth_type="FACE",
+        bake_space_transform=True,
+    )
+    print(f"EXPORTED {name}: parts={sorted(objs)} fbx={fbx} png={png}")
