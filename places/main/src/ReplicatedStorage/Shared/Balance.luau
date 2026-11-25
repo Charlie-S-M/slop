@@ -30,7 +30,7 @@ export type ForgeOdds = {
 local Balance = {}
 
 -- The flat damage every shot starts with, so a new player can clear stage 1 before training.
-Balance.GUN_DAMAGE_TIERS = { 1, 2, 3, 10, 25, 100, 500 }
+Balance.GUN_DAMAGE_TIERS = { 1, 2, 3, 10, 25, 100, 500, 2000 }
 Balance.GUN_DAMAGE_TUNING = {
 	BrickBlaster = 1.08,
 	ScrapScatter = 1.04,
@@ -288,6 +288,11 @@ const FORGE_SPREAD = 0.62
 	and every extra ore and every point of luck pushes the center up, so more ores are always worth
 	adding. A forge can rise at most one rarity above its best ore.
 ]]
+-- The forge reaches the Eternal tier only when the mix has one of these ores, so Godly ores alone
+-- can't roll it.
+Balance.ETERNAL_TIER = 8
+Balance.ETERNAL_ORES = { Glasscore = true } :: { [string]: boolean }
+
 function Balance.forgeOdds(ores: { OreDef }, luck: number): ForgeOdds
 	local count = #ores
 	local chances = table.create(Rarity.Count, 0)
@@ -306,6 +311,18 @@ function Balance.forgeOdds(ores: { OreDef }, luck: number): ForgeOdds
 	end
 	local center = raritySum / count - 0.4 + 0.12 * (count - 1) + luck
 	local ceiling = math.min(best + 1, Rarity.Count)
+	if ceiling >= Balance.ETERNAL_TIER then
+		local hasKey = false
+		for _, ore in ores do
+			if Balance.ETERNAL_ORES[ore.id] then
+				hasKey = true
+				break
+			end
+		end
+		if not hasKey then
+			ceiling = Balance.ETERNAL_TIER - 1
+		end
+	end
 
 	local total = 0
 	for tier = 1, ceiling do

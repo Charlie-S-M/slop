@@ -28,13 +28,15 @@ describe("evolutions", function()
 	end)
 
 	it("evolved guns do not evolve again and never come out of the forge", function()
+		local evolvedCount = 0
 		for _, def in Guns.List do
 			if def.evolvesFrom then
+				evolvedCount += 1
 				expect(Guns.evolutionOf(def.id)).toBeNil()
 				expect(table.find(Guns.pool(def.rarity), def)).toBeNil()
 			end
 		end
-		expect(#Guns.List).toBe(25)
+		expect(evolvedCount).toBe(5)
 	end)
 
 	it("charges coins worth stage-70 kills, only from Legendary up", function()

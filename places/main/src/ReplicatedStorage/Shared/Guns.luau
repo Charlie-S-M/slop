@@ -476,6 +476,25 @@ const LIST: { GunDef } = {
 		rgb(255, 200, 60),
 		rgb(120, 200, 255)
 	),
+	-- Eternal: forged only from a mix with a Glasscore.
+	gun(
+		"Dawnbringer",
+		"Dawnbringer",
+		8,
+		"Rifle",
+		rgb(255, 250, 240),
+		rgb(255, 214, 120),
+		rgb(170, 210, 255)
+	),
+	gun(
+		"EverlightCannon",
+		"Everlight Cannon",
+		8,
+		"Launcher",
+		rgb(245, 240, 255),
+		rgb(170, 210, 255),
+		rgb(255, 236, 190)
+	),
 }
 
 table.insert(
@@ -511,6 +530,8 @@ local collectionIds = {
 	"GildedHandcannon",
 	"CosmicAnnihilator",
 	"Starforge",
+	"Dawnbringer",
+	"EverlightCannon",
 }
 --[[
 	Evolved guns: one per Legendary-and-up forge gun. Each keeps its base gun's kind and rarity, is

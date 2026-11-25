@@ -69,6 +69,15 @@ const LIST: { RarityDef } = {
 		powerMultiplier = 300,
 		gunScale = 1.9,
 	},
+	-- Past Godly. The forge only rolls it from a mix with an Eternal ore (Balance.ETERNAL_ORES).
+	{
+		tier = 8,
+		name = "Eternal",
+		color = Color3.fromRGB(255, 236, 190),
+		glow = Color3.fromRGB(170, 210, 255),
+		powerMultiplier = 800,
+		gunScale = 2.1,
+	},
 }
 
 local Rarity = {}
