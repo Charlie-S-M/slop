@@ -10,16 +10,17 @@ const TweenService = game:GetService("TweenService")
 
 const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const Format = require("@game/ReplicatedStorage/Shared/Format")
-const Guns = require("@game/ReplicatedStorage/Shared/Guns")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
 const Ores = require("@game/ReplicatedStorage/Shared/Ores")
 const Rarity = require("@game/ReplicatedStorage/Shared/Rarity")
 const Upgrades = require("@game/ReplicatedStorage/Shared/Upgrades")
 const ClientState = require("../ClientState")
-const Effects = require("../Effects")
 const Kit = require("../UI/Kit")
 const Menus = require("../Menus")
 const Preview = require("../UI/Preview")
+const Cutscene = require("../Cutscene/ForgeCutscene")
+const Timing = require("../Cutscene/TimingGame")
+const Players = game:GetService("Players")
 
 local Forge = {}
 
@@ -29,18 +30,11 @@ local slotFrames: { Frame } = {}
 local oddsRows: { { frame: Frame, fill: Frame, label: TextLabel } } = {}
 local powerLabel: TextLabel
 local forgeButton: TextButton
-local overlay: Frame
-local overlayViewport: ViewportFrame
-local overlayTitle: TextLabel
-local overlaySub: TextLabel
-local overlayGlow: Frame
-local overlayRays: Frame
-local overlayButtons: Frame
-local equipNewButton: TextButton
 local built = false
 local forging = false
-local pendingResult: any = nil
-local lastResultUid: string? = nil
+local activeToken: string? = nil
+local beganAt = 0
+local strikes: { number } = {}
 
 local function selectedCount(id: string): number
 	local count = 0
@@ -243,87 +237,6 @@ local function autoFill()
 	refreshOres()
 end
 
-local function showResult(result: any)
-	local item = result.item
-	local def = Guns.get(item.id)
-	if not def then
-		return
-	end
-	local rarity = Rarity.get(def.rarity)
-	lastResultUid = item.uid
-	Preview.gun(overlayViewport, def.id, 1.4)
-	overlayViewport.Visible = true
-	overlayTitle.Text = def.name
-	overlayTitle.TextColor3 = rarity.color:Lerp(Color3.new(1, 1, 1), 0.25)
-	overlaySub.Text = `{rarity.name} {def.kind} · ⚡ {Format.abbreviate(item.power)} Power`
-		.. (if result.new then "  ·  NEW!" else "")
-	overlayGlow.BackgroundColor3 = rarity.color
-	overlayGlow.BackgroundTransparency = 0.25
-	TweenService:Create(overlayGlow, TweenInfo.new(1.2), { BackgroundTransparency = 0.75 }):Play()
-	-- A sunburst of rarity-colored rays turns slowly behind the new gun.
-	overlayRays.Visible = true
-	for _, ray in overlayRays:GetChildren() do
-		if ray:IsA("Frame") then
-			ray.BackgroundColor3 = rarity.glow
-			ray.BackgroundTransparency = if def.rarity >= 4 then 0.35 else 0.6
-		end
-	end
-	task.spawn(function()
-		local started = os.clock()
-		while overlay.Visible and overlayRays.Visible do
-			overlayRays.Rotation = (os.clock() - started) * 20
-			task.wait()
-		end
-	end)
-	if def.rarity >= 5 then
-		Effects.confetti({ rarity.color, rarity.glow, Color3.new(1, 1, 1) }, 70)
-	end
-	overlayButtons.Visible = true
-	equipNewButton.Visible = true
-	Kit.setButtonText(equipNewButton, if result.better then "Equip (Stronger!)" else "Equip")
-	Kit.pop(overlayViewport, 1.4)
-	Kit.sound(Kit.Sounds.Ding, 0.5, 1 + def.rarity * 0.04)
-	if def.rarity >= 4 then
-		Kit.sound(Kit.Sounds.Boom, 0.3, 1.2)
-	end
-end
-
-local function playForging()
-	forging = true
-	overlay.Visible = true
-	overlayViewport.Visible = false
-	overlayButtons.Visible = false
-	overlayTitle.Text = "Forging..."
-	overlayTitle.TextColor3 = Color3.fromRGB(255, 180, 60)
-	overlaySub.Text = "The ores melt into something new"
-	overlayGlow.BackgroundColor3 = Color3.fromRGB(255, 130, 30)
-	overlayGlow.BackgroundTransparency = 0.6
-	overlayRays.Visible = false
-	Kit.sound(Kit.Sounds.Charge, 0.5)
-	Kit.sound(Kit.Sounds.Riser, 0.35)
-	-- The glow pulses faster and faster as the forge heats up.
-	local started = os.clock()
-	while os.clock() - started < Balance.FORGE_SECONDS do
-		local t = (os.clock() - started) / Balance.FORGE_SECONDS
-		overlayGlow.BackgroundTransparency = 0.55 - math.abs(math.sin(t * t * 30)) * 0.35
-		overlayTitle.Rotation = math.sin(os.clock() * 40) * t * 4
-		task.wait()
-	end
-	overlayTitle.Rotation = 0
-	forging = false
-	-- The server usually answers long before the animation ends.
-	local waited = 0
-	while not pendingResult and waited < 3 do
-		waited += task.wait()
-	end
-	if pendingResult then
-		showResult(pendingResult)
-		pendingResult = nil
-	else
-		overlay.Visible = false
-	end
-end
-
 local function doForge()
 	if forging or #selected == 0 then
 		return
@@ -332,10 +245,7 @@ local function doForge()
 	for _, id in selected do
 		request[id] = (request[id] or 0) + 1
 	end
-	pendingResult = nil
 	Net.event("Forge"):FireServer(request)
-	selected = {}
-	task.spawn(playForging)
 end
 
 local function build(content: Frame)
@@ -507,122 +417,6 @@ local function build(content: Frame)
 		onClick = doForge,
 	})
 
-	-- The forging and reveal overlay covers the whole window.
-	overlay = Kit.new("Frame", {
-		Name = "Overlay",
-		Size = UDim2.new(1, 20, 1, 20),
-		Position = UDim2.fromOffset(-10, -10),
-		BackgroundColor3 = Kit.Colors.Ink,
-		BackgroundTransparency = 0.08,
-		Visible = false,
-		ZIndex = 20,
-		Parent = content,
-	})
-	Kit.corner(16).Parent = overlay
-	overlayGlow = Kit.new("Frame", {
-		Size = UDim2.fromScale(0.6, 0.6),
-		Position = UDim2.fromScale(0.5, 0.42),
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		BackgroundColor3 = Color3.fromRGB(255, 130, 30),
-		BackgroundTransparency = 0.6,
-		ZIndex = 21,
-		Parent = overlay,
-	})
-	Kit.cornerScale(0.5).Parent = overlayGlow
-	Kit.aspect(1).Parent = overlayGlow
-	-- Twelve thin bars through the center make the sunburst.
-	overlayRays = Kit.new("Frame", {
-		Name = "Rays",
-		Size = UDim2.fromScale(0.9, 0.9),
-		Position = UDim2.fromScale(0.5, 0.42),
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		BackgroundTransparency = 1,
-		Visible = false,
-		ZIndex = 21,
-		Parent = overlay,
-	})
-	Kit.aspect(1).Parent = overlayRays
-	for index = 0, 11 do
-		local ray = Kit.new("Frame", {
-			Size = UDim2.fromScale(0.07, 1),
-			Position = UDim2.fromScale(0.5, 0.5),
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Rotation = index * 15,
-			BorderSizePixel = 0,
-			ZIndex = 21,
-			Parent = overlayRays,
-		})
-		Kit.new("UIGradient", {
-			Transparency = NumberSequence.new({
-				NumberSequenceKeypoint.new(0, 1),
-				NumberSequenceKeypoint.new(0.5, 0),
-				NumberSequenceKeypoint.new(1, 1),
-			}),
-			Rotation = 90,
-			Parent = ray,
-		})
-	end
-	overlayViewport = Preview.viewport({
-		Size = UDim2.fromScale(0.7, 0.55),
-		Position = UDim2.fromScale(0.5, 0.42),
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		ZIndex = 22,
-		Parent = overlay,
-	})
-	overlayTitle = Kit.text({
-		Text = "",
-		Size = UDim2.fromScale(0.8, 0.1),
-		Position = UDim2.fromScale(0.1, 0.03),
-		ZIndex = 23,
-		Stroke = 4,
-		Parent = overlay,
-	})
-	overlaySub = Kit.text({
-		Text = "",
-		Size = UDim2.fromScale(0.8, 0.06),
-		Position = UDim2.fromScale(0.1, 0.72),
-		ZIndex = 23,
-		Stroke = 2.5,
-		Parent = overlay,
-	})
-	overlayButtons = Kit.new("Frame", {
-		Size = UDim2.fromScale(0.7, 0.12),
-		Position = UDim2.fromScale(0.15, 0.82),
-		BackgroundTransparency = 1,
-		ZIndex = 23,
-		Parent = overlay,
-	})
-	equipNewButton = Kit.button({
-		name = "EquipNew",
-		color = Kit.Colors.Green,
-		dark = Kit.Colors.GreenDark,
-		size = UDim2.fromScale(0.48, 1),
-		text = "Equip",
-		parent = overlayButtons,
-		onClick = function()
-			if lastResultUid then
-				Net.event("Equip"):FireServer(lastResultUid)
-			end
-			overlay.Visible = false
-		end,
-	})
-	Kit.button({
-		name = "Continue",
-		color = Kit.Colors.Blue,
-		dark = Kit.Colors.BlueDark,
-		size = UDim2.fromScale(0.48, 1),
-		position = UDim2.fromScale(0.52, 0),
-		text = "Continue",
-		parent = overlayButtons,
-		onClick = function()
-			overlay.Visible = false
-		end,
-	})
-	for _, descendant in overlayButtons:GetDescendants() do
-		if descendant:IsA("GuiObject") then
-			descendant.ZIndex += 23
-		end
-	end
 	refreshOres()
 end
 
@@ -635,7 +429,6 @@ function Forge:Init()
 		build = build,
 		onOpen = function()
 			if built then
-				overlay.Visible = forging
 				refreshOres()
 			end
 		end,
@@ -643,14 +436,75 @@ function Forge:Init()
 end
 
 function Forge:Start()
+	local function abort()
+		local token = activeToken
+		activeToken = nil
+		forging = false
+		Cutscene.abort()
+		if token then
+			local completed = table.clone(strikes)
+			task.delay(
+				math.max(0, Balance.FORGE_MIN_SECONDS + 1 - (os.clock() - beganAt)),
+				function()
+					Net.event("ForgeFinish"):FireServer(token, completed)
+				end
+			)
+		end
+	end
+	Players.LocalPlayer.CharacterRemoving:Connect(abort)
+	local function bindDeath(character: Model)
+		local humanoid = character:WaitForChild("Humanoid", 8)
+		if humanoid and humanoid:IsA("Humanoid") then
+			humanoid.Died:Once(abort)
+		end
+	end
+	Players.LocalPlayer.CharacterAdded:Connect(bindDeath)
+	if Players.LocalPlayer.Character then
+		task.spawn(bindDeath, Players.LocalPlayer.Character)
+	end
+	Net.event("ForgeStart").OnClientEvent:Connect(function(start)
+		if activeToken then
+			return
+		end
+		selected = {}
+		forging = true
+		activeToken = start.token
+		beganAt = os.clock()
+		strikes = {}
+		local ok, err = pcall(function()
+			Cutscene.play(start, function(index)
+				local screen =
+					Players.LocalPlayer.PlayerGui:FindFirstChild("ForgeCutscene") :: ScreenGui
+				local score = Timing.strike(screen, index, Cutscene.anvilScreenPoint(), function()
+					return activeToken == start.token
+				end, function(value)
+					strikes[index] = value
+				end)
+				return score
+			end)
+		end)
+		if not ok then
+			warn("Forge playback: ", err)
+		end
+		if activeToken == start.token then
+			Net.event("ForgeFinish"):FireServer(start.token, strikes)
+		end
+	end)
 	Net.event("ForgeResult").OnClientEvent:Connect(function(result)
-		pendingResult = result
+		local reveal = activeToken ~= nil and Cutscene.playing
+		activeToken = nil
+		forging = false
+		if reveal then
+			Cutscene.reveal(result)
+		end
+		if built then
+			refreshOres()
+		end
 	end)
 	ClientState.ProfileChanged:Connect(function()
-		if built and Menus.isOpen("Forge") and not forging and not overlay.Visible then
+		if built and Menus.isOpen("Forge") and not forging then
 			refreshOres()
 		end
 	end)
 end
-
 return Forge

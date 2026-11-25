@@ -63,7 +63,7 @@ const LIST: { RarityDef } = {
 	},
 	{
 		tier = 7,
-		name = "Celestial",
+		name = "Godly",
 		color = Color3.fromRGB(64, 240, 230),
 		glow = Color3.fromRGB(255, 120, 250),
 		powerMultiplier = 300,

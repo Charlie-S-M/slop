@@ -41,7 +41,14 @@ function ClientState.shotDamage(): number
 	if not profile or not item or not def then
 		return 0
 	end
-	return Balance.shotDamage(profile.power, item.power, def.kind, profile.rebirths, profile.level)
+	return Balance.shotDamage(
+		profile.power,
+		item.power,
+		def.kind,
+		profile.rebirths,
+		profile.level,
+		def.id
+	)
 end
 
 function ClientState.bagCount(): number

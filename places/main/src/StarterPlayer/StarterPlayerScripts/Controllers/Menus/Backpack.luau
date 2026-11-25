@@ -38,7 +38,14 @@ local function gunDamage(item: Types.GunItem, def: Guns.GunDef): number
 	if not profile then
 		return 0
 	end
-	return Balance.shotDamage(profile.power, item.power, def.kind, profile.rebirths, profile.level)
+	return Balance.shotDamage(
+		profile.power,
+		item.power,
+		def.kind,
+		profile.rebirths,
+		profile.level,
+		def.id
+	)
 end
 
 local function card(parent: Instance, rarityTier: number, order: number): TextButton
@@ -91,9 +98,10 @@ local function refreshDetail()
 	detailRarity.Text = `{rarity.name} {def.kind}`
 	detailRarity.TextColor3 = rarity.color:Lerp(Color3.new(1, 1, 1), 0.2)
 	detailStats.Text = table.concat({
+		`Grade {item.grade}   •   Speed {string.format("%.2f", item.speed)}×`,
 		`⚡ Gun Power: {Format.abbreviate(item.power)}`,
 		`💥 Damage: {Format.abbreviate(gunDamage(item, def))}`,
-		`🔥 Fire rate: {stats.fireRate}/s`,
+		`🔥 Fire rate: {string.format("%.1f", stats.fireRate * item.speed)}/s`,
 		`📦 Magazine: {stats.magazine}`,
 		`🎯 Training: +{Format.abbreviate(
 			Balance.trainingGain(item.train, def.kind, 1, profile.upgrades.Training or 0)

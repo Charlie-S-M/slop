@@ -476,10 +476,49 @@ const LIST: { GunDef } = {
 	),
 }
 
+table.insert(
+	LIST,
+	gun(
+		"PrismCarbine",
+		"Prism Carbine",
+		3,
+		"Rifle",
+		rgb(60, 72, 85),
+		rgb(25, 229, 255),
+		rgb(234, 221, 192)
+	)
+)
+local collectionIds = {
+	"PopPistol",
+	"BrickBlaster",
+	"TinSpitter",
+	"ScrapScatter",
+	"RookieRifle",
+	"BuzzSMG",
+	"RangerRifle",
+	"Boomstick",
+	"TrackerDMR",
+	"PrismCarbine",
+	"FrostRepeater",
+	"HawkEye",
+	"PrismBurst",
+	"Dragonbreath",
+	"VoidLance",
+	"SolarFlare",
+	"TitanHowitzer",
+	"GildedHandcannon",
+	"CosmicAnnihilator",
+	"Starforge",
+}
 const BY_ID: { [string]: GunDef } = {}
 const BY_RARITY: { [number]: { GunDef } } = {}
 for _, def in LIST do
 	BY_ID[def.id] = def
+end
+local collection: { GunDef } = {}
+for _, id in collectionIds do
+	local def = assert(BY_ID[id], `collection gun {id} is not in the catalog`)
+	table.insert(collection, def)
 	local pool = BY_RARITY[def.rarity]
 	if not pool then
 		pool = {}
@@ -490,7 +529,7 @@ end
 
 local Guns = {}
 
-Guns.List = LIST
+Guns.List = collection
 Guns.Kinds = KINDS
 Guns.STARTER_ID = "PopPistol"
 -- The starter gun gives exactly +1 power per shot, the number the game is named for.

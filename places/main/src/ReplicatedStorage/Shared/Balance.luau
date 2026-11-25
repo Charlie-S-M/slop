@@ -29,6 +29,18 @@ export type ForgeOdds = {
 local Balance = {}
 
 -- The flat damage every shot starts with, so a new player can clear stage 1 before training.
+Balance.GUN_DAMAGE_TIERS = { 1, 2, 3, 10, 25, 100, 500 }
+Balance.GUN_DAMAGE_TUNING = {
+	BrickBlaster = 1.08,
+	ScrapScatter = 1.04,
+	RangerRifle = 1.04,
+	Boomstick = 1.08,
+	HawkEye = 1.08,
+	Dragonbreath = 1.04,
+	VoidLance = 1.08,
+	TitanHowitzer = 1.04,
+	GildedHandcannon = 1.08,
+}
 Balance.BASE_DAMAGE = 10
 Balance.MAX_FORGE_ORES = 5
 Balance.MAX_GUNS = 60
@@ -112,9 +124,15 @@ function Balance.pelletDamage(
 	gunPower: number,
 	kind: Guns.GunKind,
 	rebirths: number,
-	level: number
+	level: number,
+	gunId: string?
 ): number
-	return Balance.baseShotDamage(power, gunPower, rebirths, level)
+	local def = if gunId then Guns.get(gunId) else nil
+	local tierScale = if def then Balance.GUN_DAMAGE_TIERS[def.rarity] else 1
+	local tuning = if gunId then Balance.GUN_DAMAGE_TUNING[gunId] or 1 else 1
+	return tierScale
+		* tuning
+		* Balance.baseShotDamage(power, gunPower, rebirths, level)
 		* Guns.kindStats(kind).damageScale
 end
 
@@ -124,10 +142,11 @@ function Balance.shotDamage(
 	gunPower: number,
 	kind: Guns.GunKind,
 	rebirths: number,
-	level: number
+	level: number,
+	gunId: string?
 ): number
 	local stats = Guns.kindStats(kind)
-	return Balance.pelletDamage(power, gunPower, kind, rebirths, level) * stats.pellets
+	return Balance.pelletDamage(power, gunPower, kind, rebirths, level, gunId) * stats.pellets
 end
 
 --[[

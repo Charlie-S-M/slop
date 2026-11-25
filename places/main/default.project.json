@@ -9,6 +9,9 @@
       },
       "Shared": {
         "$path": "src/ReplicatedStorage/Shared"
+      },
+      "ForgeModels": {
+        "$path": "src/ReplicatedStorage/ForgeModels.rbxm"
       }
     },
     "ServerScriptService": {

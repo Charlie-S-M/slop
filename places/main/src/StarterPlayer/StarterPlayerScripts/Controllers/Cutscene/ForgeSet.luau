@@ -187,7 +187,7 @@ local function buildCrucible(root: Model): (Model, CFrame, BasePart, number, num
 		Enum.Material.Neon,
 		"Metal"
 	)
-	light(metal, rgb(255, 140, 50), 26, 3)
+	light(metal, rgb(255, 140, 50), 22, 2.1)
 	-- Chains up to the ceiling, part of the model so they tilt with it.
 	for x = -1, 1, 2 do
 		block(
@@ -267,7 +267,7 @@ local function buildAnvil(root: Model): CFrame
 			stud(root, base + Vector3.new(x * 1.6, 1.4, z * 2.2), rgb(64, 66, 78))
 		end
 	end
-	light(top, rgb(255, 170, 90), 18, 1.5)
+	light(top, rgb(255, 170, 90), 15, 1.15)
 	return CFrame.new(top.Position + Vector3.new(0, 1.05, 0))
 end
 

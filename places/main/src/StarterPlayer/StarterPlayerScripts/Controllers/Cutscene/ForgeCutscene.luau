@@ -54,6 +54,7 @@ local screen: ScreenGui
 local skipButton: TextButton
 local aborted = false
 local stage: Model? = nil
+local revealSpin: RBXScriptConnection? = nil
 
 ------------------------------------------------------------------------------------------------
 -- Helpers
@@ -127,18 +128,21 @@ end
 type Paint = { part: BasePart, color: Color3, material: Enum.Material }
 
 -- A copy of the gun, anchored, lying flat with its barrel along +X, recording its real colors.
-local function buildGun(def: Guns.GunDef): (Model, { Paint })
+local function buildGun(def: Guns.GunDef, reveal: boolean?): (Model, { Paint })
 	local model = GunBuilder.build(def)
 	local paints: { Paint } = {}
 	for _, descendant in model:GetDescendants() do
 		if descendant:IsA("BasePart") then
 			descendant.Anchored = true
+			if descendant.Transparency == 1 then
+				continue
+			end
 			table.insert(
 				paints,
 				{ part = descendant, color = descendant.Color, material = descendant.Material }
 			)
 		elseif descendant:IsA("ParticleEmitter") then
-			descendant.Enabled = false
+			descendant.Enabled = reveal == true
 		end
 	end
 	return model, paints
@@ -215,7 +219,7 @@ end
 
 local function pour(set: ForgeSet.Set, gun: Model, paints: { Paint })
 	local mold = set.moldCenter.Position
-	shot(mold + Vector3.new(16, 9, 18), mold + Vector3.new(0, 5, -6))
+	shot(mold + Vector3.new(12, 8, 15), mold + Vector3.new(0, 5, -6))
 	glide(mold + Vector3.new(12, 7, 15), mold + Vector3.new(0, 4, -6), 1.6)
 	layFlat(gun, set.moldCenter)
 	gun.Parent = stage
@@ -278,7 +282,7 @@ end
 
 local function quench(set: ForgeSet.Set, gun: Model, paints: { Paint })
 	local barrel = set.barrelTop.Position
-	shot(barrel + Vector3.new(-12, 8, 14), barrel + Vector3.new(0, 2, 0))
+	shot(barrel + Vector3.new(-8, 6, 10), barrel + Vector3.new(0, 2, 0))
 	local above = CFrame.new(barrel + Vector3.new(0, 7, 0))
 	gun:PivotTo(above * CFrame.Angles(0, math.rad(90), math.rad(90)))
 	tweenNumber(0, 1, 0.45, function(t)
@@ -330,6 +334,10 @@ local function statLine(
 end
 
 local function restore()
+	if revealSpin then
+		revealSpin:Disconnect()
+		revealSpin = nil
+	end
 	camera.CameraType = Enum.CameraType.Custom
 	camera.FieldOfView = 70
 	Hud.screen().Enabled = true
@@ -359,7 +367,7 @@ function ForgeCutscene.reveal(result: Result)
 	local barrel = set.barrelTop.Position
 	stage = stage or Instance.new("Model");
 	(stage :: Model).Parent = workspace
-	local gun = buildGun(def)
+	local gun = buildGun(def, true)
 	gun.Parent = stage
 	local glow = Instance.new("Part")
 	glow.Anchored = true
@@ -372,16 +380,17 @@ function ForgeCutscene.reveal(result: Result)
 	light.Range = 28
 	light.Brightness = if def.rarity >= 4 then 6 else 3
 	light.Parent = glow
-	shot(barrel + Vector3.new(0, 7, 16), barrel + Vector3.new(0, 6, 0), 45)
+	shot(barrel + Vector3.new(0, 7, 15), barrel + Vector3.new(0, 6, 0), 45)
 	local started = os.clock()
 	local spin = RunService.RenderStepped:Connect(function()
 		local t = os.clock() - started
 		local rise = math.min(t / 0.8, 1)
 		gun:PivotTo(
 			CFrame.new(barrel + Vector3.new(0, -2 + 8 * rise + math.sin(t * 2) * 0.3, 0))
-				* CFrame.Angles(0, t * 1.4, 0)
+				* CFrame.Angles(0, math.pi / 2 + t * 0.8, 0)
 		)
 	end)
+	revealSpin = spin
 	set.steam:Emit(20)
 	Kit.sound(Kit.Sounds.Ding, 0.5, 1 + def.rarity * 0.04)
 	if def.rarity >= 4 then
@@ -602,7 +611,7 @@ function ForgeCutscene.play(start: Start, strike: (number) -> number): { number 
 	end
 	layFlat(gun, set.anvilTop * CFrame.new(0, 0.6, 0))
 	local anvil = set.anvilTop.Position
-	shot(anvil + Vector3.new(-3, 11, 13), anvil + Vector3.new(0, 1, 0), 50)
+	shot(anvil + Vector3.new(-3, 7, 9), anvil + Vector3.new(0, 1, 0), 50)
 	for index = 1, Balance.STRIKES do
 		if aborted then
 			break

@@ -131,6 +131,7 @@ local function onEnemyHit(
 	pelletsHit: number,
 	gunPower: number,
 	kind: Guns.GunKind,
+	gunId: string,
 	aim: Vector3
 )
 	local enemy = Arena.enemyFromInstance(player, instance)
@@ -140,7 +141,7 @@ local function onEnemyHit(
 	end
 	local stats = Guns.kindStats(kind)
 	local perPellet =
-		Balance.pelletDamage(profile.power, gunPower, kind, profile.rebirths, profile.level)
+		Balance.pelletDamage(profile.power, gunPower, kind, profile.rebirths, profile.level, gunId)
 	local crit = math.random() < CRIT_CHANCE
 	local amount = perPellet * pelletsHit * (if crit then CRIT_MULTIPLIER else 1)
 	if stats.splashRadius > 0 then
@@ -219,7 +220,7 @@ local function onShoot(player: Player, target: unknown, pellets: unknown, aim: u
 		onTraining(player, trainingTarget, root, item.train, def.kind, aim)
 		return
 	end
-	onEnemyHit(player, target, count, item.power, def.kind, aim)
+	onEnemyHit(player, target, count, item.power, def.kind, def.id, aim)
 end
 
 function Combat:Start()

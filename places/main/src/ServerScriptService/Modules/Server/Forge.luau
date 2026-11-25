@@ -55,7 +55,7 @@ local function rawDps(item: Types.GunItem): number
 	if not def then
 		return 0
 	end
-	return Balance.shotDamage(0, item.power, def.kind, 0, 1)
+	return Balance.shotDamage(0, item.power, def.kind, 0, 1, def.id)
 		* GunStats.fireRate(def.kind, item.speed)
 end
 

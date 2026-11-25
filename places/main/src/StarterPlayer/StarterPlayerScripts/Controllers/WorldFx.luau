@@ -384,17 +384,21 @@ local function setupStations()
 	if not lobby then
 		return
 	end
-	for _, part in lobby:GetDescendants() do
+	local function bind(part: Instance)
 		local station = part:GetAttribute("Station")
 		if typeof(station) == "string" and part:IsA("BasePart") then
 			local info = STATION_MENUS[station]
-			if info then
+			if info and not part:FindFirstChild("StationPrompt") then
 				local prompt = Instance.new("ProximityPrompt")
+				prompt.Name = "StationPrompt"
 				prompt.ActionText = info.text
 				prompt.ObjectText = ""
 				prompt.KeyboardKeyCode = Enum.KeyCode.E
 				prompt.HoldDuration = 0
-				prompt.MaxActivationDistance = if station == "Portal" then 22 else 16
+				prompt.MaxActivationDistance = if station == "Forge"
+					then 32
+					elseif station == "Portal" then 22
+					else 16
 				prompt.RequiresLineOfSight = false
 				prompt.Style = Enum.ProximityPromptStyle.Default
 				prompt.Parent = part
@@ -413,6 +417,10 @@ local function setupStations()
 					* CFrame.Angles(0, t * rate, 0)
 			end)
 		end
+	end
+	lobby.DescendantAdded:Connect(bind)
+	for _, part in lobby:GetDescendants() do
+		bind(part)
 	end
 end
 
@@ -565,6 +573,7 @@ function WorldFx:Init()
 end
 
 function WorldFx:Start()
+	task.spawn(setupStations)
 	local arenas = workspace:WaitForChild("Arenas", 30)
 	if arenas then
 		arenas.DescendantAdded:Connect(function(instance)
@@ -584,7 +593,6 @@ function WorldFx:Start()
 		animate(dt)
 		animatePickups()
 	end)
-	task.spawn(setupStations)
 	ClientState.StatsChanged:Connect(refreshPadLocks)
 	captureLobbyMood()
 	ClientState.RunChanged:Connect(onRun)

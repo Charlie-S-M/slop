@@ -219,12 +219,135 @@ local function makePart(name: string, info: Block, color: Color3, rarity: number
 	return part
 end
 
+local function buildCollection(def: Guns.GunDef, power: number?): Model?
+	local folder = game.ReplicatedStorage:FindFirstChild("ForgeModels")
+	local template = folder and folder:FindFirstChild(def.id)
+	if not template or not template:IsA("Model") then
+		return nil
+	end
+	local model = template:Clone()
+	local grip = model:FindFirstChild("Handle") :: BasePart
+	grip.Name = "Grip"
+	local handle = Instance.new("Part")
+	handle.Name = "Handle"
+	handle.Size = Vector3.one * 0.1
+	handle.Transparency = 1
+	handle.CanCollide = false
+	handle.CanQuery = false
+	handle.CanTouch = false
+	handle.Massless = true
+	handle.Parent = model
+	model.PrimaryPart = handle
+	local tier = def.rarity
+	local rarity = Rarity.get(tier)
+	local palette = {
+		Grip = def.trim,
+		Stock = def.trim,
+		Body = def.body,
+		Shell = def.body:Lerp(Color3.new(1, 1, 1), 0.18),
+		Metal = Color3.fromRGB(90, 102, 119),
+		Tip = def.trim,
+		Glow = def.accent,
+		Crystal = rarity.glow,
+	}
+	for _, part in model:GetChildren() do
+		if part:IsA("BasePart") and part ~= handle then
+			if def.id ~= "PrismCarbine" then
+				part.Color = palette[part.Name] or def.body
+				part.Material = if (part.Name == "Glow" and tier >= 2)
+						or part.Name == "Crystal"
+					then Enum.Material.Neon
+					elseif part.Name == "Metal" then Enum.Material.Metal
+					else Enum.Material.SmoothPlastic
+			end
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0, weld.Part1 = handle, part
+			weld.Parent = part
+		end
+	end
+	local tip = (model:FindFirstChild("Tip") or model:FindFirstChild("Violet aperture")) :: BasePart
+	local muzzle = Instance.new("Attachment")
+	muzzle.Name = "Muzzle"
+	muzzle.Position = tip.Position - Vector3.zAxis * tip.Size.X / 2
+	muzzle.Parent = handle
+	if tier >= 3 then
+		local light = Instance.new("PointLight")
+		light.Color = def.accent
+		light.Range = 2 + tier * 0.5
+		light.Brightness = 0.25 + tier * 0.1
+		light.Parent = muzzle
+		local sparks = Instance.new("ParticleEmitter")
+		sparks.Name = "ForgeGlints"
+		sparks.Texture = "rbxassetid://92851213685130"
+		sparks.Color = ColorSequence.new(def.accent, rarity.glow)
+		sparks.LightEmission = 1
+		sparks.Lifetime = NumberRange.new(0.35, 0.7)
+		sparks.Rate = 2 + (tier - 3) * 2
+		sparks.Speed = NumberRange.new(0.12, 0.65)
+		sparks.SpreadAngle = Vector2.new(180, 180)
+		sparks.Size = NumberSequence.new(0.14 + tier * 0.02, 0)
+		sparks.Parent = muzzle
+	end
+	if tier >= 4 then
+		for i = 1, tier - 3 do
+			local angle = 2 * math.pi * i / (tier - 3)
+			local function anchor(z: number, radius: number): Attachment
+				local a = Instance.new("Attachment")
+				a.Position = Vector3.new(
+					math.cos(angle) * radius,
+					muzzle.Position.Y + math.sin(angle) * radius,
+					z
+				)
+				a.Orientation = Vector3.new(0, 0, math.deg(angle))
+				a.Parent = handle
+				return a
+			end
+			local arc = Instance.new("Beam")
+			arc.Name = "EnergyArc"
+			arc.Attachment0 = anchor(muzzle.Position.Z * 0.25, 0.25)
+			arc.Attachment1 = anchor(muzzle.Position.Z * 0.92, 0.15)
+			arc.CurveSize0 = 0.32
+			arc.CurveSize1 = -0.28
+			arc.Width0 = 0.035
+			arc.Width1 = 0.012
+			arc.FaceCamera = true
+			arc.LightEmission = 1
+			arc.Color = ColorSequence.new(def.accent, rarity.glow)
+			arc.Parent = handle
+		end
+	end
+	if tier >= 6 then
+		local orbit = Instance.new("ParticleEmitter")
+		orbit.Name = "StarCorona"
+		orbit.Texture = "rbxassetid://92851213685130"
+		orbit.Color = ColorSequence.new(rarity.color, rarity.glow)
+		orbit.LightEmission = 1
+		orbit.Rate = if tier == 7 then 10 else 5
+		orbit.Lifetime = NumberRange.new(0.5, 1)
+		orbit.Speed = NumberRange.new(0.3, 0.8)
+		orbit.SpreadAngle = Vector2.new(180, 180)
+		orbit.RotSpeed = NumberRange.new(-90, 90)
+		orbit.Size = NumberSequence.new(0.3, 0)
+		orbit.Parent = grip
+	end
+	model:ScaleTo(
+		rarity.gunScale
+			* GunBuilder.BASE_SCALE
+			* (1 + math.clamp(math.log10(math.max(power or 1, 1)) * 0.03, 0, 0.4))
+	)
+	return model
+end
+
 --[[
 	Builds the gun model. The handle is anchored-free and every other part is welded to it, so the
 	result works both as a tool and, once anchored, as a display piece.
 ]]
 function GunBuilder.build(def: Guns.GunDef, power: number?): Model
 	local rarity = Rarity.get(def.rarity)
+	local collection = buildCollection(def, power)
+	if collection then
+		return collection
+	end
 	local blueprint = BLUEPRINTS[def.kind]
 	local model = Instance.new("Model")
 	model.Name = def.id
