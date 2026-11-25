@@ -304,6 +304,11 @@ Balance.PET_SLOTS = 3
 Balance.MAX_PETS = 50
 Balance.MAX_ORE_DROP_CHANCE = 0.95
 
+-- The chance a regular enemy drops an ore, raised by Ores pets up to the cap.
+function Balance.oreDropChance(petMultiplier: number): number
+	return math.min(Balance.ORE_DROP_CHANCE * petMultiplier, Balance.MAX_ORE_DROP_CHANCE)
+end
+
 -- The forge reaches the Eternal tier only when the mix has one of these ores, so Godly ores alone
 -- can't roll it.
 Balance.ETERNAL_TIER = 8

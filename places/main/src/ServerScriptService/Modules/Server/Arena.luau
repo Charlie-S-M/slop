@@ -15,6 +15,7 @@ const ArmorStats = require("@game/ReplicatedStorage/Shared/ArmorStats")
 const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const Biomes = require("@game/ReplicatedStorage/Shared/Biomes")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
+const PetStats = require("@game/ReplicatedStorage/Shared/PetStats")
 const OreBuilder = require("@game/ReplicatedStorage/Shared/OreBuilder")
 const Ores = require("@game/ReplicatedStorage/Shared/Ores")
 const Rarity = require("@game/ReplicatedStorage/Shared/Rarity")
@@ -272,10 +273,19 @@ local function spawnStage(run: Run)
 end
 
 local function dropOres(run: Run, enemy: Enemy)
+	local profile = PlayerData.get(run.player)
 	local drops = 0
 	if enemy.isBoss then
 		drops = Balance.BOSS_ORE_DROPS
-	elseif not enemy.isMini and random:NextNumber() < Balance.ORE_DROP_CHANCE then
+	elseif
+		not enemy.isMini
+		and random:NextNumber()
+			< Balance.oreDropChance(
+				if profile
+					then PetStats.multiplier(profile.pets, profile.equippedPets, "Ores")
+					else 1
+			)
+	then
 		drops = 1
 	end
 	local pool = Ores.forBiome(run.biome.index)

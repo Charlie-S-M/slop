@@ -24,6 +24,10 @@ export type EventName =
 	| "UnequipArmor"
 	| "SellArmor"
 	| "LockArmor"
+	| "HatchEgg"
+	| "EquipPet"
+	| "UnequipPet"
+	| "ReleasePet"
 	| "BuyUpgrade"
 	| "Rebirth"
 	| "ClaimDaily"
@@ -37,6 +41,7 @@ export type EventName =
 	| "ForgeStart"
 	| "ForgeResult"
 	| "EvolveResult"
+	| "Hatched"
 	| "Reward"
 	| "EnemyAttack"
 
@@ -58,6 +63,11 @@ const EVENTS: { EventName } = {
 	"UnequipArmor",
 	"SellArmor",
 	"LockArmor",
+	"HatchEgg",
+	"EquipPet",
+	"UnequipPet",
+	"ReleasePet",
+	"Hatched",
 	"BuyUpgrade",
 	"Rebirth",
 	"ClaimDaily",

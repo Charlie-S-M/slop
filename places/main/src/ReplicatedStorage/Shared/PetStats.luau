@@ -3,8 +3,9 @@
 
 const Balance = require("./Balance")
 const Pets = require("./Pets")
+const Types = require("./Types")
 
-export type OwnedPet = { uid: string, id: string, locked: boolean? }
+export type OwnedPet = Types.PetItem
 
 local PetStats = {}
 

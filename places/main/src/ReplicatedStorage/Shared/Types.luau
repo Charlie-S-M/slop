@@ -17,6 +17,8 @@ export type GunItem = {
 	locked: boolean?,
 }
 
+export type PetItem = { uid: string, id: string, locked: boolean? }
+
 export type ArmorSlot = "Helmet" | "Chestplate" | "Boots"
 
 -- One forged armor piece the player owns. `defense` is the share of each hit it blocks.
@@ -73,6 +75,9 @@ export type Profile = {
 	-- Forged armor pieces, and the uid worn in each slot.
 	armor: { ArmorItem },
 	equippedArmor: { [string]: string },
+	-- Hatched pets, and the uids following the player (at most Balance.PET_SLOTS).
+	pets: { PetItem },
+	equippedPets: { string },
 }
 
 -- The stats that change many times a second, sent on their own so the full state stays quiet.

@@ -40,7 +40,7 @@ describe("the pet catalog", function()
 end)
 
 describe("pet bonuses", function()
-	local function pet(uid: string, id: string)
+	local function pet(uid: string, id: string): PetStats.OwnedPet
 		return { uid = uid, id = id }
 	end
 
@@ -77,5 +77,13 @@ describe("pet bonuses", function()
 			1 + def.bonus * Balance.PET_SLOTS,
 			6
 		)
+	end)
+end)
+
+describe("ore drop chance with pets", function()
+	it("scales with the Ores multiplier and stops at the cap", function()
+		expect(Balance.oreDropChance(1)).toBe(Balance.ORE_DROP_CHANCE)
+		expect(Balance.oreDropChance(1.5)).toBeCloseTo(Balance.ORE_DROP_CHANCE * 1.5, 6)
+		expect(Balance.oreDropChance(10)).toBe(Balance.MAX_ORE_DROP_CHANCE)
 	end)
 end)

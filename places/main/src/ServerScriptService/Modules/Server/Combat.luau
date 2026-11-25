@@ -12,6 +12,7 @@ const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const GunStats = require("@game/ReplicatedStorage/Shared/GunStats")
 const Guns = require("@game/ReplicatedStorage/Shared/Guns")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
+const PetStats = require("@game/ReplicatedStorage/Shared/PetStats")
 const Types = require("@game/ReplicatedStorage/Shared/Types")
 const Arena = require("./Arena")
 const PlayerData = require("./PlayerData")
@@ -119,8 +120,12 @@ local function onTraining(
 	if Vector3.new(offset.X, 0, offset.Z).Magnitude > PAD_RADIUS then
 		return
 	end
-	local gain =
-		Balance.trainingGain(train, kind, zoneDef.multiplier, profile.upgrades.Training or 0)
+	local gain = Balance.trainingGain(
+		train,
+		kind,
+		zoneDef.multiplier,
+		profile.upgrades.Training or 0
+	) * PetStats.multiplier(profile.pets, profile.equippedPets, "Training")
 	PlayerData.addPower(player, gain)
 	PlayerData.addXp(player, 1)
 	trainFx:FireClient(player, gain, aim)
@@ -141,8 +146,14 @@ local function onEnemyHit(
 		return
 	end
 	local stats = Guns.kindStats(kind)
-	local perPellet =
-		Balance.pelletDamage(profile.power, gunPower, kind, profile.rebirths, profile.level, gunId)
+	local perPellet = Balance.pelletDamage(
+		profile.power,
+		gunPower,
+		kind,
+		profile.rebirths,
+		profile.level,
+		gunId
+	) * PetStats.multiplier(profile.pets, profile.equippedPets, "Damage")
 	local crit = math.random() < CRIT_CHANCE
 	local amount = perPellet * pelletsHit * (if crit then CRIT_MULTIPLIER else 1)
 	if stats.splashRadius > 0 then
