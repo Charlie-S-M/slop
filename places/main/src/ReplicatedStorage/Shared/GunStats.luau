@@ -132,6 +132,17 @@ end
 	pistol keeps exactly +1 per shot.
 ]]
 function GunStats.migrateGun(item: { [string]: any }): Types.GunItem
+	-- Equipped attachments carry over; only string slot -> string id entries are kept.
+	local parts: { [string]: string }? = nil
+	if typeof(item.parts) == "table" then
+		local kept: { [string]: string } = {}
+		for slot, id in item.parts do
+			if typeof(slot) == "string" and typeof(id) == "string" then
+				kept[slot] = id
+			end
+		end
+		parts = kept
+	end
 	local power = if typeof(item.power) == "number" then item.power else 1
 	local train = item.train
 	if typeof(train) ~= "number" then
@@ -153,6 +164,7 @@ function GunStats.migrateGun(item: { [string]: any }): Types.GunItem
 		train = train,
 		grade = grade,
 		locked = item.locked,
+		parts = parts,
 	}
 end
 

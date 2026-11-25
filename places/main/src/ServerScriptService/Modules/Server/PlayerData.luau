@@ -21,7 +21,7 @@ const Types = require("@game/ReplicatedStorage/Shared/Types")
 type Profile = Types.Profile
 
 const STORE_NAME = "PewIncremental_v1"
-const CURRENT_VERSION = 6
+const CURRENT_VERSION = 7
 const AUTOSAVE_SECONDS = 60
 -- A lock older than this belongs to a server that died without releasing it.
 const LOCK_STALE_SECONDS = AUTOSAVE_SECONDS * 3

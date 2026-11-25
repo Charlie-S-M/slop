@@ -15,6 +15,7 @@ const Kit = require("../UI/Kit")
 const Menus = require("../Menus")
 const Preview = require("../UI/Preview")
 const ArmorView = require("./ArmorView")
+const PartsView = require("./PartsView")
 
 local Backpack = {}
 
@@ -32,6 +33,7 @@ local lockButton: TextButton
 local sellButton: TextButton
 local oresFooter: Frame
 local armorView: Frame
+local partsView: Frame
 local sellAllButton: TextButton
 local tabButtons: { [string]: TextButton } = {}
 local built = false
@@ -299,6 +301,7 @@ local function setTab(name: string)
 	oresGrid.Visible = name == "Ores"
 	oresFooter.Visible = name == "Ores"
 	armorView.Visible = name == "Armor"
+	partsView.Visible = name == "Parts"
 	for tabName, button in tabButtons do
 		if tabName == name then
 			Kit.setButtonColor(button, Kit.Colors.Orange, Kit.Colors.OrangeDark)
@@ -310,6 +313,8 @@ local function setTab(name: string)
 		refreshGuns()
 	elseif name == "Armor" then
 		ArmorView.refresh()
+	elseif name == "Parts" then
+		PartsView.refresh()
 	else
 		refreshOres()
 	end
@@ -341,7 +346,7 @@ end
 
 local function build(content: Frame)
 	built = true
-	for index, name in { "Guns", "Ores", "Armor" } do
+	for index, name in { "Guns", "Ores", "Armor", "Parts" } do
 		tabButtons[name] = Kit.button({
 			name = name,
 			color = Kit.Colors.GreyDark,
@@ -351,7 +356,8 @@ local function build(content: Frame)
 			text = if name == "Guns"
 				then "🔫 Guns"
 				elseif name == "Ores" then "💎 Ores"
-				else "🛡️ Armor",
+				elseif name == "Armor" then "🛡️ Armor"
+				else "⚙️ Parts",
 			parent = content,
 			onClick = function()
 				setTab(name)
@@ -481,6 +487,7 @@ local function build(content: Frame)
 		Parent = oresFooter,
 	})
 	armorView = ArmorView.build(content)
+	partsView = PartsView.build(content)
 	setTab(tab)
 end
 
@@ -515,6 +522,8 @@ function Backpack:Start()
 				refreshGuns()
 			elseif tab == "Armor" then
 				ArmorView.refresh()
+			elseif tab == "Parts" then
+				PartsView.refresh()
 			else
 				refreshOres()
 			end

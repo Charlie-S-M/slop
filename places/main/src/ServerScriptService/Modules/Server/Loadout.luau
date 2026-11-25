@@ -47,7 +47,7 @@ function Loadout.refreshGun(player: Player)
 		return
 	end
 	removeGuns(player)
-	local tool = GunBuilder.buildTool(def, item.uid, item.power)
+	local tool = GunBuilder.buildTool(def, item.uid, item.power, item.parts)
 	tool:SetAttribute("Power", item.power)
 	tool.Parent = backpack
 	humanoid:EquipTool(tool)

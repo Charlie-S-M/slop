@@ -8,6 +8,7 @@ export type UpgradeId =
 	| "Toughness"
 	| "CoinBoost"
 	| "Magnet"
+	| "PartLuck"
 
 export type UpgradeDef = {
 	id: UpgradeId,
@@ -140,6 +141,22 @@ const LIST: { UpgradeDef } = {
 		end,
 		describe = function(level)
 			return `{9 + 4 * level} studs`
+		end,
+	},
+	{
+		id = "PartLuck",
+		name = "Part Luck",
+		description = "Rarer attachments from boss chests",
+		icon = "Gear",
+		color = Color3.fromRGB(90, 200, 255),
+		maxLevel = 20,
+		baseCost = 2000,
+		costGrowth = 1.6,
+		effect = function(level)
+			return 0.1 * level
+		end,
+		describe = function(level)
+			return percent(0.1 * level)
 		end,
 	},
 }

@@ -31,6 +31,8 @@ export type EventName =
 	| "LockPet"
 	| "TemperArmor"
 	| "EnterTower"
+	| "EquipPart"
+	| "UnequipPart"
 	| "BuyUpgrade"
 	| "Rebirth"
 	| "ClaimDaily"
@@ -45,6 +47,7 @@ export type EventName =
 	| "ForgeResult"
 	| "EvolveResult"
 	| "Hatched"
+	| "ChestOpened"
 	| "Reward"
 	| "EnemyAttack"
 
@@ -73,6 +76,9 @@ const EVENTS: { EventName } = {
 	"LockPet",
 	"TemperArmor",
 	"EnterTower",
+	"EquipPart",
+	"UnequipPart",
+	"ChestOpened",
 	"Hatched",
 	"BuyUpgrade",
 	"Rebirth",

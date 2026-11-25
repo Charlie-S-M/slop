@@ -4,6 +4,7 @@
 -- reads from here and listens to the signals; it never changes the values itself.
 
 const Balance = require("@game/ReplicatedStorage/Shared/Balance")
+const GunStats = require("@game/ReplicatedStorage/Shared/GunStats")
 const Guns = require("@game/ReplicatedStorage/Shared/Guns")
 const PetStats = require("@game/ReplicatedStorage/Shared/PetStats")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
@@ -28,11 +29,12 @@ function ClientState.equipped(): (Types.GunItem?, Guns.GunDef?)
 	end
 	for _, item in profile.guns do
 		if item.uid == profile.equipped then
-			return item, Guns.get(item.id)
+			return GunStats.effective(item), Guns.get(item.id)
 		end
 	end
 	local first = profile.guns[1]
-	return first, if first then Guns.get(first.id) else nil
+	return if first then GunStats.effective(first) else nil,
+		if first then Guns.get(first.id) else nil
 end
 
 -- Damage of one full trigger pull with the equipped gun, as the server would compute it.

@@ -3,6 +3,7 @@
 -- Selling, equipping, upgrades, rebirths, and the daily reward. Every handler validates its
 -- arguments and prices on the server. Forging lives in Forge.
 
+const Attachments = require("@game/ReplicatedStorage/Shared/Attachments")
 const Armor = require("@game/ReplicatedStorage/Shared/Armor")
 const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const Biomes = require("@game/ReplicatedStorage/Shared/Biomes")
@@ -87,9 +88,66 @@ local function onSellGun(player: Player, uid: unknown)
 	local def = Guns.get(item.id)
 	local price = Balance.gunSellPrice(item.power, if def then def.rarity else 1)
 	table.remove(profile.guns, index)
+	-- Its parts go back to the pile.
+	const returned: { [string]: string } = item.parts or {}
+	for _, partId in returned do
+		profile.attachments[partId] = (profile.attachments[partId] or 0) + 1
+	end
 	PlayerData.addCoins(player, price)
 	PlayerData.markState(player)
 	rewardRemote:FireClient(player, { kind = "coins", coins = price })
+end
+
+------------------------------------------------------------------------------------------------
+-- Attachments
+------------------------------------------------------------------------------------------------
+
+-- Puts an owned part on the equipped gun, returning whatever was in that slot to the pile.
+local function onEquipPart(player: Player, partId: unknown)
+	if not RateLimit.allow(player, "EquipPart", 4, 5) or typeof(partId) ~= "string" then
+		return
+	end
+	local profile = PlayerData.get(player)
+	local def = Attachments.get(partId)
+	if not profile or not def or (profile.attachments[def.id] or 0) < 1 then
+		return
+	end
+	local gun = PlayerData.equippedGun(profile)
+	local parts = gun.parts or {}
+	local old = parts[def.slot]
+	if old == def.id then
+		return
+	end
+	profile.attachments[def.id] -= 1
+	if profile.attachments[def.id] <= 0 then
+		profile.attachments[def.id] = nil
+	end
+	if old then
+		profile.attachments[old] = (profile.attachments[old] or 0) + 1
+	end
+	parts[def.slot] = def.id
+	gun.parts = parts
+	PlayerData.markState(player)
+	Loadout.refreshGun(player)
+end
+
+local function onUnequipPart(player: Player, slot: unknown)
+	if not RateLimit.allow(player, "EquipPart", 4, 5) or not Attachments.isSlot(slot) then
+		return
+	end
+	local profile = PlayerData.get(player)
+	if not profile then
+		return
+	end
+	local gun = PlayerData.equippedGun(profile)
+	local old = gun.parts and gun.parts[slot :: string]
+	if not old or not gun.parts then
+		return
+	end
+	gun.parts[slot :: string] = nil
+	profile.attachments[old] = (profile.attachments[old] or 0) + 1
+	PlayerData.markState(player)
+	Loadout.refreshGun(player)
 end
 
 ------------------------------------------------------------------------------------------------
@@ -305,6 +363,8 @@ function Economy:Start()
 	Net.event("ToggleLock").OnServerEvent:Connect(onToggleLock)
 	Net.event("SellGun").OnServerEvent:Connect(onSellGun)
 	Net.event("EquipArmor").OnServerEvent:Connect(onEquipArmor)
+	Net.event("EquipPart").OnServerEvent:Connect(onEquipPart)
+	Net.event("UnequipPart").OnServerEvent:Connect(onUnequipPart)
 	Net.event("UnequipArmor").OnServerEvent:Connect(onUnequipArmor)
 	Net.event("LockArmor").OnServerEvent:Connect(onLockArmor)
 	Net.event("SellArmor").OnServerEvent:Connect(onSellArmor)

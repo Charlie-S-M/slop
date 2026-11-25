@@ -89,3 +89,21 @@ describe("equipped parts", function()
 		expect(evolved.parts and evolved.parts.Barrel).toBe(barrel.id)
 	end)
 end)
+
+describe("saved parts", function()
+	it("survive loading a saved gun, and bad entries are dropped", function()
+		local barrel = Attachments.forSlot("Barrel", 4)
+		local saved = {
+			uid = "g9",
+			id = "SolarFlare",
+			power = 10,
+			speed = 1,
+			train = 1,
+			grade = "B",
+			parts = { Barrel = barrel.id, Grip = 5, [3] = "x" },
+		}
+		local loaded = GunStats.migrateGun(saved)
+		expect(loaded.parts and loaded.parts.Barrel).toBe(barrel.id)
+		expect(loaded.parts and loaded.parts.Grip).toBeNil()
+	end)
+end)

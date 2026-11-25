@@ -6,6 +6,7 @@
 	handle's -Z axis, and the "Muzzle" attachment sits at the barrel tip.
 ]]
 
+const Attachments = require("./Attachments")
 const Guns = require("./Guns")
 const Rarity = require("./Rarity")
 
@@ -445,11 +446,78 @@ function GunBuilder.build(def: Guns.GunDef, power: number?): Model
 end
 
 --[[
+	Adds a brick per attachment, in the part's rarity color, laid out on the gun's bounding box
+	(barrel along -Z): a scope on top, a grip under the front, a muzzle extension past the barrel, a
+	magazine under the middle, and a charm hanging off the back. Each is welded to the Handle.
+]]
+function GunBuilder.addParts(model: Model, parts: { [string]: string }?)
+	local handle = model:FindFirstChild("Handle")
+	if not parts or not handle or not handle:IsA("BasePart") then
+		return
+	end
+	local box, size = model:GetBoundingBox()
+	local unit = math.max(size.X, size.Y) * 0.25
+	const layout: { [string]: { offset: Vector3, size: Vector3 } } = {
+		Scope = {
+			offset = Vector3.new(0, size.Y * 0.55, -size.Z * 0.1),
+			size = Vector3.new(unit, unit, size.Z * 0.35),
+		},
+		Grip = {
+			offset = Vector3.new(0, -size.Y * 0.35, -size.Z * 0.3),
+			size = Vector3.new(unit * 0.8, unit * 2, unit * 0.8),
+		},
+		Barrel = {
+			offset = Vector3.new(0, size.Y * 0.1, -size.Z * 0.56),
+			size = Vector3.new(unit * 1.2, unit * 1.2, size.Z * 0.15),
+		},
+		Magazine = {
+			offset = Vector3.new(0, -size.Y * 0.45, 0),
+			size = Vector3.new(unit * 0.9, unit * 2.2, unit * 1.3),
+		},
+		Keychain = {
+			offset = Vector3.new(size.X * 0.4, -size.Y * 0.3, size.Z * 0.42),
+			size = Vector3.new(unit * 0.7, unit * 0.7, unit * 0.7),
+		},
+	}
+	for slot, id in parts do
+		local def = Attachments.get(id)
+		local spot = layout[slot]
+		if def and spot and def.slot == slot then
+			local brick = Instance.new("Part")
+			brick.Name = `Part_{slot}`
+			brick.Anchored = false
+			brick.CanCollide = false
+			brick.CanQuery = false
+			brick.CanTouch = false
+			brick.Massless = true
+			brick.Material = if def.rarity >= 5
+				then Enum.Material.Neon
+				else Enum.Material.SmoothPlastic
+			brick.Color = Rarity.get(def.rarity).color
+			brick.Shape = if slot == "Keychain" then Enum.PartType.Ball else Enum.PartType.Block
+			brick.Size = spot.size
+			brick.CFrame = box * CFrame.new(spot.offset)
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0 = handle
+			weld.Part1 = brick
+			weld.Parent = brick
+			brick.Parent = model
+		end
+	end
+end
+
+--[[
 	Wraps a built gun in a Tool. Every part is unanchored and welded, and the grip turns the barrel
 	to point where the character faces.
 ]]
-function GunBuilder.buildTool(def: Guns.GunDef, uid: string, power: number?): Tool
+function GunBuilder.buildTool(
+	def: Guns.GunDef,
+	uid: string,
+	power: number?,
+	parts: { [string]: string }?
+): Tool
 	local model = GunBuilder.build(def, power)
+	GunBuilder.addParts(model, parts)
 	local tool = Instance.new("Tool")
 	tool.Name = def.name
 	tool.CanBeDropped = false

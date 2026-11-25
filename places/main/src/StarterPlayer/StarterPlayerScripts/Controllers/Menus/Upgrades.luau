@@ -19,6 +19,7 @@ const GLYPHS = {
 	Heart = "❤️",
 	Coin = "💰",
 	Magnet = "🧲",
+	Gear = "⚙️",
 }
 
 type Card = { def: Upgrades.UpgradeDef, level: TextLabel, effect: TextLabel, buy: TextButton }

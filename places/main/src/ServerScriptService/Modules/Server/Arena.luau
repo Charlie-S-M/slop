@@ -11,6 +11,7 @@
 const Players = game:GetService("Players")
 const RunService = game:GetService("RunService")
 
+const Attachments = require("@game/ReplicatedStorage/Shared/Attachments")
 const ArmorStats = require("@game/ReplicatedStorage/Shared/ArmorStats")
 const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const Biomes = require("@game/ReplicatedStorage/Shared/Biomes")
@@ -97,6 +98,7 @@ local random = Random.new()
 local runRemote: RemoteEvent
 local attackRemote: RemoteEvent
 local rewardRemote: RemoteEvent
+local chestRemote: RemoteEvent
 local notifyRemote: RemoteEvent
 
 local arenasFolder: Folder
@@ -374,6 +376,29 @@ local function awardBossMaterials(run: Run, enemy: Enemy, profile: Types.Profile
 	PlayerData.markState(run.player)
 end
 
+-- Every boss leaves a chest: usually coins, sometimes (CHEST_PART_CHANCE) an attachment whose rarity
+-- is rolled on the reel, which Part Luck tilts toward rarer parts.
+local function openChest(run: Run, _enemy: Enemy, profile: Types.Profile)
+	if random:NextNumber() < Balance.CHEST_PART_CHANCE then
+		local luck = Upgrades.value("PartLuck", profile.upgrades.PartLuck or 0)
+		local rarity = Balance.reelRarity(random:NextNumber(), luck)
+		local pool = Attachments.ofRarity(rarity)
+		if #pool > 0 then
+			local def = pool[random:NextInteger(1, #pool)]
+			profile.attachments[def.id] = (profile.attachments[def.id] or 0) + 1
+			PlayerData.markState(run.player)
+			chestRemote:FireClient(run.player, { kind = "part", partId = def.id, rarity = rarity })
+			return
+		end
+	end
+	local coins = Balance.enemyCoins(run.stage)
+		* Balance.CHEST_COIN_KILLS
+		* Upgrades.value("CoinBoost", profile.upgrades.CoinBoost or 0)
+		* Balance.towerBonus(profile.towerBest)
+	PlayerData.addCoins(run.player, coins)
+	chestRemote:FireClient(run.player, { kind = "coins", coins = coins })
+end
+
 local function killEnemy(run: Run, enemy: Enemy)
 	if not enemy.alive then
 		return
@@ -410,6 +435,7 @@ local function killEnemy(run: Run, enemy: Enemy)
 	dropOres(run, enemy)
 	if enemy.isBoss and profile then
 		awardBossMaterials(run, enemy, profile)
+		openChest(run, enemy, profile)
 	end
 	if enemy.def.behavior == "Splitter" and not enemy.isMini then
 		for side = -1, 1, 2 do
@@ -879,6 +905,7 @@ function Arena:Start()
 	runRemote = Net.event("Run")
 	attackRemote = Net.event("EnemyAttack")
 	rewardRemote = Net.event("Reward")
+	chestRemote = Net.event("ChestOpened")
 	notifyRemote = Net.event("Notify")
 
 	Net.event("EnterArena").OnServerEvent:Connect(function(player, stage: unknown)

@@ -38,7 +38,7 @@ local function equippedGun(player: Player): (Guns.GunDef?, Types.GunItem?)
 		return nil, nil
 	end
 	local item = PlayerData.equippedGun(profile)
-	return Guns.get(item.id), item
+	return Guns.get(item.id), GunStats.effective(item)
 end
 
 -- The player must be holding the gun the profile says is equipped.
