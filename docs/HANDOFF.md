@@ -36,6 +36,8 @@ The person set this order. Names, drop rates, and growth numbers are proposals t
 | 6 | Infinite Tower at 1B Power | Not started |
 | 7 | Attachments and boss chests | Not started |
 | 8 | Upgrade caps ×3–×4 | Not started |
+| 9 | Blender armor and an equipment hotbar | Not started |
+| 10 | Blender forge, and remove the sell and equip stations | Not started |
 
 What each item should let a player do:
 
@@ -69,6 +71,16 @@ What each item should let a player do:
 8. **Upgrade caps.** 4× the cap for Ore Bag, Training Boost, Toughness, and Coin Boost; 3× for
    Forge Luck, Swift Boots, and Ore Magnet. Tune prices above the old caps so the new levels can be
    reached.
+   9. **Blender armor and an equipment hotbar** (added by the person mid-run). Remake the armor
+   pieces as Blender models, and stop welding armor onto the avatar. Instead, add a hotbar showing
+   the equipped weapon, armor, and pet as pixel-art icons. The person's references were a sheet
+   of pixel-art gun sprites and a sleek dark rounded hotbar with numbered slots and a glowing
+   selected slot. The icons can be rendered from Blender (orthographic, low resolution, nearest
+   filter) and uploaded as image assets.
+10. **Blender forge** (added by the person mid-run). Rebuild the forge as a Blender model, like
+   the reference: a cozy medieval smithy with a timber frame, a stone base, a thatched or
+   shingled roof, a glowing hearth, an anvil out front, and a hanging sign. Remove the lobby's
+   Sell station and Equip station, which aren't useful now. Selling stays in the Backpack.
 
 ## How the work runs
 
