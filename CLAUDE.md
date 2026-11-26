@@ -106,3 +106,7 @@ the staging experience**, and publishing a GitHub release publishes them to prod
   truth for the world.
 - Each place's `src/ServerScriptService/Tests/Packages/default.project.json` mounts
   `test_packages/roblox_packages` at `Tests.Packages`. Keep it in place.
+
+## Notes
+
+Project notes, decisions and plans live in `docs/` (an Obsidian vault). Use [[wikilinks]] when linking notes.
