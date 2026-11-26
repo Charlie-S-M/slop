@@ -22,7 +22,7 @@ Wheel.PRIZES = {
 	{ key = "LuckPotion", label = "Luck Potion", glyph = "🧪", weight = 14 },
 	{ key = "LuckyForge", label = "Lucky Forge", glyph = "🔨", weight = 10 },
 	{ key = "Power", label = "Power", glyph = "⚡", weight = 17 },
-	{ key = "CoinPotion", label = "2 Coin Potions", glyph = "🪙", weight = 10 },
+	{ key = "CoinPotion", label = "2 Coin Potions", glyph = "💰", weight = 10 },
 	{ key = "PowerPotion", label = "2 Power Potions", glyph = "💪", weight = 5 },
 	{ key = "Eggs", label = "3 Eggs", glyph = "🥚", weight = 3 },
 	{ key = "Exclusive", label = "Jackpot Blaster", glyph = "🎰", weight = 0.5 },

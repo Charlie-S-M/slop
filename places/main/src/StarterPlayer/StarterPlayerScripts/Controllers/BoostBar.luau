@@ -47,7 +47,7 @@ const POTIONS: { [string]: { glyph: string, title: string, detail: string, color
 		color = Color3.fromRGB(240, 85, 70),
 	},
 	Coins = {
-		glyph = "🪙",
+		glyph = "💰",
 		title = "Coin Potion",
 		detail = "2× coins",
 		color = Color3.fromRGB(255, 196, 60),

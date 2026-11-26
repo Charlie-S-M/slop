@@ -152,22 +152,22 @@ local function productCard(def: Products.ProductDef, order: number, parent: Fram
 		FontFace = Kit.FONT_BODY,
 		Gradient = false,
 		Stroke = 0,
-		Size = if wide then UDim2.fromScale(0.23, 0.65) else UDim2.fromScale(0.8, 0.38),
+		Size = if wide then UDim2.fromScale(0.23, 0.65) else UDim2.fromScale(0.8, 0.32),
 		Position = if wide then UDim2.fromScale(0.015, 0.14) else UDim2.fromScale(0.1, 0.025),
 		Parent = card,
 	})
 	local title = Kit.text({
 		Text = def.name,
 		Size = if wide then UDim2.fromScale(0.5, 0.28) else UDim2.fromScale(0.94, 0.16),
-		Position = if wide then UDim2.fromScale(0.26, 0.08) else UDim2.fromScale(0.03, 0.42),
+		Position = if wide then UDim2.fromScale(0.26, 0.08) else UDim2.fromScale(0.03, 0.36),
 		TextXAlignment = if wide then Enum.TextXAlignment.Left else Enum.TextXAlignment.Center,
 		Stroke = 3,
 		Parent = card,
 	})
 	local description = Kit.text({
 		Text = def.description,
-		Size = if wide then UDim2.fromScale(0.5, 0.22) else UDim2.fromScale(0.94, 0.14),
-		Position = if wide then UDim2.fromScale(0.26, 0.4) else UDim2.fromScale(0.03, 0.56),
+		Size = if wide then UDim2.fromScale(0.5, 0.22) else UDim2.fromScale(0.94, 0.13),
+		Position = if wide then UDim2.fromScale(0.26, 0.4) else UDim2.fromScale(0.03, 0.515),
 		TextXAlignment = if wide then Enum.TextXAlignment.Left else Enum.TextXAlignment.Center,
 		TextColor3 = Color3.fromRGB(245, 240, 255),
 		Stroke = 1.5,
@@ -186,8 +186,8 @@ local function productCard(def: Products.ProductDef, order: number, parent: Fram
 	then
 		note = Kit.text({
 			Text = "",
-			Size = if wide then UDim2.fromScale(0.5, 0.18) else UDim2.fromScale(0.94, 0.1),
-			Position = if wide then UDim2.fromScale(0.26, 0.66) else UDim2.fromScale(0.03, 0.7),
+			Size = if wide then UDim2.fromScale(0.5, 0.18) else UDim2.fromScale(0.94, 0.11),
+			Position = if wide then UDim2.fromScale(0.26, 0.66) else UDim2.fromScale(0.03, 0.655),
 			TextXAlignment = if wide then Enum.TextXAlignment.Left else Enum.TextXAlignment.Center,
 			TextColor3 = Color3.fromRGB(255, 230, 120),
 			Stroke = 2,

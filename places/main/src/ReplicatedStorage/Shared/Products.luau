@@ -132,7 +132,7 @@ const PRODUCTS: { ProductDef } = {
 		"Passes",
 		"2× Coins",
 		"Double coins from monsters and chests.",
-		"\u{1FA99}",
+		"\u{1F4B0}",
 		GREEN,
 		249
 	),
@@ -225,10 +225,10 @@ const PRODUCTS: { ProductDef } = {
 	item("Power3", "product", "Power", "Power Chest", "A chest of Power.", "\u{26A1}", RED, 239),
 	item("Power4", "product", "Power", "Power Vault", "A vault of Power.", "\u{26A1}", RED, 639),
 	-- Coin packs, scaled to your best stage.
-	item("Coins1", "product", "Coins", "Coin Pouch", "Instant coins.", "\u{1FA99}", GREEN, 29),
-	item("Coins2", "product", "Coins", "Coin Stack", "Lots of coins.", "\u{1FA99}", GREEN, 79),
-	item("Coins3", "product", "Coins", "Coin Bag", "A bag of coins.", "\u{1FA99}", GREEN, 239),
-	item("Coins4", "product", "Coins", "Coin Vault", "A vault of coins.", "\u{1FA99}", GREEN, 639),
+	item("Coins1", "product", "Coins", "Coin Pouch", "Instant coins.", "\u{1F4B0}", GREEN, 29),
+	item("Coins2", "product", "Coins", "Coin Stack", "Lots of coins.", "\u{1F4B0}", GREEN, 79),
+	item("Coins3", "product", "Coins", "Coin Bag", "A bag of coins.", "\u{1F4B0}", GREEN, 239),
+	item("Coins4", "product", "Coins", "Coin Vault", "A vault of coins.", "\u{1F4B0}", GREEN, 639),
 	-- Free hatches from your best unlocked egg.
 	item(
 		"Eggs3",
@@ -415,7 +415,7 @@ Products.SECTIONS = {
 	{ key = "ServerLuck", label = "Server Luck", glyph = "\u{1F340}", color = GOLD },
 	{ key = "Passes", label = "Passes", glyph = "\u{1F39F}", color = BLUE },
 	{ key = "Power", label = "Power", glyph = "\u{26A1}", color = rgb(245, 120, 50) },
-	{ key = "Coins", label = "Coins", glyph = "\u{1FA99}", color = GREEN },
+	{ key = "Coins", label = "Coins", glyph = "\u{1F4B0}", color = GREEN },
 	{ key = "Eggs", label = "Eggs", glyph = "\u{1F95A}", color = PINK },
 	{ key = "Potions", label = "Potions", glyph = "\u{1F9EA}", color = PURPLE },
 }
