@@ -64,9 +64,11 @@ The person's list, with their answers to the open questions. Branch: `feat/hotba
 | Training dummy label sized in studs; wall torches centered on their wall; pet click freeze | Done, b60b0f2 |
 | Leaderboard tabs: Power (server), Robux Spent, Playtime, Forged (all-time ordered stores) | Done, 031fc8c |
 | Settings: auto auto mode, auto skip wave, SFX and music volume, codes (music button moved here) | Done, 031fc8c |
-| Quests like the reference (Daily, Challenge, swap, New Quests for Robux, rank, daily chest), with a 3D voxel knight instead of "Sarge" | Next |
-| Shop station near the forge (walk to it, cash and $ effects that fade), shop menu like the reference: Featured + limited guns, Passes, currency and boosts (power, coins, eggs, Server Luck, Lucky Forge), Potions (new timed-boost inventory) | To do |
-| Lucky Wheel station: a free spin a day, paid spins (1/3/10), 0.5% exclusive gun | To do |
+| Quests like the reference (Daily, Challenge, swap, New Quests for Robux, rank, daily chest), with a 3D voxel knight instead of "Sarge" | Done, 33761c5 |
+| Shop station near the forge (walk to it, cash and $ effects that fade), shop menu like the reference: Featured + limited guns, Passes, currency and boosts (power, coins, eggs, Server Luck, Lucky Forge), Potions (new timed-boost inventory) | Done, 2111d56 |
+| Lucky Wheel station: a free spin a day, paid spins (1/3/10), 0.5% exclusive gun | Done, f24009a |
+| Enemies spawn at least 40 studs from the player | Done, 626bc3f |
+| Stages up to 250, one new rarity per 50 stages past 80, balanced damage, a cutscene for each new rarity (added while the person was away) | Next |
 | Create the real developer products and game passes ("create them now") | Blocked on an Open Cloud key |
 
 Codes: `release`, `update_0`, `pewpew`, `forgefire`, `thankyou`; `dev_everything` is the testing kit
