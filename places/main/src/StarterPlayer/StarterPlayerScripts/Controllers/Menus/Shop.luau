@@ -21,51 +21,9 @@ const Kit = require("../UI/Kit")
 const Purchases = require("../UI/Purchases")
 const Menus = require("../Menus")
 
-const ICONS: { [string]: string } = {
-	VIP = "rbxassetid://75082206768069",
-	ForgeSkip = "rbxassetid://107491437957675",
-	AutoPerfectForge = "rbxassetid://74931791150498",
-	DoubleCoins = "rbxassetid://129240356882843",
-	SpeedBoost = "rbxassetid://91049851600984",
-	ExtraLuck = "rbxassetid://120939241537738",
-	SuperLuck = "rbxassetid://119635048464725",
-	AutoCollect = "rbxassetid://132765503741360",
-	KeepOres = "rbxassetid://106213568812684",
-	DoubleBossLoot = "rbxassetid://129417140537604",
-	AutoRebirth = "rbxassetid://118310728453503",
-	PetStorage30 = "rbxassetid://113040957963786",
-	PetStorage60 = "rbxassetid://88418366752160",
-	StarterPack = "rbxassetid://130827733906026",
-	NovaReaper = "rbxassetid://105357955856386",
-	DragonheartCannon = "rbxassetid://96414104804423",
-	ServerLuck = "rbxassetid://108415526433412",
-	LuckyForge = "rbxassetid://89847424186181",
-	LuckyForge5 = "rbxassetid://124708381194995",
-	Power1 = "rbxassetid://104178201178184",
-	Power2 = "rbxassetid://73920252810601",
-	Power3 = "rbxassetid://99878191341049",
-	Power4 = "rbxassetid://109647640405739",
-	Coins1 = "rbxassetid://81644951723199",
-	Coins2 = "rbxassetid://95194189899062",
-	Coins3 = "rbxassetid://126987145787059",
-	Coins4 = "rbxassetid://119771257444042",
-	Eggs3 = "rbxassetid://139736038356674",
-	Eggs10 = "rbxassetid://121938876395306",
-	LuckPotion = "rbxassetid://73938991494833",
-	LuckPotion5 = "rbxassetid://80370437321900",
-	PowerPotion = "rbxassetid://95040728632073",
-	PowerPotion5 = "rbxassetid://106589231895557",
-	CoinPotion = "rbxassetid://123756723964763",
-	CoinPotion5 = "rbxassetid://130471800289012",
-	WheelSpin1 = "rbxassetid://83412254646547",
-	WheelSpin3 = "rbxassetid://98740610747289",
-	WheelSpin10 = "rbxassetid://99080256700893",
-	NewQuests = "rbxassetid://139381574117591",
-}
-
 local ShopMenu = {}
 
-const PAGE_COLOR = Color3.fromRGB(52, 32, 78)
+const PAGE_COLOR = Color3.fromRGB(65, 35, 94)
 const STALL = Vector3.new(88, 0, 48)
 const RAIN_RANGE = 34
 const RAIN_GLYPHS = { "$", "R$", "$" }
@@ -139,8 +97,8 @@ end
 local function sectionFrame(order: number, label: string, glyph: string, columns: number): Frame
 	Kit.text({
 		Name = `{label}Header`,
-		Text = `{glyph}   {string.upper(label)}`,
-		TextXAlignment = Enum.TextXAlignment.Left,
+		Text = `{glyph}   {label}   {glyph}`,
+		TextXAlignment = Enum.TextXAlignment.Center,
 		Size = UDim2.new(0.94, 0, 0, 36),
 		LayoutOrder = order * 2 - 1,
 		Stroke = 3,
@@ -188,19 +146,20 @@ local function productCard(def: Products.ProductDef, order: number, parent: Fram
 		card
 	Kit.gradient(def.color:Lerp(Color3.new(1, 1, 1), 0.25), def.color:Lerp(Color3.new(), 0.3)).Parent =
 		card
-	Kit.new("ImageLabel", {
+	Kit.text({
 		Name = "ProductIcon",
-		BackgroundTransparency = 1,
-		Image = ICONS[def.key],
-		ScaleType = Enum.ScaleType.Fit,
-		Size = if wide then UDim2.fromScale(0.23, 0.84) else UDim2.fromScale(0.72, 0.36),
-		Position = if wide then UDim2.fromScale(0.015, 0.08) else UDim2.fromScale(0.14, 0.2),
+		Text = def.glyph,
+		FontFace = Kit.FONT_BODY,
+		Gradient = false,
+		Stroke = 0,
+		Size = if wide then UDim2.fromScale(0.23, 0.65) else UDim2.fromScale(0.8, 0.38),
+		Position = if wide then UDim2.fromScale(0.015, 0.14) else UDim2.fromScale(0.1, 0.025),
 		Parent = card,
 	})
 	local title = Kit.text({
 		Text = def.name,
 		Size = if wide then UDim2.fromScale(0.5, 0.28) else UDim2.fromScale(0.94, 0.16),
-		Position = if wide then UDim2.fromScale(0.26, 0.08) else UDim2.fromScale(0.03, 0.035),
+		Position = if wide then UDim2.fromScale(0.26, 0.08) else UDim2.fromScale(0.03, 0.42),
 		TextXAlignment = if wide then Enum.TextXAlignment.Left else Enum.TextXAlignment.Center,
 		Stroke = 3,
 		Parent = card,
@@ -302,9 +261,26 @@ end
 
 local function build(content: Frame)
 	built = true
+	local panel = content.Parent :: Frame
+	local root = panel.Parent :: Frame
+	local strip = panel:FindFirstChild("Strip") :: Frame
+	strip.Size = UDim2.new(1, -8, 0, 40)
+	strip.Position = UDim2.fromOffset(4, 4)
+	strip.BackgroundColor3 = Color3.new(1, 1, 1)
+	Kit.gradient(Color3.fromRGB(255, 209, 58), Color3.fromRGB(238, 124, 24)).Parent = strip
+	local heading = root:FindFirstChild("Title") :: TextLabel
+	heading.Text = "\u{1F6CD} Shop"
+	heading.Position = UDim2.fromOffset(14, 4)
+	heading.Size = UDim2.new(0.6, 0, 0, 38)
+	heading.Rotation = 0
+	local close = root:FindFirstChild("Close") :: TextButton
+	close.Size = UDim2.fromOffset(42, 40)
+	close.Position = UDim2.new(1, -4, 0, 4)
+	content.Position = UDim2.fromOffset(8, 49)
+	content.Size = UDim2.new(1, -16, 1, -57)
 	local tabs = Kit.new("Frame", {
 		BackgroundTransparency = 1,
-		Size = UDim2.fromScale(0.2, 1),
+		Size = UDim2.fromScale(0.16, 1),
 		Parent = content,
 	})
 	Kit.new("UIListLayout", {
@@ -315,15 +291,15 @@ local function build(content: Frame)
 	page = Kit.new("ScrollingFrame", {
 		BackgroundColor3 = PAGE_COLOR,
 		BorderSizePixel = 0,
-		Size = UDim2.fromScale(0.78, 1),
-		Position = UDim2.fromScale(0.22, 0),
+		Size = UDim2.fromScale(0.825, 1),
+		Position = UDim2.fromScale(0.175, 0),
 		CanvasSize = UDim2.new(),
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		ScrollBarThickness = 8,
 		Parent = content,
 	}) :: ScrollingFrame
-	Kit.corner(18).Parent = page
-	Kit.stroke(3, Color3.fromRGB(120, 170, 255), Enum.ApplyStrokeMode.Border).Parent = page
+	Kit.corner(9).Parent = page
+	Kit.stroke(3, Color3.fromRGB(115, 72, 143), Enum.ApplyStrokeMode.Border).Parent = page
 	Kit.new("UIListLayout", {
 		Padding = UDim.new(0, 8),
 		SortOrder = Enum.SortOrder.LayoutOrder,
@@ -335,6 +311,13 @@ local function build(content: Frame)
 		PaddingBottom = UDim.new(0, 16),
 		Parent = page,
 	})
+	local picks = sectionFrame(0, "Top Picks", "\u{1F6CD}", 3)
+	for index, key in { "Coins1", "Power1", "Coins2" } do
+		local def = Products.get(key)
+		if def then
+			productCard(def, index, picks, false)
+		end
+	end
 	for order, section in Products.SECTIONS do
 		local wide = section.key == "Featured"
 		local grid = sectionFrame(order, section.label, section.glyph, if wide then 1 else 3)
@@ -351,7 +334,7 @@ local function build(content: Frame)
 			color = section.color,
 			dark = section.color:Lerp(Color3.new(), 0.35),
 			size = UDim2.fromScale(1, 0.125),
-			text = `{section.glyph} {section.label}`,
+			text = `{section.glyph}\n{section.label}`,
 			parent = tabs,
 			onClick = function()
 				-- Scroll so the section's header sits at the top of the page.
