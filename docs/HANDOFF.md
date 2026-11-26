@@ -200,3 +200,15 @@ Paste this into a new session to pick up where the last one stopped:
 - `Cutscene/TierCutscene.luau` plays for tiers 9–11 before the impact frame.
 - Not done yet: new eggs and pets for the new regions, evolutions for the new tier guns, and
   Blender models for the new guns (they use the brick builder in the 3D forge scene).
+
+## Batch of 2026-11-26
+
+Done: forge skip camera, armor pour alignment, readable wheel, floor-pinned station signs, Auto
+Rebirth setting, prestige rework (warning window with a 3 s countdown, full restart, rewards
+doubling each time), ores a third as common, packs sized to the player's play time
+(`PackValues.luau`), boost icons at the top right (`BoostBar.luau`), and three focus guns per
+Legendary+ tier (`Guns.FOCUS`, `Balance.focusTuning` / `focusTraining`).
+
+Open: one request arrived empty ("for forging,"); ask the person what it was. The boost icons'
+hover could only be checked with a real mouse (simulated mouse moves don't reach Studio); taps pin
+the tooltip either way. New tier 9-11 guns have no evolutions yet.
