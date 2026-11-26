@@ -41,6 +41,8 @@ export type EventName =
 	| "ClaimDaily"
 	| "EnterArena"
 	| "LeaveArena"
+	| "SaveSetting"
+	| "RedeemCode"
 	-- Server to client
 	| "State"
 	| "Stats"
@@ -91,6 +93,8 @@ const EVENTS: { EventName } = {
 	"ClaimDaily",
 	"EnterArena",
 	"LeaveArena",
+	"SaveSetting",
+	"RedeemCode",
 	"State",
 	"Stats",
 	"Notify",

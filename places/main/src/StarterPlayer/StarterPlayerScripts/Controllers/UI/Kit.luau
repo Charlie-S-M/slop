@@ -155,11 +155,26 @@ function Kit.text(props: Props): TextLabel
 	return label
 end
 
+-- Every effect sound plays through these groups, so the Settings menu's sliders set their volume.
+local function soundGroup(name: string): SoundGroup
+	local existing = SoundService:FindFirstChild(name)
+	if existing and existing:IsA("SoundGroup") then
+		return existing
+	end
+	local group = Instance.new("SoundGroup")
+	group.Name = name
+	group.Parent = SoundService
+	return group
+end
+Kit.SfxGroup = soundGroup("Sfx")
+Kit.MusicGroup = soundGroup("MusicGroup")
+
 local function playSound(id: string, volume: number?, speed: number?)
 	local sound = Instance.new("Sound")
 	sound.SoundId = id
 	sound.Volume = volume or 0.5
 	sound.PlaybackSpeed = (speed or 1) * (0.95 + math.random() * 0.1)
+	sound.SoundGroup = Kit.SfxGroup
 	sound.Parent = SoundService
 	sound:Play()
 	sound.Ended:Once(function()

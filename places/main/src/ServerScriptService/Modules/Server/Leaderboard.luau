@@ -1,19 +1,57 @@
 --!strict
 
--- Fills the lobby leaderboard with the strongest players in the server, and keeps the player list
--- stats (Power and Stage) current. The board's "Entries" attribute carries the same list as JSON
--- for the Leaderboard menu, which opens from the board's prompt.
+--[[
+	The lobby leaderboard, opened from the board's prompt. It has four boards:
+	- Power: the strongest players in this server, by rebirths and then Power.
+	- Robux Spent, Playtime, and Forged: all-time boards kept in ordered data stores. When those
+	  can't be reached (a Studio place without API access), they show the players in the server.
 
+	The board part's "Entries" attribute carries every board as JSON for the Leaderboard menu.
+	This module also keeps the player list stats (Power and Stage) current.
+]]
+
+const DataStoreService = game:GetService("DataStoreService")
 const HttpService = game:GetService("HttpService")
 const Players = game:GetService("Players")
 
 const Format = require("@game/ReplicatedStorage/Shared/Format")
+const Types = require("@game/ReplicatedStorage/Shared/Types")
 const PlayerData = require("./PlayerData")
 
 const REFRESH_SECONDS = 4
-const ROWS = 8
+const GLOBAL_SECONDS = 60
+const ROWS = 10
+
+type Entry = { name: string, value: number, rebirths: number? }
+type GlobalBoard = { key: string, read: (Types.Profile) -> number }
+
+-- The all-time boards, by the name the menu shows them under.
+const GLOBAL_BOARDS: { [string]: GlobalBoard } = {
+	Robux = {
+		key = "RobuxSpent",
+		read = function(profile)
+			return profile.robuxSpent
+		end,
+	},
+	Playtime = {
+		key = "Playtime",
+		read = function(profile)
+			return profile.playSeconds
+		end,
+	},
+	Forged = {
+		key = "Forged",
+		read = function(profile)
+			return profile.forges
+		end,
+	},
+}
 
 local Leaderboard = {}
+
+-- The last all-time lists read from the stores; nil until a read works.
+local globalLists: { [string]: { Entry } } = {}
+local names: { [number]: string } = {}
 
 local function board(): Instance?
 	local lobby = workspace:FindFirstChild("Lobby")
@@ -49,48 +87,103 @@ local function ensureStats(player: Player): (StringValue, IntValue)
 	return power :: StringValue, stage :: IntValue
 end
 
+local function nameOf(userId: number): string
+	local cached = names[userId]
+	if cached then
+		return cached
+	end
+	local ok, name = pcall(function()
+		return Players:GetNameFromUserIdAsync(userId)
+	end)
+	local found = if ok and typeof(name) == "string" then name else `Player {userId}`
+	names[userId] = found
+	return found
+end
+
+-- Writes everyone's all-time stats, then reads back each board's top rows.
+local function syncGlobal()
+	for label, spec in GLOBAL_BOARDS do
+		local ok, store = pcall(function()
+			return DataStoreService:GetOrderedDataStore(`Board_{spec.key}`)
+		end)
+		if not ok or not store then
+			continue
+		end
+		for _, player in Players:GetPlayers() do
+			local profile = PlayerData.get(player)
+			if profile then
+				names[player.UserId] = player.DisplayName
+				local value = math.floor(spec.read(profile))
+				pcall(function()
+					store:SetAsync(tostring(player.UserId), value)
+				end)
+			end
+		end
+		local read, pages = pcall(function()
+			return store:GetSortedAsync(false, ROWS)
+		end)
+		if read and pages then
+			local list: { Entry } = {}
+			for _, row in (pages :: DataStorePages):GetCurrentPage() do
+				local userId = tonumber(row.key)
+				if userId and typeof(row.value) == "number" then
+					table.insert(list, { name = nameOf(userId), value = row.value })
+				end
+			end
+			globalLists[label] = list
+		end
+	end
+end
+
+-- A board from the players in this server, for when the all-time list can't be read.
+local function serverList(read: (Types.Profile) -> number): { Entry }
+	local list: { Entry } = {}
+	for _, player in Players:GetPlayers() do
+		local profile = PlayerData.get(player)
+		if profile then
+			table.insert(list, { name = player.DisplayName, value = read(profile) })
+		end
+	end
+	table.sort(list, function(a, b)
+		return a.value > b.value
+	end)
+	while #list > ROWS do
+		table.remove(list)
+	end
+	return list
+end
+
 local function refresh()
-	local entries = {}
+	local power: { Entry } = {}
 	for _, player in Players:GetPlayers() do
 		local profile = PlayerData.get(player)
 		if profile then
 			table.insert(
-				entries,
-				{ name = player.DisplayName, power = profile.power, rebirths = profile.rebirths }
+				power,
+				{ name = player.DisplayName, value = profile.power, rebirths = profile.rebirths }
 			)
 			-- The player list shows display copies; the profile stays the source of truth.
-			local power, stage = ensureStats(player)
-			power.Value = Format.abbreviate(profile.power)
+			local shownPower, stage = ensureStats(player)
+			shownPower.Value = Format.abbreviate(profile.power)
 			stage.Value = profile.bestStage
 		end
 	end
-	table.sort(entries, function(a, b)
+	table.sort(power, function(a, b)
 		if a.rebirths ~= b.rebirths then
-			return a.rebirths > b.rebirths
+			return (a.rebirths or 0) > (b.rebirths or 0)
 		end
-		return a.power > b.power
+		return a.value > b.value
 	end)
+	while #power > ROWS do
+		table.remove(power)
+	end
+	local boards: { [string]: { Entry } } = { Power = power }
+	for label, spec in GLOBAL_BOARDS do
+		boards[label] = globalLists[label] or serverList(spec.read)
+	end
 	local found = board()
-	if not found then
-		return
-	end
-	local top = {}
-	for row = 1, math.min(ROWS, #entries) do
-		top[row] = entries[row]
-	end
-	found:SetAttribute("Entries", HttpService:JSONEncode(top))
-	local gui = found:FindFirstChild("Gui")
-	if not gui then
-		return
-	end
-	for row = 1, ROWS do
-		local label = gui:FindFirstChild(`Row{row}`) :: TextLabel?
-		if label then
-			local entry = entries[row]
-			label.Text = if entry
-				then `{row}. {entry.name}   ⚡ {Format.abbreviate(entry.power)}   🔄 {entry.rebirths}`
-				else ""
-		end
+	if found then
+		found:SetAttribute("Entries", HttpService:JSONEncode(boards))
 	end
 end
 
@@ -117,6 +210,12 @@ function Leaderboard:Start()
 		while true do
 			refresh()
 			task.wait(REFRESH_SECONDS)
+		end
+	end)
+	task.spawn(function()
+		while true do
+			task.wait(GLOBAL_SECONDS)
+			syncGlobal()
 		end
 	end)
 end

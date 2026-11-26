@@ -73,6 +73,7 @@ const MENU_BUTTONS: { MenuButton } = {
 	{ name = "Rebirth", glyph = "🔄", color = Color3.fromRGB(170, 90, 255), key = nil },
 	{ name = "Daily", glyph = "🎁", color = Color3.fromRGB(70, 200, 90), key = nil },
 	{ name = "Gauntlet", glyph = "⚔️", color = Color3.fromRGB(235, 70, 90), key = nil },
+	{ name = "Settings", glyph = "⚙️", color = Color3.fromRGB(150, 160, 185), key = nil },
 }
 
 local function pill(parent: Instance, glyph: string, color: Color3, order: number): TextLabel
@@ -606,8 +607,35 @@ local function refreshStats()
 	badges.Daily.Visible = os.time() - profile.lastDaily >= Balance.DAILY_COOLDOWN
 end
 
+local wasActive = false
+local skippedDeadline = 0
+
+-- The Settings menu's automation: auto mode follows entering and leaving a stage, and the wait
+-- between stages or waves is skipped as soon as it starts.
+local function automate(run: any, active: boolean)
+	local profile = ClientState.profile
+	local options = profile and profile.settings
+	if not options then
+		wasActive = active
+		return
+	end
+	if options.autoMode and active ~= wasActive then
+		setAuto(active)
+	end
+	wasActive = active
+	-- Run updates repeat the same countdown, so each countdown is skipped once.
+	if options.autoSkip and active and typeof(run.nextIn) == "number" then
+		local deadline = os.clock() + run.nextIn
+		if math.abs(deadline - skippedDeadline) > 1 then
+			skippedDeadline = deadline
+			Net.event("SkipWait"):FireServer()
+		end
+	end
+end
+
 local function refreshRun(run: any)
 	local active = run.active == true
+	automate(run, active)
 	runPanel.Visible = active
 	backButton.Visible = active
 	if active and typeof(run.nextIn) == "number" then

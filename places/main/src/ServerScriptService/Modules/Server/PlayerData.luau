@@ -107,6 +107,9 @@ local function defaultProfile(): Profile
 		towerBest = 0,
 		prestige = 0,
 		attachments = {},
+		robuxSpent = 0,
+		settings = { autoMode = false, autoSkip = false, sfx = 1, music = 1 },
+		redeemedCodes = {},
 	}
 end
 
@@ -123,6 +126,13 @@ local function reconcile(saved: any): Profile
 	end
 	if #profile.guns == 0 then
 		profile.guns = defaultProfile().guns
+	end
+	-- Settings saved before a setting existed get its default, so every key is always present.
+	const defaults = defaultProfile().settings :: any
+	for key, value in defaults do
+		if typeof((profile.settings :: any)[key]) ~= typeof(value) then
+			(profile.settings :: any)[key] = value
+		end
 	end
 	-- Equipped pets must be owned, unique uids; anything else would hold a slot no card can free.
 	local ownedPets: { [string]: boolean } = {}

@@ -50,6 +50,16 @@ export type PendingForge = {
 }
 
 -- The saved player profile. Every field is plain JSON so the DataStore can hold it.
+-- What the Settings menu saves. Volumes run from 0 to 1.
+export type Settings = {
+	-- Turn auto mode on when a stage starts, and off on the way back to the lobby.
+	autoMode: boolean,
+	-- Skip the wait between stages and waves as soon as it starts.
+	autoSkip: boolean,
+	sfx: number,
+	music: number,
+}
+
 export type Profile = {
 	version: number,
 	power: number,
@@ -90,6 +100,11 @@ export type Profile = {
 	prestige: number,
 	-- Attachments not on a gun, by part id.
 	attachments: { [string]: number },
+	-- Robux the player has spent in this game, for the leaderboard.
+	robuxSpent: number,
+	-- The Settings menu's choices, and the codes this player has redeemed.
+	settings: Settings,
+	redeemedCodes: { [string]: boolean },
 }
 
 -- The stats that change many times a second, sent on their own so the full state stays quiet.
