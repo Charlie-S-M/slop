@@ -19,6 +19,8 @@ const VOLUME = 0.22
 
 local Music = {}
 
+local ambience: SoundGroup
+local forging = false
 local sound: Sound
 local trackIndex = 1
 local inGauntlet = false
@@ -40,7 +42,7 @@ local function setTowerMusic(active: boolean)
 		while rhythmVersion == version do
 			-- The beat is part of the music, so it follows the music volume.
 			local volume = Kit.MusicGroup.Volume
-			if volume > 0.01 then
+			if volume > 0.01 and not forging then
 				if beat % 4 == 0 then
 					Kit.sound(Kit.Sounds.Boom, 0.12 * volume, 1.8)
 				elseif beat % 4 == 2 then
@@ -73,11 +75,24 @@ local function nextLobbyTrack()
 	task.spawn(play, LOBBY_TRACKS[trackIndex])
 end
 
+function Music.forgeMix(active: boolean)
+	forging = active
+	TweenService:Create(
+		ambience,
+		TweenInfo.new(if active then 0.55 else 0.85),
+		{ Volume = if active then 0 else 1 }
+	):Play()
+end
+
 function Music:Init()
+	ambience = Instance.new("SoundGroup")
+	ambience.Name = "Ambience"
+	ambience.Volume = 1
+	ambience.Parent = Kit.MusicGroup
 	sound = Instance.new("Sound")
 	sound.Name = "Music"
 	sound.Volume = 0
-	sound.SoundGroup = Kit.MusicGroup
+	sound.SoundGroup = ambience
 	sound.Parent = SoundService
 end
 

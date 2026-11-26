@@ -25,6 +25,7 @@ const Upgrades = require("@game/ReplicatedStorage/Shared/Upgrades")
 const ArenaBuilder = require("./World/ArenaBuilder")
 const EnemyBuilder = require("./World/EnemyBuilder")
 const Boosts = require("./Boosts")
+const Loadout = require("./Loadout")
 const PlayerData = require("./PlayerData")
 const QuestKeeper = require("./QuestKeeper")
 const RateLimit = require("./RateLimit")
@@ -606,6 +607,7 @@ local function onStageCleared(run: Run)
 		end
 	elseif profile and run.stage > profile.bestStage then
 		profile.bestStage = run.stage
+		Loadout.refreshStats(run.player)
 		PlayerData.markState(run.player)
 	end
 	if run.tower then

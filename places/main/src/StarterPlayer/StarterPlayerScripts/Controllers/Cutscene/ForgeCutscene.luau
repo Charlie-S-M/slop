@@ -317,15 +317,52 @@ local function hammerStrike(
 	return accuracy
 end
 
-local function quench(set: ForgeSet.Set, gun: Model, paints: { Paint })
+-- Measure the visible geometry in the builder's canonical coordinates. Imported grips
+-- may sit away from the mesh; the longest horizontal dimension runs down the bore.
+local function bucketPose(model: Model, isGun: boolean): CFrame
+	model:PivotTo(CFrame.identity)
+	local low = Vector3.one * math.huge
+	local high = -low
+	for _, part in model:GetDescendants() do
+		if not part:IsA("BasePart") or part.Transparency >= 1 then
+			continue
+		end
+		for x = -1, 1, 2 do
+			for y = -1, 1, 2 do
+				for z = -1, 1, 2 do
+					local point = part.CFrame * (part.Size * Vector3.new(x, y, z) * 0.5)
+					low = low:Min(point)
+					high = high:Max(point)
+				end
+			end
+		end
+	end
+	local size = high - low
+	local rotation = CFrame.identity
+	local width = size.X
+	local depth = size.Z
+	local height = size.Y
+	if isGun then
+		if size.Z >= size.X then
+			rotation = CFrame.Angles(math.pi / 2, 0, 0)
+			depth, height = size.Y, size.Z
+		else
+			rotation = CFrame.Angles(0, 0, math.pi / 2)
+			width, height = size.Y, size.X
+		end
+	end
+	local fit = math.min(1, 5.8 / math.sqrt(width * width + depth * depth), 9 / height)
+	local original = model:GetScale()
+	model:ScaleTo(original * fit)
+	return rotation * CFrame.new(-(low + high) * 0.5 * fit)
+end
+
+local function quench(set: ForgeSet.Set, gun: Model, paints: { Paint }, isGun: boolean)
 	local barrel = set.barrelTop.Position
+	local pose = bucketPose(gun, isGun)
 	shot(barrel + Vector3.new(-8, 6, 10), barrel + Vector3.new(0, 2, 0))
-	local above = CFrame.new(barrel + Vector3.new(0, 7, 0))
-	gun:PivotTo(above * CFrame.Angles(0, math.rad(90), 0))
 	tweenNumber(0, 1, 0.45, function(t)
-		gun:PivotTo(
-			CFrame.new(barrel + Vector3.new(0, 7 - 10 * t, 0)) * CFrame.Angles(0, math.rad(90), 0)
-		)
+		gun:PivotTo(CFrame.new(barrel + Vector3.new(0, 7 - 8.4 * t, 0)) * pose)
 	end)
 	task.wait(0.45)
 	set.steam:Emit(40)
@@ -426,6 +463,12 @@ function ForgeCutscene.reveal(result: Result, label: string?)
 	local function alive(): boolean
 		return ForgeCutscene.playing and stage == revealStage
 	end
+	if tier == 8 or tier == 10 then
+		TierCutscene.eclipse(tier, screen, alive)
+		if not alive() then
+			return
+		end
+	end
 	local gun = buildGun(id, true) :: Model
 	gun.Parent = revealStage
 	local glow = Instance.new("Part")
@@ -440,6 +483,7 @@ function ForgeCutscene.reveal(result: Result, label: string?)
 	light.Brightness = if tier >= 4 then 6 else 3
 	light.Parent = glow
 	shot(barrel + Vector3.new(0, 7, 15), barrel + Vector3.new(0, 6, 0), 45)
+	local pose = bucketPose(gun, gunDef ~= nil)
 	local started = os.clock()
 	local spin = RunService.RenderStepped:Connect(function()
 		local t = os.clock() - started
@@ -447,6 +491,7 @@ function ForgeCutscene.reveal(result: Result, label: string?)
 		gun:PivotTo(
 			CFrame.new(barrel + Vector3.new(0, -2 + 8 * rise + math.sin(t * 2) * 0.3, 0))
 				* CFrame.Angles(0, math.pi / 2 + t * 0.8, 0)
+				* pose
 		)
 	end)
 	revealSpin = spin
@@ -459,7 +504,7 @@ function ForgeCutscene.reveal(result: Result, label: string?)
 		-- Let the gun rise into view, then hit the impact frame before the card.
 		task.wait(0.5)
 		-- Past Eternal, the tier's own cutscene plays first.
-		if alive() and tier >= 9 then
+		if alive() and tier >= 9 and tier ~= 10 then
 			TierCutscene.play(tier, screen, alive)
 		end
 		if alive() then
@@ -665,7 +710,9 @@ function ForgeCutscene.play(start: Start, strike: (number) -> number): { number 
 	stage = Instance.new("Model");
 	(stage :: Model).Name = "ForgeStage"
 	(stage :: Model).Parent = workspace
-	local rarityColor = Rarity.get(start.rarity).color
+	local rarityColor = if start.rarity == 8 or start.rarity == 10
+		then Color3.fromRGB(108, 255, 149)
+		else Rarity.get(start.rarity).color
 
 	skipButton = Kit.button({
 		name = "Skip",
@@ -714,7 +761,7 @@ function ForgeCutscene.play(start: Start, strike: (number) -> number): { number 
 		return accuracies
 	end
 	task.wait(0.3)
-	quench(set, gun, paints)
+	quench(set, gun, paints, Guns.get(start.gunId) ~= nil)
 	gun:Destroy()
 	return accuracies
 end
