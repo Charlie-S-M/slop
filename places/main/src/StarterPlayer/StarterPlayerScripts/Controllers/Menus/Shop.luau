@@ -18,65 +18,51 @@ const PackValues = require("@game/ReplicatedStorage/Shared/PackValues")
 const Products = require("@game/ReplicatedStorage/Shared/Products")
 const ClientState = require("../ClientState")
 const Kit = require("../UI/Kit")
-const PixelSprites = require("@game/ReplicatedStorage/Shared/PixelSprites")
-const Preview = require("../UI/Preview")
 const Purchases = require("../UI/Purchases")
 const Menus = require("../Menus")
 
-const CASH = {
-	".............k..........",
-	"............gtk.........",
-	"...........gtttgk.......",
-	".........kgttttttgk.....",
-	"........ktgtttttghhg....",
-	"......kwwgtttgttgttg....",
-	".....dwwwwttttttttgg....",
-	"....kggawwwhtttttgggk...",
-	"...dhgtgawwwttgabbdkk...",
-	".kwhgtttgawwwdabbdddk...",
-	"khtgtttttgawababbbbdd...",
-	"kttgtttttgdadaabbabbbk..",
-	"kgtgttttgtgddbabbbbdbd..",
-	"kggtgggttgkdddbbbdbbbd..",
-	".ggghhhtggkddddbbbbbbd..",
-	".gggthggdabdddddbbabbk..",
-	".kgggggkbbbabdddddbbddk.",
-	".kggggkbbbbabdddddddddbk",
-	"..kkkkkaabbbbdabbbabbbbd",
-	"...kkkkdbbabbdaabbbbbbbd",
-	"....kk.ddbbbdddbabbawbdk",
-	"........dbbdddddddbbbdd.",
-	"..........kkk..ddddbbd..",
-	".................kkk....",
-}
-const CASH_COLORS: { [string]: Color3 } = {
-	k = Color3.fromRGB(42, 15, 41),
-	d = Color3.fromRGB(143, 62, 15),
-	b = Color3.fromRGB(255, 175, 12),
-	a = Color3.fromRGB(255, 224, 65),
-	w = Color3.fromRGB(255, 248, 192),
-	g = Color3.fromRGB(12, 111, 86),
-	t = Color3.fromRGB(16, 204, 165),
-	h = Color3.fromRGB(105, 254, 209),
+const ICONS: { [string]: string } = {
+	VIP = "rbxassetid://75082206768069",
+	ForgeSkip = "rbxassetid://107491437957675",
+	AutoPerfectForge = "rbxassetid://74931791150498",
+	DoubleCoins = "rbxassetid://129240356882843",
+	SpeedBoost = "rbxassetid://91049851600984",
+	ExtraLuck = "rbxassetid://120939241537738",
+	SuperLuck = "rbxassetid://119635048464725",
+	AutoCollect = "rbxassetid://132765503741360",
+	KeepOres = "rbxassetid://106213568812684",
+	DoubleBossLoot = "rbxassetid://129417140537604",
+	AutoRebirth = "rbxassetid://118310728453503",
+	PetStorage30 = "rbxassetid://113040957963786",
+	PetStorage60 = "rbxassetid://88418366752160",
+	StarterPack = "rbxassetid://130827733906026",
+	NovaReaper = "rbxassetid://105357955856386",
+	DragonheartCannon = "rbxassetid://96414104804423",
+	ServerLuck = "rbxassetid://108415526433412",
+	LuckyForge = "rbxassetid://89847424186181",
+	LuckyForge5 = "rbxassetid://124708381194995",
+	Power1 = "rbxassetid://104178201178184",
+	Power2 = "rbxassetid://73920252810601",
+	Power3 = "rbxassetid://99878191341049",
+	Power4 = "rbxassetid://109647640405739",
+	Coins1 = "rbxassetid://81644951723199",
+	Coins2 = "rbxassetid://95194189899062",
+	Coins3 = "rbxassetid://126987145787059",
+	Coins4 = "rbxassetid://119771257444042",
+	Eggs3 = "rbxassetid://139736038356674",
+	Eggs10 = "rbxassetid://121938876395306",
+	LuckPotion = "rbxassetid://73938991494833",
+	LuckPotion5 = "rbxassetid://80370437321900",
+	PowerPotion = "rbxassetid://95040728632073",
+	PowerPotion5 = "rbxassetid://106589231895557",
+	CoinPotion = "rbxassetid://123756723964763",
+	CoinPotion5 = "rbxassetid://130471800289012",
+	WheelSpin1 = "rbxassetid://83412254646547",
+	WheelSpin3 = "rbxassetid://98740610747289",
+	WheelSpin10 = "rbxassetid://99080256700893",
+	NewQuests = "rbxassetid://139381574117591",
 }
 
-local function cashArt(parent: Frame)
-	local art = Preview.viewport({
-		Size = UDim2.fromScale(0.23, 0.84),
-		Position = UDim2.fromScale(0.015, 0.08),
-		Parent = parent,
-	})
-	Kit.aspect(1).Parent = art
-	for _, run in PixelSprites.runs(CASH) do
-		Kit.new("Frame", {
-			Size = UDim2.new(run.width / 24, 0, 1 / 24, 1),
-			Position = UDim2.fromScale(run.x / 24, run.y / 24),
-			BackgroundColor3 = CASH_COLORS[run.key],
-			BorderSizePixel = 0,
-			Parent = art,
-		})
-	end
-end
 local ShopMenu = {}
 
 const PAGE_COLOR = Color3.fromRGB(52, 32, 78)
@@ -202,26 +188,15 @@ local function productCard(def: Products.ProductDef, order: number, parent: Fram
 		card
 	Kit.gradient(def.color:Lerp(Color3.new(1, 1, 1), 0.25), def.color:Lerp(Color3.new(), 0.3)).Parent =
 		card
-	if def.key == "StarterPack" then
-		cashArt(card)
-	elseif wide then
-		local icon = Preview.viewport({
-			Size = UDim2.fromScale(0.24, 0.88),
-			Position = UDim2.fromScale(0.01, 0.06),
-			Parent = card,
-		})
-		Preview.gun(icon, def.key)
-	else
-		Kit.text({
-			Text = def.glyph,
-			Size = UDim2.fromScale(0.72, 0.36),
-			Position = UDim2.fromScale(0.14, 0.2),
-			Stroke = 0,
-			Gradient = false,
-			FontFace = Kit.FONT_BODY,
-			Parent = card,
-		})
-	end
+	Kit.new("ImageLabel", {
+		Name = "ProductIcon",
+		BackgroundTransparency = 1,
+		Image = ICONS[def.key],
+		ScaleType = Enum.ScaleType.Fit,
+		Size = if wide then UDim2.fromScale(0.23, 0.84) else UDim2.fromScale(0.72, 0.36),
+		Position = if wide then UDim2.fromScale(0.015, 0.08) else UDim2.fromScale(0.14, 0.2),
+		Parent = card,
+	})
 	local title = Kit.text({
 		Text = def.name,
 		Size = if wide then UDim2.fromScale(0.5, 0.28) else UDim2.fromScale(0.94, 0.16),
