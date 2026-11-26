@@ -136,6 +136,26 @@ const PRODUCTS: { ProductDef } = {
 		GREEN,
 		249
 	),
+	item(
+		"ForgeSkip",
+		"pass",
+		"Passes",
+		"Forge Skip",
+		"Skip the melt and pour scenes.",
+		"▶",
+		BLUE,
+		99
+	),
+	item(
+		"AutoPerfectForge",
+		"pass",
+		"Passes",
+		"Auto Perfect Forge",
+		"Automatically land perfect forge strikes.",
+		"★",
+		GOLD,
+		299
+	),
 	item("SpeedBoost", "pass", "Passes", "Speed Boost", "Walk 50% faster.", "👟", BLUE, 149),
 	item("ExtraLuck", "pass", "Passes", "Extra Luck", "+25% forge luck.", "🍀", GREEN, 99),
 	item("SuperLuck", "pass", "Passes", "Super Luck", "+60% forge luck.", "🌟", TEAL, 349),
@@ -393,6 +413,8 @@ Products.POTIONS = { LuckPotion = "Luck", PowerPotion = "Power", CoinPotion = "C
 Products.POTION_SECONDS = 15 * 60
 -- The limited guns' sale ends at this time (UTC), shown as a countdown.
 Products.LIMITED_ENDS = 1797465600
+
+Products.PENDING_PASSES = { ForgeSkip = true, AutoPerfectForge = true } :: { [string]: boolean }
 
 local byKey: { [string]: ProductDef } = {}
 for _, def in PRODUCTS do

@@ -135,9 +135,11 @@ end
 
 local function sendRunInfo(run: Run, cleared: boolean?)
 	local alive = 0
+	local elite = false
 	for _, enemy in run.enemies do
 		if enemy.alive then
 			alive += 1
+			elite = elite or enemy.isBoss or enemy.isMini
 		end
 	end
 	runRemote:FireClient(run.player, {
@@ -145,6 +147,7 @@ local function sendRunInfo(run: Run, cleared: boolean?)
 		stage = run.stage,
 		biome = run.biome.index,
 		enemiesLeft = alive,
+		elite = elite and cleared ~= true,
 		enemiesTotal = run.totalEnemies,
 		isBoss = Balance.isBossStage(run.stage),
 		suggested = Balance.suggestedDamage(run.stage),

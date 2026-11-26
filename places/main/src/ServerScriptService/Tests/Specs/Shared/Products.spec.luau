@@ -15,7 +15,9 @@ describe("products", function()
 		local seen: { [number]: string } = {}
 		for _, def in Products.List do
 			local id = def.ids[UNIVERSE]
-			expect(typeof(id)).toBe("number")
+			if not Products.PENDING_PASSES[def.key] then
+				expect(typeof(id)).toBe("number")
+			end
 			if id then
 				expect(seen[id]).toBe(nil)
 				seen[id] = def.key

@@ -28,6 +28,9 @@ export type ForgeOdds = {
 }
 
 local Balance = {}
+Balance.DAY_SECONDS = 300
+Balance.NIGHT_SECONDS = 360
+Balance.LUCK_BONUS = { ExtraLuck = 0.25, SuperLuck = 0.6, Potion = 0.3, Server = 0.5, Charge = 1 }
 
 -- The flat damage every shot starts with, so a new player can clear stage 1 before training.
 -- Past Eternal each tier hits 3x harder: a real upgrade that still leaves stages to grind.

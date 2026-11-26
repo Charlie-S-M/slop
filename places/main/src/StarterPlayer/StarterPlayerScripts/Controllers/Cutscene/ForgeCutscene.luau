@@ -714,20 +714,21 @@ function ForgeCutscene.play(start: Start, strike: (number) -> number): { number 
 		then Color3.fromRGB(108, 255, 149)
 		else Rarity.get(start.rarity).color
 
-	skipButton = Kit.button({
-		name = "Skip",
-		color = Kit.Colors.Grey,
-		dark = Kit.Colors.GreyDark,
-		size = UDim2.fromScale(0.1, 0.07),
-		position = UDim2.fromScale(0.97, 0.94),
-		anchor = Vector2.new(1, 1),
-		text = "Skip ⏩",
-		parent = screen,
-		onClick = function()
-			ForgeCutscene.skipRequested = true
-		end,
-	})
-
+	if player:GetAttribute("Pass_ForgeSkip") == true then
+		skipButton = Kit.button({
+			name = "Skip",
+			color = Kit.Colors.Grey,
+			dark = Kit.Colors.GreyDark,
+			size = UDim2.fromScale(0.1, 0.07),
+			position = UDim2.fromScale(0.97, 0.94),
+			anchor = Vector2.new(1, 1),
+			text = "Skip ⏩",
+			parent = screen,
+			onClick = function()
+				ForgeCutscene.skipRequested = true
+			end,
+		})
+	end
 	melt(set, start, rarityColor)
 	if not aborted then
 		pour(set, gun, paints)

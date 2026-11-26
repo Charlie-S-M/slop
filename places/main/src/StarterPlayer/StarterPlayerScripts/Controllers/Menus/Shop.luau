@@ -116,6 +116,9 @@ local function refresh()
 		then
 			Kit.setButtonText(card.button, "Sold out")
 			Kit.setButtonColor(card.button, Kit.Colors.Grey, Kit.Colors.GreyDark)
+		elseif Products.PENDING_PASSES[def.key] and not Products.id(def) then
+			Kit.setButtonColor(card.button, Kit.Colors.Grey, Kit.Colors.GreyDark)
+			Kit.setButtonText(card.button, "Coming soon")
 		else
 			Kit.setButtonColor(card.button, Kit.Colors.Green, Kit.Colors.GreenDark)
 			Kit.setButtonText(card.button, `R$ {Format.commas(def.price)}`)

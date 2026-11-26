@@ -24,6 +24,9 @@ local forging = false
 local sound: Sound
 local trackIndex = 1
 local inGauntlet = false
+local eliteActive = false
+local eliteStage = 0
+local musicVersion = 0
 local towerMusic = false
 local rhythmVersion = 0
 
@@ -57,17 +60,19 @@ local function setTowerMusic(active: boolean)
 	end)
 end
 
-local function play(id: string)
-	if sound.SoundId == id and sound.IsPlaying then
-		return
-	end
+local function play(id: string, volume: number?)
+	musicVersion += 1
+	local version = musicVersion
 	local fadeOut = TweenService:Create(sound, TweenInfo.new(0.6), { Volume = 0 })
 	fadeOut:Play()
 	fadeOut.Completed:Wait()
+	if version ~= musicVersion then
+		return
+	end
 	sound.SoundId = id
 	sound.TimePosition = 0
 	sound:Play()
-	TweenService:Create(sound, TweenInfo.new(1.2), { Volume = VOLUME }):Play()
+	TweenService:Create(sound, TweenInfo.new(1.2), { Volume = volume or VOLUME }):Play()
 end
 
 local function nextLobbyTrack()
@@ -96,6 +101,19 @@ function Music:Init()
 	sound.Parent = SoundService
 end
 
+local function celebrate()
+	local cue = Instance.new("Sound")
+	cue.SoundId = Kit.Sounds.Ding
+	cue.SoundGroup = Kit.MusicGroup
+	cue.Volume = 0.22
+	cue.Parent = SoundService
+	cue:Play()
+	TweenService:Create(cue, TweenInfo.new(1.6), { Volume = 0 }):Play()
+	task.delay(1.7, function()
+		cue:Destroy()
+	end)
+end
+
 function Music:Start()
 	sound.Ended:Connect(function()
 		if inGauntlet then
@@ -108,9 +126,22 @@ function Music:Start()
 		local active = run.active == true
 		setTowerMusic(active and run.tower == true)
 		sound.PlaybackSpeed = if towerMusic then 1.24 else 1
-		if active ~= inGauntlet then
+		local elite = active and run.elite == true
+		if eliteActive and active and (not elite or run.stage ~= eliteStage) then
+			celebrate()
+		end
+		if elite ~= eliteActive or active ~= inGauntlet then
 			inGauntlet = active
-			task.spawn(play, if active then GAUNTLET_TRACK else LOBBY_TRACKS[trackIndex])
+			eliteActive = elite
+			eliteStage = run.stage
+			task.spawn(
+				play,
+				if elite
+					then "rbxassetid://1843529634"
+					elseif active then GAUNTLET_TRACK
+					else LOBBY_TRACKS[trackIndex],
+				if elite then 0.58 else VOLUME
+			)
 		end
 	end)
 	task.spawn(play, LOBBY_TRACKS[trackIndex])

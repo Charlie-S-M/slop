@@ -81,7 +81,7 @@ const KINDS: { [GunKind]: KindStats } = {
 		recoil = 0.8,
 	},
 	Shotgun = {
-		fireRate = 1.3,
+		fireRate = 1.404,
 		damageScale = 0.55,
 		pellets = 7,
 		magazine = 6,
@@ -105,7 +105,7 @@ const KINDS: { [GunKind]: KindStats } = {
 		recoil = 1,
 	},
 	Sniper = {
-		fireRate = 0.8,
+		fireRate = 0.864,
 		damageScale = 6.5,
 		pellets = 1,
 		magazine = 5,
@@ -129,7 +129,7 @@ const KINDS: { [GunKind]: KindStats } = {
 		recoil = 0.35,
 	},
 	Launcher = {
-		fireRate = 0.75,
+		fireRate = 0.81,
 		damageScale = 5.5,
 		pellets = 1,
 		magazine = 4,

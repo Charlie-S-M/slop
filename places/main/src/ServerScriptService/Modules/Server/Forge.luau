@@ -152,7 +152,10 @@ function Forge.finishPending(player: Player, accuracies: { any }?): Outcome?
 	if not profile then
 		return nil
 	end
-	local outcome = finishProfile(profile, accuracies or {})
+	local scores = if Boosts.hasPass(player, "AutoPerfectForge")
+		then table.create(Balance.STRIKES, 1)
+		else accuracies or {}
+	local outcome = finishProfile(profile, scores)
 	if not outcome then
 		return nil
 	end
