@@ -663,6 +663,16 @@ const LIMITED: { GunDef } = {
 		rgb(255, 120, 40),
 		rgb(255, 210, 90)
 	),
+	-- The Lucky Wheel's exclusive.
+	gun(
+		"JackpotBlaster",
+		"Jackpot Blaster",
+		8,
+		"Minigun",
+		rgb(250, 200, 40),
+		rgb(255, 80, 160),
+		rgb(255, 255, 255)
+	),
 }
 for _, def in LIMITED do
 	BY_ID[def.id] = def

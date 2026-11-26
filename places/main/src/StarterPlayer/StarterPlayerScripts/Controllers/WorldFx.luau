@@ -51,6 +51,7 @@ const STATION_MENUS = {
 	Portal = { menu = "Gauntlet", text = "Enter the Gauntlet" },
 	Leaderboard = { menu = "Leaderboard", text = "Leaderboard" },
 	Shop = { menu = "Shop", text = "Open Shop" },
+	Wheel = { menu = "Wheel", text = "Spin the Wheel" },
 }
 
 ------------------------------------------------------------------------------------------------

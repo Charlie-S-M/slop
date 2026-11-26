@@ -282,6 +282,37 @@ const PRODUCTS: { ProductDef } = {
 		GOLD,
 		76
 	),
+	-- Sold from the Lucky Wheel.
+	item(
+		"WheelSpin1",
+		"product",
+		nil,
+		"1 Wheel Spin",
+		"One spin of the Lucky Wheel.",
+		"🎡",
+		GOLD,
+		24
+	),
+	item(
+		"WheelSpin3",
+		"product",
+		nil,
+		"3 Wheel Spins",
+		"Three Lucky Wheel spins.",
+		"🎡",
+		GOLD,
+		105
+	),
+	item(
+		"WheelSpin10",
+		"product",
+		nil,
+		"10 Wheel Spins",
+		"Ten Lucky Wheel spins.",
+		"🎡",
+		GOLD,
+		319
+	),
 	-- Sold from the Quests menu.
 	item(
 		"NewQuests",

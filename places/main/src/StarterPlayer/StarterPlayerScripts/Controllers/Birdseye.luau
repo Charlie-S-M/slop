@@ -16,6 +16,14 @@ local stations = {
 	Rebirth = "Gem",
 	Portal = "PortalIcon",
 	Leaderboard = "Trophy",
+	Wheel = "WheelIcon",
+}
+-- Station icon colors (body, accent); the rest use Default.
+const STATION_COLORS: { [string]: { Color3 } } = {
+	Default = { Color3.fromRGB(100, 116, 162), Color3.fromRGB(255, 177, 70) },
+	Leaderboard = { Color3.fromRGB(255, 196, 60), Color3.fromRGB(255, 240, 170) },
+	Wheel = { Color3.fromRGB(225, 50, 60), Color3.fromRGB(250, 235, 205) },
+	Shop = { Color3.fromRGB(230, 60, 60), Color3.fromRGB(255, 205, 60) },
 }
 local painted: { [Instance]: boolean } = setmetatable({}, { __mode = "k" }) :: any
 type Target = { anchor: BasePart, key: string, size: number }
@@ -443,15 +451,8 @@ local function inspect(item: Instance)
 		end
 		local station = item:GetAttribute("Station")
 		if typeof(station) == "string" then
-			local trophy = station == "Leaderboard"
-			icon(
-				item,
-				item,
-				(stations :: any)[station] or "Shop",
-				if trophy then Color3.fromRGB(255, 196, 60) else Color3.fromRGB(100, 116, 162),
-				if trophy then Color3.fromRGB(255, 240, 170) else Color3.fromRGB(255, 177, 70),
-				13
-			)
+			local colors = STATION_COLORS[station] or STATION_COLORS.Default
+			icon(item, item, (stations :: any)[station] or "Shop", colors[1], colors[2], 13)
 		elseif
 			item.Name == "Crate"
 			and (item:FindFirstAncestor("Lobby") or item:FindFirstAncestor("Arenas"))

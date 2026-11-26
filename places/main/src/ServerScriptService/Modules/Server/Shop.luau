@@ -16,6 +16,7 @@ const Net = require("@game/ReplicatedStorage/Shared/Net")
 const Pets = require("@game/ReplicatedStorage/Shared/Pets")
 const Products = require("@game/ReplicatedStorage/Shared/Products")
 const Types = require("@game/ReplicatedStorage/Shared/Types")
+const Wheel = require("@game/ReplicatedStorage/Shared/Wheel")
 const Boosts = require("./Boosts")
 const Economy = require("./Economy")
 const PlayerData = require("./PlayerData")
@@ -46,6 +47,7 @@ const POTION_PACKS: { [string]: PotionPack } = {
 const random = Random.new()
 local notifyRemote: RemoteEvent
 local hatchedRemote: RemoteEvent
+local wheelRemote: RemoteEvent
 
 local function notify(player: Player, text: string)
 	notifyRemote:FireClient(player, text, Color3.fromRGB(140, 255, 120))
@@ -140,6 +142,9 @@ local function grant(player: Player, profile: Types.Profile, key: string)
 		local potion, count = pack.potion, pack.count
 		profile.potions[potion] = (profile.potions[potion] or 0) + count
 		notify(player, `+{count} potion{if count == 1 then "" else "s"}! Use them from the shop.`)
+	elseif Wheel.PACKS[key] then
+		profile.wheelSpins += Wheel.PACKS[key]
+		notify(player, `+{Wheel.PACKS[key]} Lucky Wheel spins! 🎡`)
 	elseif key == "NewQuests" then
 		QuestKeeper.reroll(player)
 		notify(player, "Fresh daily quests! 📜")
@@ -218,16 +223,72 @@ local function onUsePotion(player: Player, key: unknown)
 	notify(player, `{boost} boost on for 15 more minutes! 🧪`)
 end
 
+-- Gives a Lucky Wheel prize. Amounts scale with progress like the shop's packs.
+local function grantPrize(player: Player, profile: Types.Profile, key: string)
+	if key == "Coins" then
+		PlayerData.addCoins(player, Balance.enemyCoins(math.max(profile.bestStage, 1)) * 600)
+	elseif key == "LuckPotion" then
+		profile.potions.LuckPotion = (profile.potions.LuckPotion or 0) + 1
+	elseif key == "LuckyForge" then
+		profile.luckyForges += 1
+	elseif key == "Power" then
+		PlayerData.addPower(player, Balance.rebirthCost(profile.rebirths) * 0.15)
+	elseif key == "CoinPotion" then
+		profile.potions.CoinPotion = (profile.potions.CoinPotion or 0) + 2
+	elseif key == "PowerPotion" then
+		profile.potions.PowerPotion = (profile.potions.PowerPotion or 0) + 2
+	elseif key == "Eggs" then
+		hatch(player, profile, 3)
+	elseif key == "Exclusive" then
+		grantGun(player, profile, Wheel.EXCLUSIVE_GUN)
+	end
+end
+
+-- One spin: the daily free spin if it's ready, otherwise a paid spin. The client animates the
+-- wheel onto the prize index it's sent back.
+local function onSpin(player: Player)
+	if not RateLimit.allow(player, "SpinWheel", 0.5, 1) then
+		return
+	end
+	local profile = PlayerData.get(player)
+	if not profile then
+		return
+	end
+	local now = os.time()
+	if Wheel.freeReady(profile.lastWheel, now) then
+		profile.lastWheel = now
+	elseif profile.wheelSpins > 0 then
+		profile.wheelSpins -= 1
+	else
+		notifyRemote:FireClient(
+			player,
+			"No spins left! Get more below.",
+			Color3.fromRGB(255, 200, 60)
+		)
+		return
+	end
+	local index = Wheel.pick(random:NextNumber(), profile.wheelPity)
+	local prize = Wheel.PRIZES[index]
+	profile.wheelPity = if index == Wheel.EXCLUSIVE then 0 else profile.wheelPity + 1
+	grantPrize(player, profile, prize.key)
+	PlayerData.markState(player)
+	wheelRemote:FireClient(player, index)
+end
+
 function Shop:Init()
 	notifyRemote = Net.event("Notify")
 	hatchedRemote = Net.event("Hatched")
+	wheelRemote = Net.event("WheelResult")
 end
 
 function Shop:Start()
-	-- A lobby baked before the shop existed gets its stall now.
+	-- A lobby baked before the shop and wheel existed gets them now.
 	local lobby = workspace:FindFirstChild("Lobby")
 	if lobby and not lobby:FindFirstChild("Shop") then
 		LobbyBuilder.shopStall(lobby)
+	end
+	if lobby and not lobby:FindFirstChild("Wheel") then
+		LobbyBuilder.wheelStand(lobby)
 	end
 	MarketplaceService.ProcessReceipt = processReceipt
 	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passId, bought)
@@ -244,6 +305,7 @@ function Shop:Start()
 		notify(player, `{def.name} unlocked! Thank you! 💖`)
 	end)
 	Net.event("UsePotion").OnServerEvent:Connect(onUsePotion)
+	Net.event("SpinWheel").OnServerEvent:Connect(onSpin)
 	PlayerData.Loaded:Connect(checkPasses)
 	for _, player in PlayerData.players() do
 		task.spawn(checkPasses, player)

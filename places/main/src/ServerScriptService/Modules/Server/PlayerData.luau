@@ -123,6 +123,9 @@ local function defaultProfile(): Profile
 		luckyForges = 0,
 		starterPackBought = false,
 		receipts = {},
+		lastWheel = 0,
+		wheelSpins = 0,
+		wheelPity = 0,
 	}
 end
 

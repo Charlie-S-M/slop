@@ -861,6 +861,54 @@ local function skyAndGround(parent: Instance)
 end
 
 --[[
+	The Lucky Wheel's stand, west of the spawn where the Upgrades stall used to be: a big upright
+	wheel of red and cream slices on a gold rim. The base is the "Wheel" station. Public so the
+	server can add it to a lobby baked before the wheel existed.
+]]
+function LobbyBuilder.wheelStand(parent: Instance): Model
+	local model = Instance.new("Model")
+	model.Name = "Wheel"
+	local origin = Vector3.new(-88, 0, -14)
+	local base = Bricks.part(model, {
+		name = "Base",
+		size = Vector3.new(16, 1.2, 16),
+		cframe = CFrame.new(origin + Vector3.new(0, 0.6, 0)),
+		color = rgb(220, 50, 60),
+	})
+	base:SetAttribute("Station", "Wheel")
+	Bricks.part(model, {
+		name = "Stand",
+		size = Vector3.new(2, 12, 2),
+		cframe = CFrame.new(origin + Vector3.new(0, 7, 2)),
+		color = GOLD,
+	})
+	-- The wheel faces the plaza (+X), its slices alternating red and cream.
+	for slice = 0, 7 do
+		local angle = slice * math.pi / 4
+		Bricks.part(model, {
+			name = "Slice",
+			size = Vector3.new(0.6, 6.2, 2.4),
+			cframe = CFrame.new(origin + Vector3.new(1, 14, 0))
+				* CFrame.Angles(angle, 0, 0)
+				* CFrame.new(0, 3.1, 0),
+			color = if slice % 2 == 0 then rgb(225, 50, 60) else rgb(250, 235, 205),
+			collide = false,
+		})
+	end
+	Bricks.part(model, {
+		name = "Hub",
+		size = Vector3.new(1, 2.4, 2.4),
+		cframe = CFrame.new(origin + Vector3.new(1.4, 14, 0)),
+		color = GOLD,
+		material = Enum.Material.Neon,
+		collide = false,
+	})
+	Props.label(base, "🎡 Lucky Wheel", rgb(255, 215, 80), Vector3.new(0, 24, 0), 14)
+	model.Parent = parent
+	return model
+end
+
+--[[
 	The Robux shop's stall, just south of the forge: a gold-and-red striped awning over a counter
 	piled with coins. The counter is the "Shop" station. Public so the server can add it to a lobby
 	baked before the shop existed.
@@ -928,6 +976,7 @@ function LobbyBuilder.build(parent: Instance): Model
 	forgeWorkshop(lobby)
 	rebirthAltar(lobby)
 	LobbyBuilder.shopStall(lobby)
+	LobbyBuilder.wheelStand(lobby)
 	portal(lobby)
 	carpetAndDecor(lobby)
 	skyAndGround(lobby)

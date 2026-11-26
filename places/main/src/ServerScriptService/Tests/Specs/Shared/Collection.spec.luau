@@ -4,10 +4,10 @@ local Balance = require("@game/ReplicatedStorage/Shared/Balance")
 local Guns = require("@game/ReplicatedStorage/Shared/Guns")
 local Ores = require("@game/ReplicatedStorage/Shared/Ores")
 Jest.it(
-	"indexes twenty-two forgeable guns, seven evolutions, and the shop's limited guns",
+	"indexes twenty-two forgeable guns, seven evolutions, and the limited shop and wheel guns",
 	function()
 		Jest.expect(#Guns.List).toBe(29 + #Guns.LIMITED)
-		Jest.expect(#Guns.LIMITED).toBe(2)
+		Jest.expect(#Guns.LIMITED).toBe(3)
 		for tier, expected in { 5, 4, 3, 3, 3, 1, 1, 2 } do
 			Jest.expect(#Guns.pool(tier)).toBe(expected)
 		end

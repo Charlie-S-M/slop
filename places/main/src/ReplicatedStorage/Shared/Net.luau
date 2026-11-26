@@ -47,6 +47,7 @@ export type EventName =
 	| "QuestSwap"
 	| "QuestChest"
 	| "UsePotion"
+	| "SpinWheel"
 	-- Server to client
 	| "State"
 	| "Stats"
@@ -58,6 +59,7 @@ export type EventName =
 	| "Hatched"
 	| "ChestOpened"
 	| "Reward"
+	| "WheelResult"
 	| "EnemyAttack"
 
 -- High-volume effects that can drop a packet without harm.
@@ -103,6 +105,8 @@ const EVENTS: { EventName } = {
 	"QuestSwap",
 	"QuestChest",
 	"UsePotion",
+	"SpinWheel",
+	"WheelResult",
 	"State",
 	"Stats",
 	"Notify",

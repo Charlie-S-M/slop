@@ -139,6 +139,11 @@ export type Profile = {
 	starterPackBought: boolean,
 	-- The last purchase receipts granted, newest last, so a retried receipt never grants twice.
 	receipts: { string },
+	-- The Lucky Wheel: when the free spin was last used, paid spins left, and spins since the
+	-- last exclusive.
+	lastWheel: number,
+	wheelSpins: number,
+	wheelPity: number,
 }
 
 -- The stats that change many times a second, sent on their own so the full state stays quiet.
