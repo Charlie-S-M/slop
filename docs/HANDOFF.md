@@ -68,7 +68,7 @@ The person's list, with their answers to the open questions. Branch: `feat/hotba
 | Shop station near the forge (walk to it, cash and $ effects that fade), shop menu like the reference: Featured + limited guns, Passes, currency and boosts (power, coins, eggs, Server Luck, Lucky Forge), Potions (new timed-boost inventory) | Done, 2111d56 |
 | Lucky Wheel station: a free spin a day, paid spins (1/3/10), 0.5% exclusive gun | Done, f24009a |
 | Enemies spawn at least 40 studs from the player | Done, 626bc3f |
-| Stages up to 250, one new rarity per 50 stages past 80, balanced damage, a cutscene for each new rarity (added while the person was away) | Next |
+| Stages up to 250, one new rarity per 50 stages past 80, balanced damage, a cutscene for each new rarity (added while the person was away) | Done, 3f30f73 and the next commit |
 | Create the real developer products and game passes ("create them now") | Blocked on an Open Cloud key |
 
 Codes: `release`, `update_0`, `pewpew`, `forgefire`, `thankyou`; `dev_everything` is the testing kit
@@ -187,3 +187,16 @@ Paste this into a new session to pick up where the last one stopped:
 > superpowers:executing-plans on the plan it names, carry on from the next unfinished task, and
 > keep running through the remaining checklist items without stopping to ask. Commit as you go
 > (don't push), and update `docs/HANDOFF.md` after each task.
+
+## Stages 81–250 (2026-11-25)
+
+- Biomes 9–25 come from `generated(...)` in `Biomes.luau` (three colors and a roster each). Regions:
+  Celestial 9–13 (ores rarity 8), Cosmic 14–18 (9), Omega 19–23 (10), finale 24–25 (11).
+- Each biome's fifth ore is a Core; `Balance.TIER_KEYS` lists which Cores open which tier, and
+  `Balance.unlocksTier` applies the gate from Eternal up.
+- Past stage 80, `Balance.GROWTH_SHIFT_STAGE` switches health to 1.5x a stage, hits to 1.11x, and
+  coins to 1.28x. These are first guesses to playtest: if stages 81+ feel too easy or too hard,
+  tune the `after` numbers in `enemyHealth`, `enemyDamage`, and `enemyCoins`.
+- `Cutscene/TierCutscene.luau` plays for tiers 9–11 before the impact frame.
+- Not done yet: new eggs and pets for the new regions, evolutions for the new tier guns, and
+  Blender models for the new guns (they use the brick builder in the 3D forge scene).
