@@ -71,9 +71,10 @@ local function build()
 	)
 	dummy.PrimaryPart = body
 	local gui = Kit.new("BillboardGui", {
-		Size = UDim2.fromOffset(220, 70),
+		-- Sized in studs, so it shrinks with the world as the camera zooms out.
+		Size = UDim2.fromScale(15, 4.8),
 		StudsOffset = Vector3.new(0, 5.5, 0),
-		MaxDistance = 120,
+		MaxDistance = math.huge,
 		AlwaysOnTop = true,
 		Parent = body,
 	})

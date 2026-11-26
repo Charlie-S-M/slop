@@ -138,22 +138,49 @@ local function bar(
 	return back, fill, text
 end
 
+-- The loadout bar's look, shared by the side buttons: a dark glassy panel with a soft blue edge.
+const PANEL_COLOR = Color3.fromRGB(22, 26, 34)
+const PANEL_EDGE = Color3.fromRGB(70, 150, 220)
+const TILE_COLOR = Color3.fromRGB(34, 40, 52)
+const TILE_EDGE = Color3.fromRGB(70, 80, 100)
+const LABEL_COLOR = Color3.fromRGB(190, 205, 225)
+
 local function buildMenuGrid()
-	local grid = Kit.new("Frame", {
+	local panel = Kit.new("Frame", {
 		Name = "MenuGrid",
 		Size = UDim2.fromScale(0.13, 0.6),
 		Position = UDim2.fromScale(0.012, 0.49),
 		AnchorPoint = Vector2.new(0, 0.5),
-		BackgroundTransparency = 1,
+		BackgroundColor3 = PANEL_COLOR,
+		BackgroundTransparency = 0.12,
 		Parent = screen,
 	})
 	Kit.new(
 		"UISizeConstraint",
-		{ MaxSize = Vector2.new(210, 430), MinSize = Vector2.new(120, 230), Parent = grid }
+		{ MaxSize = Vector2.new(200, 470), MinSize = Vector2.new(118, 260), Parent = panel }
 	)
+	Kit.new("UICorner", { CornerRadius = UDim.new(0, 20), Parent = panel })
+	Kit.new("UIStroke", { Color = PANEL_EDGE, Thickness = 2, Transparency = 0.35, Parent = panel })
+	Kit.text({
+		Text = "MENU",
+		Size = UDim2.fromScale(0.6, 0.04),
+		Position = UDim2.fromScale(0.08, 0.012),
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = LABEL_COLOR,
+		Stroke = 0,
+		Gradient = false,
+		Parent = panel,
+	})
+	local grid = Kit.new("Frame", {
+		Name = "Buttons",
+		Size = UDim2.fromScale(0.88, 0.9),
+		Position = UDim2.fromScale(0.06, 0.07),
+		BackgroundTransparency = 1,
+		Parent = panel,
+	})
 	Kit.new("UIGridLayout", {
-		CellSize = UDim2.fromScale(0.47, 0.235),
-		CellPadding = UDim2.fromScale(0.04, 0.02),
+		CellSize = UDim2.fromScale(0.47, 0.18),
+		CellPadding = UDim2.fromScale(0.06, 0.025),
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Parent = grid,
 	})
@@ -164,40 +191,81 @@ local function buildMenuGrid()
 			LayoutOrder = index,
 			Parent = grid,
 		})
-		local button = Kit.button({
-			name = "Button",
-			color = info.color,
-			dark = info.color:Lerp(Color3.new(0, 0, 0), 0.35),
-			size = UDim2.fromScale(1, 1),
-			radius = 14,
-			parent = holder,
-			onClick = function()
-				Menus.toggle(info.name)
-			end,
+		local button = Kit.new("TextButton", {
+			Name = "Button",
+			Text = "",
+			AutoButtonColor = false,
+			Size = UDim2.fromScale(1, 1),
+			BackgroundColor3 = TILE_COLOR,
+			Parent = holder,
 		})
-		local face = button:FindFirstChild("Face") :: Frame
+		Kit.new("UICorner", { CornerRadius = UDim.new(0, 12), Parent = button })
+		local edge = Kit.new("UIStroke", {
+			Color = TILE_EDGE,
+			Thickness = 2,
+			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+			Parent = button,
+		})
+		local scale = Kit.new("UIScale", { Scale = 1, Parent = button })
+		-- The button's own color, as a slim strip along its bottom edge.
+		local strip = Kit.new("Frame", {
+			Name = "Accent",
+			Size = UDim2.fromScale(0.5, 0.05),
+			Position = UDim2.fromScale(0.5, 0.95),
+			AnchorPoint = Vector2.new(0.5, 1),
+			BackgroundColor3 = info.color,
+			BorderSizePixel = 0,
+			Parent = button,
+		})
+		Kit.cornerScale(0.5).Parent = strip
 		Kit.text({
 			Name = "Glyph",
 			Text = info.glyph,
-			Size = UDim2.fromScale(0.62, 0.55),
-			Position = UDim2.fromScale(0.5, 0.06),
+			Size = UDim2.fromScale(0.5, 0.46),
+			Position = UDim2.fromScale(0.5, 0.1),
 			AnchorPoint = Vector2.new(0.5, 0),
 			Stroke = 0,
 			Gradient = false,
 			FontFace = Kit.FONT_BODY,
-			ZIndex = 3,
-			Parent = face,
+			Parent = button,
 		})
 		Kit.text({
 			Name = "Name",
 			Text = info.name,
-			Size = UDim2.fromScale(1.04, 0.32),
-			Position = UDim2.fromScale(0.5, 0.97),
+			Size = UDim2.fromScale(0.92, 0.24),
+			Position = UDim2.fromScale(0.5, 0.86),
 			AnchorPoint = Vector2.new(0.5, 1),
-			Stroke = 2.5,
-			ZIndex = 4,
-			Parent = face,
+			TextColor3 = LABEL_COLOR,
+			Stroke = 1.5,
+			Gradient = false,
+			Parent = button,
 		})
+		if info.key then
+			Kit.text({
+				Name = "Key",
+				Text = info.key.Name,
+				Size = UDim2.fromScale(0.2, 0.18),
+				Position = UDim2.fromScale(0.94, 0.06),
+				AnchorPoint = Vector2.new(1, 0),
+				TextColor3 = Color3.fromRGB(120, 135, 160),
+				Stroke = 0,
+				Gradient = false,
+				Parent = button,
+			})
+		end
+		button.MouseEnter:Connect(function()
+			TweenService:Create(edge, Kit.FAST, { Color = info.color }):Play()
+			TweenService:Create(scale, Kit.FAST, { Scale = 1.05 }):Play()
+		end)
+		button.MouseLeave:Connect(function()
+			TweenService:Create(edge, Kit.FAST, { Color = TILE_EDGE }):Play()
+			TweenService:Create(scale, Kit.FAST, { Scale = 1 }):Play()
+		end)
+		button.Activated:Connect(function()
+			Kit.sound(Kit.Sounds.Click, 0.4)
+			Kit.pop(button)
+			Menus.toggle(info.name)
+		end)
 		local badge = Kit.new("Frame", {
 			Name = "Badge",
 			Size = UDim2.fromScale(0.3, 0.3),

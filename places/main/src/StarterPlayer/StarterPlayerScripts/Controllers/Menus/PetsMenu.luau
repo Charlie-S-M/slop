@@ -39,6 +39,8 @@ local equipButton: TextButton
 local lockButton: TextButton
 local releaseButton: TextButton
 local selectedUid: string? = nil
+-- The pet whose 3D preview is in the detail panel, so it's only rebuilt when that changes.
+local detailShown: string? = nil
 local selecting = false
 local marked: { [string]: boolean } = {}
 local releaseMany: TextButton
@@ -76,7 +78,10 @@ local function refreshDetail()
 		return
 	end
 	local rarity = Rarity.get(def.rarity)
-	Preview.pet(detailViewport, def.id, 0.8)
+	if detailShown ~= def.id then
+		detailShown = def.id
+		Preview.pet(detailViewport, def.id, 0.8)
+	end
 	detailName.Text = def.name
 	detailName.TextColor3 = rarity.color
 	local equipped = table.find(profile.equippedPets, pet.uid) ~= nil
@@ -137,8 +142,33 @@ local function refreshEggs()
 		else `Following you: {#profile.equippedPets}/{Balance.PET_SLOTS}  ·  Owned: {#profile.pets}/{Balance.MAX_PETS}`
 end
 
--- What the grid shows; it is only rebuilt when this changes.
+-- What the grid shows; it is only rebuilt when this changes. Selecting a pet isn't part of it:
+-- rebuilding means a fresh 3D preview for every pet, which froze the game on each click.
 local lastGrid = ""
+type Card = {
+	stroke: UIStroke,
+	color: Color3,
+	label: TextLabel?,
+	caption: string?,
+	bonus: string?,
+}
+local cardsByUid: { [string]: Card } = {}
+
+-- Outlines the selected (or marked) cards in white and the rest in their rarity color, and ticks
+-- the equipped ones, without rebuilding the grid.
+local function paintSelection()
+	local profile = ClientState.profile
+	for uid, card in cardsByUid do
+		local selected = if selecting then marked[uid] == true else uid == selectedUid
+		card.stroke.Thickness = if selected then 4 else 3
+		card.stroke.Color = if selected then Kit.Colors.White else card.color
+		local label = card.label
+		if label then
+			local equipped = profile ~= nil and table.find(profile.equippedPets, uid) ~= nil
+			label.Text = `{card.caption}{if equipped then "  ✓" else ""}\n{card.bonus}`
+		end
+	end
+end
 
 local function refresh()
 	local profile = ClientState.profile
@@ -159,13 +189,16 @@ local function refresh()
 		releaseMany,
 		if not selecting then "Select pets" elseif count == 0 then "Cancel" else "Release " .. count
 	)
-	local parts =
-		{ tostring(selecting), selectedUid or "", table.concat(profile.equippedPets, ",") }
+	local parts = {}
 	for _, pet in profile.pets do
 		table.insert(parts, `{pet.uid}:{pet.id}:{if pet.locked then 1 else 0}`)
 	end
 	local signature = table.concat(parts, "|")
 	if signature == lastGrid then
+		if selectedUid and not owned(selectedUid) then
+			selectedUid = nil
+		end
+		paintSelection()
 		refreshDetail()
 		return
 	end
@@ -176,6 +209,7 @@ local function refresh()
 			child:Destroy()
 		end
 	end
+	table.clear(cardsByUid)
 	local sorted = table.clone(profile.pets)
 	table.sort(sorted, function(a, b)
 		local da, db = Pets.get(a.id), Pets.get(b.id)
@@ -185,7 +219,6 @@ local function refresh()
 		local def = Pets.get(pet.id)
 		if def then
 			local rarity = Rarity.get(def.rarity)
-			local selected = if selecting then marked[pet.uid] == true else pet.uid == selectedUid
 			local button = Kit.new("TextButton", {
 				Text = "",
 				AutoButtonColor = false,
@@ -194,27 +227,26 @@ local function refresh()
 				Parent = list,
 			})
 			Kit.corner(12).Parent = button
-			Kit.stroke(
-				if selected then 4 else 3,
-				if selected then Kit.Colors.White else rarity.color,
-				Enum.ApplyStrokeMode.Border
-			).Parent =
-				button
+			local stroke = Kit.stroke(3, rarity.color, Enum.ApplyStrokeMode.Border)
+			stroke.Parent = button
+			cardsByUid[pet.uid] = { stroke = stroke, color = rarity.color }
 			local viewport = Preview.viewport({
 				Size = UDim2.fromScale(0.9, 0.62),
 				Position = UDim2.fromScale(0.05, 0.03),
 				Parent = button,
 			})
 			Preview.pet(viewport, def.id)
-			local mark = if table.find(profile.equippedPets, pet.uid) then "  ✓" else ""
-			Kit.text({
-				Text = `{def.name}{mark}\n+{Format.percent(def.bonus)}`,
+			local label = Kit.text({
+				Text = "",
 				Size = UDim2.fromScale(0.94, 0.33),
 				Position = UDim2.fromScale(0.03, 0.65),
 				TextColor3 = rarity.color,
 				Stroke = 2,
 				Parent = button,
 			})
+			cardsByUid[pet.uid].label = label
+			cardsByUid[pet.uid].caption = def.name
+			cardsByUid[pet.uid].bonus = `+{Format.percent(def.bonus)}`
 			button.Activated:Connect(function()
 				Kit.sound(Kit.Sounds.Click, 0.3)
 				if selecting then
@@ -226,7 +258,6 @@ local function refresh()
 					else
 						marked[pet.uid] = true
 					end
-					lastGrid = ""
 				else
 					selectedUid = pet.uid
 				end
@@ -237,6 +268,7 @@ local function refresh()
 	if selectedUid and not owned(selectedUid) then
 		selectedUid = nil
 	end
+	paintSelection()
 	refreshDetail()
 end
 

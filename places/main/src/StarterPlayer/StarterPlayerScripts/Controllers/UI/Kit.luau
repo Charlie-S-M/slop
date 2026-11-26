@@ -130,7 +130,13 @@ function Kit.text(props: Props): TextLabel
 	local gradientOn = props.Gradient ~= false
 	local maxSize = props.MaxTextSize
 	for key, value in props do
-		if key ~= "Stroke" and key ~= "Gradient" and key ~= "MaxTextSize" and key ~= "Parent" then
+		if
+			key ~= "Stroke"
+			and key ~= "StrokeColor"
+			and key ~= "Gradient"
+			and key ~= "MaxTextSize"
+			and key ~= "Parent"
+		then
 			(label :: any)[key] = value
 		end
 	end

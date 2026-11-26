@@ -87,13 +87,54 @@ local function floorBelow(position: Vector3, ignore: Instance): number?
 	return nil
 end
 
+const SIDES = { Vector3.xAxis, -Vector3.xAxis, Vector3.zAxis, -Vector3.zAxis }
+
+-- The middle of the wall a torch hangs on. The nearest wall brick around the torch is its wall;
+-- a ray at just that brick from behind finds the far face, and the middle is between the two.
+-- Nil when the torch isn't on a wall (the portal's torches hang on pillars).
+local function wallMiddle(torch: Model): Vector3?
+	const start = torch:GetBoundingBox().Position
+	const params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = { torch }
+	local nearest: RaycastResult? = nil
+	local direction = Vector3.zero
+	for _, side in SIDES do
+		const hit = workspace:Raycast(start, side * 8, params)
+		-- Only the wall the torch was built on counts, not a nearby building's wall.
+		const wall = hit and hit.Instance:FindFirstAncestor("Wall")
+		if
+			hit
+			and wall
+			and wall.Parent == torch.Parent
+			and (not nearest or hit.Distance < nearest.Distance)
+		then
+			nearest = hit
+			direction = side
+		end
+	end
+	if not nearest then
+		return nil
+	end
+	const only = RaycastParams.new()
+	only.FilterType = Enum.RaycastFilterType.Include
+	only.FilterDescendantsInstances = { nearest.Instance }
+	const behind = nearest.Position + direction * 40
+	const outer = workspace:Raycast(behind, -direction * 40, only)
+	if not outer then
+		return nil
+	end
+	return (nearest.Position + outer.Position) / 2
+end
+
 local function icon(
 	owner: Instance,
 	anchor: BasePart,
 	key: string,
 	body: Color3,
 	accent: Color3,
-	size: number
+	size: number,
+	at: Vector3?
 )
 	if painted[owner] then
 		return
@@ -117,9 +158,8 @@ local function icon(
 		and not owner:GetAttribute("EnemyId")
 		and not owner:GetAttribute("OrePickup")
 	then
-		local center = if owner:IsA("Model")
-			then owner:GetBoundingBox().Position
-			else anchor.Position
+		local center = at
+			or if owner:IsA("Model") then owner:GetBoundingBox().Position else anchor.Position
 		local floor = floorBelow(center, owner)
 		if floor then
 			local offset = Vector3.new(center.X, floor + 0.5, center.Z) - anchor.Position
@@ -218,7 +258,16 @@ local function style(model: Model)
 		return
 	end
 	conceal(model)
-	icon(model, anchor, key, body, accent, size)
+	-- Wall torches sit on the middle of their wall, so every one lines up the same way.
+	icon(
+		model,
+		anchor,
+		key,
+		body,
+		accent,
+		size,
+		if model.Name == "Torch" then wallMiddle(model) else nil
+	)
 	if model:GetAttribute("EnemyId") then
 		local gui = anchor:FindFirstChild("PixelIcon") :: BillboardGui?
 		if gui then
