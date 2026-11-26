@@ -101,17 +101,24 @@ function Music:Init()
 	sound.Parent = SoundService
 end
 
-local function celebrate()
+local function celebrationNote(pitch: number, fade: number)
 	local cue = Instance.new("Sound")
 	cue.SoundId = Kit.Sounds.Ding
 	cue.SoundGroup = Kit.MusicGroup
-	cue.Volume = 0.22
+	cue.Volume = 0.18
+	cue.PlaybackSpeed = pitch
 	cue.Parent = SoundService
 	cue:Play()
-	TweenService:Create(cue, TweenInfo.new(1.6), { Volume = 0 }):Play()
-	task.delay(1.7, function()
+	TweenService:Create(cue, TweenInfo.new(fade), { Volume = 0 }):Play()
+	task.delay(fade + 0.1, function()
 		cue:Destroy()
 	end)
+end
+
+local function celebrate()
+	celebrationNote(1, 0.55)
+	task.delay(0.16, celebrationNote, 1.2599, 0.65)
+	task.delay(0.34, celebrationNote, 1.4983, 1.15)
 end
 
 function Music:Start()
@@ -137,7 +144,7 @@ function Music:Start()
 			task.spawn(
 				play,
 				if elite
-					then "rbxassetid://1843529634"
+					then "rbxassetid://1843463175"
 					elseif active then GAUNTLET_TRACK
 					else LOBBY_TRACKS[trackIndex],
 				if elite then 0.58 else VOLUME
