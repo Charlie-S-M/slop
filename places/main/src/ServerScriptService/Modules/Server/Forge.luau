@@ -20,6 +20,7 @@ const GunStats = require("@game/ReplicatedStorage/Shared/GunStats")
 const Guns = require("@game/ReplicatedStorage/Shared/Guns")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
 const Ores = require("@game/ReplicatedStorage/Shared/Ores")
+const Quests = require("@game/ReplicatedStorage/Shared/Quests")
 const Rarity = require("@game/ReplicatedStorage/Shared/Rarity")
 const Types = require("@game/ReplicatedStorage/Shared/Types")
 const Upgrades = require("@game/ReplicatedStorage/Shared/Upgrades")
@@ -102,6 +103,7 @@ local function finishArmor(
 	end
 	table.insert(profile.armor, piece)
 	profile.forges += 1
+	Quests.record(profile.quests, "Forges", 1)
 	return {
 		armor = piece,
 		new = isNew,
@@ -139,6 +141,7 @@ local function finishProfile(profile: Types.Profile, accuracies: { any }): Outco
 	local isNew = not profile.gunIndex[pending.gunId]
 	profile.gunIndex[pending.gunId] = true
 	profile.forges += 1
+	Quests.record(profile.quests, "Forges", 1)
 	return { item = item, new = isNew, better = rawDps(item) > rawDps(current) }
 end
 

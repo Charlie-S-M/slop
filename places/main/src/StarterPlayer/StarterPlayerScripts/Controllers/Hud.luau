@@ -15,6 +15,7 @@ const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const Biomes = require("@game/ReplicatedStorage/Shared/Biomes")
 const Format = require("@game/ReplicatedStorage/Shared/Format")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
+const Quests = require("@game/ReplicatedStorage/Shared/Quests")
 const Signal = require("@game/ReplicatedStorage/Shared/Signal")
 const ClientState = require("./ClientState")
 const Kit = require("./UI/Kit")
@@ -73,6 +74,7 @@ const MENU_BUTTONS: { MenuButton } = {
 	{ name = "Rebirth", glyph = "🔄", color = Color3.fromRGB(170, 90, 255), key = nil },
 	{ name = "Daily", glyph = "🎁", color = Color3.fromRGB(70, 200, 90), key = nil },
 	{ name = "Gauntlet", glyph = "⚔️", color = Color3.fromRGB(235, 70, 90), key = nil },
+	{ name = "Quests", glyph = "📜", color = Color3.fromRGB(255, 160, 60), key = Enum.KeyCode.Q },
 	{ name = "Settings", glyph = "⚙️", color = Color3.fromRGB(150, 160, 185), key = nil },
 }
 
@@ -605,6 +607,7 @@ local function refreshStats()
 
 	badges.Rebirth.Visible = profile.power >= Balance.rebirthCost(profile.rebirths)
 	badges.Daily.Visible = os.time() - profile.lastDaily >= Balance.DAILY_COOLDOWN
+	badges.Quests.Visible = Quests.ready(profile.quests)
 end
 
 local wasActive = false

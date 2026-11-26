@@ -25,6 +25,7 @@ const Upgrades = require("@game/ReplicatedStorage/Shared/Upgrades")
 const ArenaBuilder = require("./World/ArenaBuilder")
 const EnemyBuilder = require("./World/EnemyBuilder")
 const PlayerData = require("./PlayerData")
+const QuestKeeper = require("./QuestKeeper")
 const RateLimit = require("./RateLimit")
 
 type EnemyDef = Biomes.EnemyDef
@@ -450,6 +451,10 @@ local function killEnemy(run: Run, enemy: Enemy)
 		PlayerData.addCoins(player, coins)
 		PlayerData.addXp(player, xp)
 		profile.kills += 1
+		QuestKeeper.record(player, "Kills", 1)
+		if enemy.isBoss then
+			QuestKeeper.record(player, "Bosses", 1)
+		end
 		rewardRemote:FireClient(player, {
 			kind = "kill",
 			coins = math.floor(coins),
@@ -548,6 +553,7 @@ end
 
 local function onStageCleared(run: Run)
 	run.state = "break"
+	QuestKeeper.record(run.player, if run.tower then "Floors" else "Stages", 1)
 	local profile = PlayerData.get(run.player)
 	if profile and run.tower then
 		local floor = Balance.towerFloor(run.stage)
@@ -890,6 +896,7 @@ local function collectPickups(run: Run)
 			end
 			table.remove(run.pickups, index)
 			profile.bag[pickup.ore.id] = (profile.bag[pickup.ore.id] or 0) + 1
+			QuestKeeper.record(run.player, "Ores", 1)
 			local isNew = not profile.oreIndex[pickup.ore.id]
 			profile.oreIndex[pickup.ore.id] = true
 			PlayerData.markState(run.player)

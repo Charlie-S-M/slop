@@ -50,6 +50,30 @@ export type PendingForge = {
 }
 
 -- The saved player profile. Every field is plain JSON so the DataStore can hold it.
+-- One quest: what to do, how far along it is, and its reward in stars.
+export type Quest = {
+	kind: string,
+	target: number,
+	progress: number,
+	stars: number,
+	hard: boolean,
+	claimed: boolean,
+	-- Each daily quest can be swapped for another once.
+	swapped: boolean,
+}
+
+-- The Quests menu's state: today's dailies, the longer challenges, stars toward the next rank,
+-- and the daily chest, which opens after three dailies are claimed.
+export type QuestBook = {
+	-- The UTC day the dailies were dealt for.
+	day: number,
+	daily: { Quest },
+	challenge: { Quest },
+	stars: number,
+	chestPips: number,
+	chestOpened: boolean,
+}
+
 -- What the Settings menu saves. Volumes run from 0 to 1.
 export type Settings = {
 	-- Turn auto mode on when a stage starts, and off on the way back to the lobby.
@@ -105,6 +129,7 @@ export type Profile = {
 	-- The Settings menu's choices, and the codes this player has redeemed.
 	settings: Settings,
 	redeemedCodes: { [string]: boolean },
+	quests: QuestBook,
 }
 
 -- The stats that change many times a second, sent on their own so the full state stays quiet.

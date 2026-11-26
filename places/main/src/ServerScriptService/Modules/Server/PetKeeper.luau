@@ -13,6 +13,7 @@ const Pets = require("@game/ReplicatedStorage/Shared/Pets")
 const PetStats = require("@game/ReplicatedStorage/Shared/PetStats")
 const Types = require("@game/ReplicatedStorage/Shared/Types")
 const PlayerData = require("./PlayerData")
+const QuestKeeper = require("./QuestKeeper")
 const RateLimit = require("./RateLimit")
 
 local PetKeeper = {}
@@ -93,6 +94,7 @@ local function onHatch(player: Player, eggId: unknown, quantity: unknown)
 		last = pet
 	end
 	PlayerData.markState(player)
+	QuestKeeper.record(player, "Hatches", count)
 	hatchedRemote:FireClient(player, { pet = last, eggId = egg.id, count = count })
 end
 

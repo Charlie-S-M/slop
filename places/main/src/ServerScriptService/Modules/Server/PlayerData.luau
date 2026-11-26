@@ -110,6 +110,14 @@ local function defaultProfile(): Profile
 		robuxSpent = 0,
 		settings = { autoMode = false, autoSkip = false, sfx = 1, music = 1 },
 		redeemedCodes = {},
+		quests = {
+			day = 0,
+			daily = {},
+			challenge = {},
+			stars = 0,
+			chestPips = 0,
+			chestOpened = false,
+		},
 	}
 end
 

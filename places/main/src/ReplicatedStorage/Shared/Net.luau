@@ -43,6 +43,9 @@ export type EventName =
 	| "LeaveArena"
 	| "SaveSetting"
 	| "RedeemCode"
+	| "QuestClaim"
+	| "QuestSwap"
+	| "QuestChest"
 	-- Server to client
 	| "State"
 	| "Stats"
@@ -95,6 +98,9 @@ const EVENTS: { EventName } = {
 	"LeaveArena",
 	"SaveSetting",
 	"RedeemCode",
+	"QuestClaim",
+	"QuestSwap",
+	"QuestChest",
 	"State",
 	"Stats",
 	"Notify",
