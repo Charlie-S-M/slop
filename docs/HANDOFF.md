@@ -53,6 +53,25 @@ conversation. Update the **Status** column and **Now** section whenever an item 
 - All branches stack in order: pew-incremental → top-tier → armor → pets → aurora-reach → infinite-tower → attachments → upgrade-caps.
 - The test profile in Studio keeps three hatched pets and a Copperplate Chestplate. Its coins were restored after testing.
 
+## Current batch (2026-11-25): monetization, settings, quests
+
+The person's list, with their answers to the open questions. Branch: `feat/hotbar-and-armor-models`.
+
+| Item | Status |
+|------|--------|
+| Side buttons restyled like the loadout bar (only the side buttons, not menu windows) | Done, b60b0f2 |
+| Intro screen (sunburst, hammer on anvil, title, loading bar, tips, click to skip) | Done, b60b0f2 |
+| Training dummy label sized in studs; wall torches centered on their wall; pet click freeze | Done, b60b0f2 |
+| Leaderboard tabs: Power (server), Robux Spent, Playtime, Forged (all-time ordered stores) | Done, 031fc8c |
+| Settings: auto auto mode, auto skip wave, SFX and music volume, codes (music button moved here) | Done, 031fc8c |
+| Quests like the reference (Daily, Challenge, swap, New Quests for Robux, rank, daily chest), with a 3D voxel knight instead of "Sarge" | Next |
+| Shop station near the forge (walk to it, cash and $ effects that fade), shop menu like the reference: Featured + limited guns, Passes, currency and boosts (power, coins, eggs, Server Luck, Lucky Forge), Potions (new timed-boost inventory) | To do |
+| Lucky Wheel station: a free spin a day, paid spins (1/3/10), 0.5% exclusive gun | To do |
+| Create the real developer products and game passes ("create them now") | Blocked on an Open Cloud key |
+
+Codes: `release`, `update_0`, `pewpew`, `forgefire`, `thankyou`; `dev_everything` is the testing kit
+(Studio or the owning group's rank 255 only). They live in `Modules/Server/Settings.luau`.
+
 ## Roadmap
 
 The person set this order. Names, drop rates, and growth numbers are proposals to playtest.
@@ -136,9 +155,13 @@ What each item should let a player do:
 
 ## Waiting on the person
 
-- Nothing. The five evolved guns, the armor pieces, and the smithy were imported on 2026-11-25 and
-  saved into `ForgeModels.rbxm`. The 3D Importer drops models where the camera is, facing +X, so
-  each was moved to the origin and the guns turned to point down −Z like the older ones.
+- An Open Cloud API key for the Studio MCP (`ROBLOX_OPEN_CLOUD_API_KEY`) with
+  `developer-product:read/write` and `game-pass:read/write` for universe 10779068698, so the shop's
+  products can be created with `manage_monetization`. The person makes the key; an agent never
+  handles it.
+- The five evolved guns, the armor pieces, and the smithy were imported on 2026-11-25 and saved
+  into `ForgeModels.rbxm`. The 3D Importer drops models where the camera is, facing +X, so each
+  was moved to the origin and the guns turned to point down −Z like the older ones.
 
 ## Known small issues
 
