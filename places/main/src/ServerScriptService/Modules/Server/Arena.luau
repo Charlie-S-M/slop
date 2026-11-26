@@ -176,6 +176,40 @@ local function weightedPick<T>(items: { T }, weights: { number }): T
 	return items[#items]
 end
 
+-- Enemies spawn at least this far from the player, so none appears on top of them.
+const SPAWN_GAP = 40
+
+-- A random point in the spawn box away from the player: the first of a few rolls that keeps
+-- SPAWN_GAP studs of room, or the farthest roll when the player stands in the middle of the box.
+local function spawnPoint(run: Run): Vector3
+	local root = rootOf(run.player)
+	local best = run.origin
+	local bestGap = -1
+	for _ = 1, 12 do
+		local point = run.origin
+			+ Vector3.new(
+				random:NextNumber(ArenaBuilder.SPAWN_MIN.X, ArenaBuilder.SPAWN_MAX.X),
+				0,
+				random:NextNumber(ArenaBuilder.SPAWN_MIN.Z, ArenaBuilder.SPAWN_MAX.Z)
+			)
+		if not root then
+			return point
+		end
+		local gap = (Vector3.new(point.X, 0, point.Z) - Vector3.new(
+			root.Position.X,
+			0,
+			root.Position.Z
+		)).Magnitude
+		if gap >= SPAWN_GAP then
+			return point
+		end
+		if gap > bestGap then
+			best, bestGap = point, gap
+		end
+	end
+	return best
+end
+
 local function setStageSign(run: Run)
 	local sign = run.arena:FindFirstChild("StageSign")
 	local gui = sign and sign:FindFirstChild("Gui")
@@ -227,13 +261,7 @@ local function spawnEnemy(
 	local model = EnemyBuilder.build(def, scale, isBoss)
 	local root = model.PrimaryPart :: BasePart
 	nextEnemyId += 1
-	local spawnAt = position
-		or run.origin
-			+ Vector3.new(
-				random:NextNumber(ArenaBuilder.SPAWN_MIN.X, ArenaBuilder.SPAWN_MAX.X),
-				0,
-				random:NextNumber(ArenaBuilder.SPAWN_MIN.Z, ArenaBuilder.SPAWN_MAX.Z)
-			)
+	local spawnAt = position or spawnPoint(run)
 	if isBoss then
 		spawnAt = run.origin + Vector3.new(0, 0, ArenaBuilder.SPAWN_MIN.Z + 20)
 	end
