@@ -29,6 +29,7 @@ const Types = require("@game/ReplicatedStorage/Shared/Types")
 const Effects = require("../Effects")
 const ForgeSet = require("./ForgeSet")
 const ImpactFrames = require("./ImpactFrames")
+const TierCutscene = require("./TierCutscene")
 const Hud = require("../Hud")
 const Kit = require("../UI/Kit")
 const Menus = require("../Menus")
@@ -438,6 +439,10 @@ function ForgeCutscene.reveal(result: Result, label: string?)
 	if RevealStyles.forRarity(tier) then
 		-- Let the gun rise into view, then hit the impact frame before the card.
 		task.wait(0.5)
+		-- Past Eternal, the tier's own cutscene plays first.
+		if alive() and tier >= 9 then
+			TierCutscene.play(tier, screen, alive)
+		end
 		if alive() then
 			ImpactFrames.play(tier, gun, screen, revealStage, alive)
 		end
