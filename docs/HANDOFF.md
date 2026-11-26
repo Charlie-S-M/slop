@@ -3,38 +3,28 @@
 Where the Pew Incremental expansion stands, so a new session can pick up without the old
 conversation. Update the **Status** column and **Now** section whenever an item lands.
 
-## Latest handoff for Claude (2026-11-26, 00:30)
+## Latest handoff for Claude (2026-11-26)
 
 Read this first; the sections below are older.
 
-**Warning: Codex and Claude share one Studio place.** Codex edits scripts directly in Studio, so
-the place can be ahead of the repo. Before any `__SyncApply`, export the place and compare
-(`tools/studio-sync/pull.luau`, run into a copy of `places/main/src`), and make sure Codex isn't
-running. A sync overwrites its edits.
+**State.** `feat/hotbar-and-armor-models` holds Codex's finished batch merged with Claude's review
+fixes, and the Studio place matches it. Not pushed. Format, selene, luau-lsp, build, and 125 specs
+pass. The person still has to save the place in Studio.
 
-**State.** Commit `7e46a73` on `feat/hotbar-and-armor-models` holds the person's latest list
-(tutorial, Luck and Training prices, forge odds, 8% faster slow guns, 5/6 minute day and night,
-boss music, Forge Skip and Auto Perfect Forge passes) plus Codex's shop restyle, eclipse reveal,
-Toughness change, and bag warning. Format, selene, luau-lsp, build, and 125 specs passed. Not
-pushed.
+- Done: forge tutorial, pricier Luck and Training, forge odds with active luck, 8% faster slow
+  guns, 5/6 minute day and night, boss music, Forge Skip and Auto Perfect Forge passes, shop
+  restyle with Top Picks, eclipse reveal, stage-scaled Toughness health, one bag-full warning.
+- Codex removed the `dev_everything` testing code. Keep it removed.
+- The shop uses emoji glyphs on purpose; the uploaded product art stays in `assets/` and on the
+  products and passes.
+- Not checked: the night look, the boss celebration by ear, a full tutorial run on a new profile.
+- To confirm with the person: Eternal is a separate draw of up to 5%, so with high ores it can
+  show more often than Celestial, the tier above it.
 
-**Checked in a playtest:** tutorial card, boss music fading in and out on stage 5, Skip shown
-only with its pass, Auto Perfect giving grade S, both eclipse reveals running without errors.
-**Not checked:** the night look (the playtest was stopped from outside mid-check), the boss
-celebration by ear, a full tutorial run on a new profile.
-
-**Not yet in the repo:** after that commit's pull, Codex kept editing `Shared/Products.luau`,
-`Controllers/Music.luau`, and `Controllers/Menus/Shop.luau` in Studio (a "Top Picks" shop
-section, glyph icons in place of image icons). When Codex is finished, pull, review, run the
-checks, and commit. Ask the person whether losing the uploaded image icons is intended.
-
-**Tell the person:** Claude's syncs on 2026-11-26 around 00:23 replaced the client and server
-scripts in Studio with the repo's copy. Anything Codex wrote there between 00:22 and the sync
-would be gone and needs re-applying.
-
-**Design note to confirm:** Codex made Eternal a separate draw of up to 5%, so with high ores it
-can show more often than Celestial, the tier above it. Omega is above Cosmic; which of the two
-rolls more depends on the ores.
+**Two agents, one Studio place.** Codex edits scripts directly in Studio and keeps its own clone
+under `OneDrive/Documents/ChatGPT/slop/build/verified-checkout`. Run only one agent on the place
+at a time. Before any `__SyncApply`, export the place and compare it with the repo
+(`tools/studio-sync/pull.luau` into a copy of `places/main/src`).
 
 ## Now
 
@@ -104,8 +94,8 @@ The person's list, with their answers to the open questions. Branch: `feat/hotba
 | Stages up to 250, one new rarity per 50 stages past 80, balanced damage, a cutscene for each new rarity (added while the person was away) | Done, 3f30f73 and the next commit |
 | Create the real developer products and game passes ("create them now") | Done 2026-11-26: 11 passes, 26 products, ids in Products.luau |
 
-Codes: `release`, `update_0`, `pewpew`, `forgefire`, `thankyou`; `dev_everything` is the testing kit
-(Studio or the owning group's rank 255 only). They live in `Modules/Server/Settings.luau`.
+Codes: `release`, `update_0`, `pewpew`, `forgefire`, `thankyou`. The `dev_everything` testing code was removed.
+They live in `Modules/Server/Settings.luau`.
 
 ## Roadmap
 

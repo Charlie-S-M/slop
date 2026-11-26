@@ -9,59 +9,23 @@ const TweenService = game:GetService("TweenService")
 const ClientState = require("./ClientState")
 const Kit = require("./UI/Kit")
 
--- Roblox's licensed music library: lobby tracks, then the Gauntlet track.
+-- Roblox's licensed music library: the regular playlist continues through ordinary encounters.
 const LOBBY_TRACKS = {
 	"rbxassetid://1836333502",
 	"rbxassetid://1848344860",
 }
-const GAUNTLET_TRACK = "rbxassetid://1837581633"
 const BOSS_TRACK = "rbxassetid://1843463175"
 const VOLUME = 0.22
 
 local Music = {}
 
 local ambience: SoundGroup
-local forging = false
 local sound: Sound
 local bossSound: Sound
 local regularMix: SoundGroup
 local trackIndex = 1
-local inGauntlet = false
 local eliteActive = false
 local musicVersion = 0
-local towerMusic = false
-local rhythmVersion = 0
-
-local function setTowerMusic(active: boolean)
-	if towerMusic == active then
-		return
-	end
-	towerMusic = active
-	rhythmVersion += 1
-	local version = rhythmVersion
-	if not active then
-		return
-	end
-	task.spawn(function()
-		local beat = 0
-		while rhythmVersion == version do
-			-- The beat is part of the music, so it follows the music volume.
-			local volume = Kit.MusicGroup.Volume
-			if volume > 0.01 and not forging then
-				if beat % 4 == 0 then
-					Kit.sound(Kit.Sounds.Boom, 0.12 * volume, 1.8)
-				elseif beat % 4 == 2 then
-					Kit.sound(Kit.Sounds.Pump, 0.075 * volume, 1.5)
-				else
-					Kit.sound(Kit.Sounds.Toggle, 0.035 * volume, 2.2)
-				end
-			end
-			beat += 1
-			task.wait(60 / 150 / 2)
-		end
-	end)
-end
-
 local function play(id: string)
 	musicVersion += 1
 	local version = musicVersion
@@ -83,7 +47,6 @@ local function nextLobbyTrack()
 end
 
 function Music.forgeMix(active: boolean)
-	forging = active
 	TweenService:Create(
 		ambience,
 		TweenInfo.new(if active then 0.55 else 0.85),
@@ -139,18 +102,10 @@ local function celebrate()
 end
 
 function Music:Start()
-	sound.Ended:Connect(function()
-		if inGauntlet then
-			sound:Play()
-		else
-			nextLobbyTrack()
-		end
-	end)
+	sound.Ended:Connect(nextLobbyTrack)
 	ClientState.RunChanged:Connect(function(run)
 		local active = run.active == true
 		local elite = active and run.elite == true
-		setTowerMusic(active and run.tower == true and not elite)
-		sound.PlaybackSpeed = if active and run.tower then 1.24 else 1
 		if elite ~= eliteActive then
 			eliteActive = elite
 			local fade = TweenInfo.new(if elite then 0.28 else 0.55)
@@ -171,10 +126,6 @@ function Music:Start()
 					end
 				end)
 			end
-		end
-		if active ~= inGauntlet then
-			inGauntlet = active
-			task.spawn(play, if active then GAUNTLET_TRACK else LOBBY_TRACKS[trackIndex])
 		end
 	end)
 	task.spawn(play, LOBBY_TRACKS[trackIndex])
