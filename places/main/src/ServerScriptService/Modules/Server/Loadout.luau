@@ -8,6 +8,7 @@ const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const GunBuilder = require("@game/ReplicatedStorage/Shared/GunBuilder")
 const Guns = require("@game/ReplicatedStorage/Shared/Guns")
 const Upgrades = require("@game/ReplicatedStorage/Shared/Upgrades")
+const Boosts = require("./Boosts")
 const PlayerData = require("./PlayerData")
 
 local Loadout = {}
@@ -66,6 +67,7 @@ function Loadout.refreshStats(player: Player)
 	humanoid.MaxHealth = maxHealth
 	humanoid.Health = math.clamp(maxHealth * share, 1, maxHealth)
 	humanoid.WalkSpeed = Upgrades.value("WalkSpeed", profile.upgrades.WalkSpeed or 0)
+		* Boosts.walkSpeed(player)
 	humanoid.JumpPower = 55
 	humanoid.UseJumpPower = true
 end

@@ -643,9 +643,36 @@ for _, id in collectionIds do
 	end
 end
 
+-- Limited guns sold in the shop. They show in the Index but never join the forge's pools.
+const LIMITED: { GunDef } = {
+	gun(
+		"NovaReaper",
+		"Nova Reaper",
+		8,
+		"Rifle",
+		rgb(40, 30, 80),
+		rgb(150, 110, 255),
+		rgb(120, 240, 255)
+	),
+	gun(
+		"DragonheartCannon",
+		"Dragonheart Cannon",
+		8,
+		"Launcher",
+		rgb(120, 24, 30),
+		rgb(255, 120, 40),
+		rgb(255, 210, 90)
+	),
+}
+for _, def in LIMITED do
+	BY_ID[def.id] = def
+	table.insert(collection, def)
+end
+
 local Guns = {}
 
 Guns.List = collection
+Guns.LIMITED = LIMITED
 Guns.Kinds = KINDS
 Guns.STARTER_ID = "PopPistol"
 -- The starter gun gives exactly +1 power per shot, the number the game is named for.

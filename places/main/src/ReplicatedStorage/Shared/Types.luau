@@ -130,6 +130,15 @@ export type Profile = {
 	settings: Settings,
 	redeemedCodes: { [string]: boolean },
 	quests: QuestBook,
+	-- Potions waiting to be used, by product key, and the boosts running, by boost name -> the
+	-- os.time they end.
+	potions: { [string]: number },
+	boosts: { [string]: number },
+	-- Forges left that roll with Lucky Forge luck.
+	luckyForges: number,
+	starterPackBought: boolean,
+	-- The last purchase receipts granted, newest last, so a retried receipt never grants twice.
+	receipts: { string },
 }
 
 -- The stats that change many times a second, sent on their own so the full state stays quiet.

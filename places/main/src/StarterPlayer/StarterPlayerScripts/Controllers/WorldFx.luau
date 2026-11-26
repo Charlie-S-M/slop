@@ -50,6 +50,7 @@ const STATION_MENUS = {
 	Rebirth = { menu = "Rebirth", text = "Rebirth" },
 	Portal = { menu = "Gauntlet", text = "Enter the Gauntlet" },
 	Leaderboard = { menu = "Leaderboard", text = "Leaderboard" },
+	Shop = { menu = "Shop", text = "Open Shop" },
 }
 
 ------------------------------------------------------------------------------------------------

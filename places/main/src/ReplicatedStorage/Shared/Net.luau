@@ -46,6 +46,7 @@ export type EventName =
 	| "QuestClaim"
 	| "QuestSwap"
 	| "QuestChest"
+	| "UsePotion"
 	-- Server to client
 	| "State"
 	| "Stats"
@@ -101,6 +102,7 @@ const EVENTS: { EventName } = {
 	"QuestClaim",
 	"QuestSwap",
 	"QuestChest",
+	"UsePotion",
 	"State",
 	"Stats",
 	"Notify",

@@ -96,6 +96,9 @@ function Format.duration(seconds: number): string
 	local hours = math.floor(total / 3600)
 	local minutes = math.floor((total % 3600) / 60)
 	local secs = total % 60
+	if hours >= 48 then
+		return string.format("%dd %dh", hours // 24, hours % 24)
+	end
 	if hours > 0 then
 		return string.format("%dh %02dm", hours, minutes)
 	elseif minutes > 0 then

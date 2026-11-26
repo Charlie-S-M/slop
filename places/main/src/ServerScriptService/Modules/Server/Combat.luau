@@ -15,6 +15,7 @@ const Net = require("@game/ReplicatedStorage/Shared/Net")
 const PetStats = require("@game/ReplicatedStorage/Shared/PetStats")
 const Types = require("@game/ReplicatedStorage/Shared/Types")
 const Arena = require("./Arena")
+const Boosts = require("./Boosts")
 const PlayerData = require("./PlayerData")
 const RateLimit = require("./RateLimit")
 
@@ -127,7 +128,7 @@ local function onTraining(
 		profile.upgrades.Training or 0
 	) * PetStats.multiplier(profile.pets, profile.equippedPets, "Training") * Balance.towerBonus(
 		profile.towerBest
-	)
+	) * Boosts.power(player, profile)
 	PlayerData.addPower(player, gain)
 	PlayerData.addXp(player, 1)
 	trainFx:FireClient(player, gain, aim)

@@ -861,6 +861,61 @@ local function skyAndGround(parent: Instance)
 end
 
 --[[
+	The Robux shop's stall, just south of the forge: a gold-and-red striped awning over a counter
+	piled with coins. The counter is the "Shop" station. Public so the server can add it to a lobby
+	baked before the shop existed.
+]]
+function LobbyBuilder.shopStall(parent: Instance): Model
+	local model = Instance.new("Model")
+	model.Name = "Shop"
+	local origin = Vector3.new(88, 0, 52)
+	local counter = Bricks.part(model, {
+		name = "Counter",
+		size = Vector3.new(20, 4, 6),
+		cframe = CFrame.new(origin + Vector3.new(0, 2, -4)),
+		color = rgb(200, 60, 60),
+	})
+	counter:SetAttribute("Station", "Shop")
+	Bricks.part(model, {
+		name = "CounterTop",
+		size = Vector3.new(21, 0.6, 7),
+		cframe = counter.CFrame * CFrame.new(0, 2.3, 0),
+		color = GOLD,
+	})
+	for side = -1, 1, 2 do
+		Bricks.part(model, {
+			name = "Post",
+			size = Vector3.new(1.2, 15, 1.2),
+			cframe = CFrame.new(origin + Vector3.new(side * 10, 7.5, -7)),
+			color = rgb(240, 240, 245),
+		})
+	end
+	for stripe = 0, 7 do
+		Bricks.part(model, {
+			name = "Awning",
+			size = Vector3.new(2.75, 1, 12),
+			cframe = CFrame.new(origin + Vector3.new(-9.6 + stripe * 2.75, 15.6, -3))
+				* CFrame.Angles(math.rad(12), 0, 0),
+			color = if stripe % 2 == 0 then rgb(230, 60, 60) else GOLD,
+		})
+	end
+	-- Coin piles on the counter.
+	for index = -2, 2 do
+		Bricks.part(model, {
+			name = "Coins",
+			size = Vector3.new(2.4, 1 + (index + 2) % 3 * 0.6, 2.4),
+			cframe = CFrame.new(origin + Vector3.new(index * 3.6, 5.2, -4)),
+			color = rgb(255, 205, 60),
+			material = Enum.Material.Neon,
+			collide = false,
+		})
+	end
+	Props.label(counter, "💰 Shop", rgb(255, 215, 80), Vector3.new(0, 16, 0), 14)
+	model.Parent = parent
+	return model
+end
+
+--[[
 	Builds the full lobby under a new "Lobby" model in the parent and returns it. The plaza floor's
 	top sits at Y = 0.
 ]]
@@ -872,6 +927,7 @@ function LobbyBuilder.build(parent: Instance): Model
 	trainingGrounds(lobby)
 	forgeWorkshop(lobby)
 	rebirthAltar(lobby)
+	LobbyBuilder.shopStall(lobby)
 	portal(lobby)
 	carpetAndDecor(lobby)
 	skyAndGround(lobby)

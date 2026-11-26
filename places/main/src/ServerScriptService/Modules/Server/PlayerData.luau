@@ -118,6 +118,11 @@ local function defaultProfile(): Profile
 			chestPips = 0,
 			chestOpened = false,
 		},
+		potions = {},
+		boosts = {},
+		luckyForges = 0,
+		starterPackBought = false,
+		receipts = {},
 	}
 end
 

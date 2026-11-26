@@ -24,6 +24,7 @@ const Types = require("@game/ReplicatedStorage/Shared/Types")
 const Upgrades = require("@game/ReplicatedStorage/Shared/Upgrades")
 const ArenaBuilder = require("./World/ArenaBuilder")
 const EnemyBuilder = require("./World/EnemyBuilder")
+const Boosts = require("./Boosts")
 const PlayerData = require("./PlayerData")
 const QuestKeeper = require("./QuestKeeper")
 const RateLimit = require("./RateLimit")
@@ -444,6 +445,8 @@ local function openChest(run: Run, enemy: Enemy, profile: Types.Profile)
 		* Balance.CHEST_COIN_KILLS
 		* Upgrades.value("CoinBoost", profile.upgrades.CoinBoost or 0)
 		* Balance.towerBonus(profile.towerBest)
+		* Boosts.coins(run.player, profile)
+		* Boosts.bossLoot(run.player)
 	PlayerData.addCoins(run.player, coins)
 	chestRemote:FireClient(run.player, { kind = "coins", coins = coins })
 end
@@ -475,6 +478,7 @@ local function killEnemy(run: Run, enemy: Enemy)
 			* (if enemy.isBoss then 6 else 1)
 			* (if enemy.isMini then 0.3 else 1)
 			* Balance.towerBonus(profile.towerBest)
+			* Boosts.coins(player, profile)
 		local xp = Balance.enemyXp(enemy.stage) * (if enemy.isBoss then 5 else 1)
 		PlayerData.addCoins(player, coins)
 		PlayerData.addXp(player, xp)
@@ -706,8 +710,10 @@ local function startRun(player: Player, startStage: number, tower: boolean?)
 		humanoid.Died:Connect(function()
 			local profile = PlayerData.get(player)
 			if profile then
-				local lost = PlayerData.bagCount(profile)
-				profile.bag = {}
+				local lost = if Boosts.keepsOres(player) then 0 else PlayerData.bagCount(profile)
+				if lost > 0 then
+					profile.bag = {}
+				end
 				PlayerData.markState(player)
 				if lost > 0 then
 					notify(
@@ -904,7 +910,8 @@ local function collectPickups(run: Run)
 	if not root or not profile then
 		return
 	end
-	local radius = Upgrades.value("Magnet", profile.upgrades.Magnet or 0)
+	local radius = Boosts.collectRadius(run.player)
+		or Upgrades.value("Magnet", profile.upgrades.Magnet or 0)
 	local capacity = Upgrades.value("BagSize", profile.upgrades.BagSize or 0)
 	local index = 1
 	while index <= #run.pickups do

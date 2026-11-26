@@ -12,6 +12,7 @@ const Net = require("@game/ReplicatedStorage/Shared/Net")
 const Pets = require("@game/ReplicatedStorage/Shared/Pets")
 const PetStats = require("@game/ReplicatedStorage/Shared/PetStats")
 const Types = require("@game/ReplicatedStorage/Shared/Types")
+const Boosts = require("./Boosts")
 const PlayerData = require("./PlayerData")
 const QuestKeeper = require("./QuestKeeper")
 const RateLimit = require("./RateLimit")
@@ -77,7 +78,7 @@ local function onHatch(player: Player, eggId: unknown, quantity: unknown)
 		return
 	end
 	local count = if quantity == 3 then 3 else 1
-	if #profile.pets + count > Balance.MAX_PETS then
+	if #profile.pets + count > Boosts.petStorage(player) then
 		notifyRemote:FireClient(player, "Your pet pen is full. Release a few first!")
 		return
 	end
@@ -158,7 +159,7 @@ local function onRelease(player: Player, selection: unknown)
 	end
 	local ids = if typeof(selection) == "table" then selection :: { unknown } else { selection }
 	local selected: { [string]: boolean } = {}
-	for i = 1, Balance.MAX_PETS do
+	for i = 1, Boosts.petStorage(player) do
 		local uid = ids[i]
 		if not isUid(uid) then
 			break

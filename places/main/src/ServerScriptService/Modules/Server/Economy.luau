@@ -295,23 +295,32 @@ local function onBuyUpgrade(player: Player, id: unknown, count: unknown)
 	rewardRemote:FireClient(player, { kind = "upgrade", id = id, level = level + levels })
 end
 
-local function onRebirth(player: Player)
-	if not RateLimit.allow(player, "Rebirth", 0.5, 1) or not inLobby(player) then
-		return
+-- Rebirths the player when they have the Power for it. Returns true when they rebirthed. The Auto
+-- Rebirth pass calls this too.
+function Economy.rebirth(player: Player): boolean
+	if not inLobby(player) then
+		return false
 	end
 	local profile = PlayerData.get(player)
 	if not profile then
-		return
+		return false
 	end
 	local cost = Balance.rebirthCost(profile.rebirths)
 	if profile.power < cost then
-		return
+		return false
 	end
 	profile.power = 0
 	profile.rebirths += 1
 	PlayerData.markState(player)
 	PlayerData.LoadoutChanged:Fire(player)
 	rewardRemote:FireClient(player, { kind = "rebirth", rebirths = profile.rebirths })
+	return true
+end
+
+local function onRebirth(player: Player)
+	if RateLimit.allow(player, "Rebirth", 0.5, 1) then
+		Economy.rebirth(player)
+	end
 end
 
 -- Prestige: at PRESTIGE_REBIRTHS rebirths, resets rebirths and Power for permanent bonuses (Balance).
