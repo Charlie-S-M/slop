@@ -170,7 +170,7 @@ local function sectionFrame(order: number, label: string, glyph: string, columns
 	})
 	local layout = Kit.new("UIGridLayout", {
 		CellSize = UDim2.new(1 / columns - 0.02, 0, 0, if columns == 1 then 150 else 190),
-		CellPadding = UDim2.new(0.02, 0, 0, 12),
+		CellPadding = UDim2.fromOffset(8, 12),
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		HorizontalAlignment = Enum.HorizontalAlignment.Center,
 		Parent = grid,
