@@ -64,6 +64,34 @@ const STYLES: { [number]: RevealStyle } = {
 		darken = 0.55,
 		halo = true,
 	},
+	-- Celestial, Cosmic, and Omega also play their tier cutscene (TierCutscene) before this.
+	[9] = {
+		kind = "Radiant",
+		seconds = 1.9,
+		background = rgb(235, 250, 255),
+		silhouette = rgb(20, 40, 70),
+		accent = rgb(150, 230, 255),
+		darken = 0.55,
+		halo = true,
+	},
+	[10] = {
+		kind = "Radiant",
+		seconds = 1.9,
+		background = rgb(20, 15, 60),
+		silhouette = rgb(230, 120, 255),
+		accent = rgb(90, 110, 255),
+		darken = 0.65,
+		halo = true,
+	},
+	[11] = {
+		kind = "Radiant",
+		seconds = 2.1,
+		background = rgb(10, 0, 5),
+		silhouette = rgb(255, 60, 80),
+		accent = rgb(255, 255, 255),
+		darken = 0.75,
+		halo = true,
+	},
 }
 
 local RevealStyles = {}

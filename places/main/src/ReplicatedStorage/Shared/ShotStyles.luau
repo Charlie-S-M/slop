@@ -96,7 +96,8 @@ ShotStyles.PRISM = {
 
 function ShotStyles.forRarity(tier: number): ShotStyle
 	local clamped = math.clamp(math.floor(tier), 1, Rarity.Count)
-	return TOP[clamped] or BASIC
+	-- Tiers past Eternal fire with the Eternal tracer.
+	return TOP[clamped] or TOP[math.min(clamped, 8)] or BASIC
 end
 
 return ShotStyles

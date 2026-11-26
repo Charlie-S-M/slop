@@ -509,6 +509,67 @@ table.insert(
 		rgb(234, 221, 192)
 	)
 )
+-- Past Eternal: two guns for each of the Celestial, Cosmic, and Omega tiers.
+for _, def in
+	{
+		gun(
+			"HaloRepeater",
+			"Halo Repeater",
+			9,
+			"SMG",
+			rgb(235, 245, 255),
+			rgb(150, 230, 255),
+			rgb(255, 230, 140)
+		),
+		gun(
+			"SeraphLance",
+			"Seraph Lance",
+			9,
+			"Sniper",
+			rgb(250, 245, 230),
+			rgb(255, 250, 200),
+			rgb(120, 200, 255)
+		),
+		gun(
+			"NebulaStorm",
+			"Nebula Storm",
+			10,
+			"Minigun",
+			rgb(40, 30, 100),
+			rgb(230, 120, 255),
+			rgb(90, 110, 255)
+		),
+		gun(
+			"QuasarCannon",
+			"Quasar Cannon",
+			10,
+			"Launcher",
+			rgb(20, 20, 60),
+			rgb(120, 240, 255),
+			rgb(255, 200, 255)
+		),
+		gun(
+			"OmegaRifle",
+			"Omega Rifle",
+			11,
+			"Rifle",
+			rgb(25, 15, 20),
+			rgb(255, 60, 80),
+			rgb(255, 255, 255)
+		),
+		gun(
+			"Worldbreaker",
+			"Worldbreaker",
+			11,
+			"Shotgun",
+			rgb(60, 10, 20),
+			rgb(255, 120, 60),
+			rgb(255, 230, 230)
+		),
+	}
+do
+	table.insert(LIST, def)
+end
 local collectionIds = {
 	"PopPistol",
 	"BrickBlaster",
@@ -532,6 +593,12 @@ local collectionIds = {
 	"Starforge",
 	"Dawnbringer",
 	"EverlightCannon",
+	"HaloRepeater",
+	"SeraphLance",
+	"NebulaStorm",
+	"QuasarCannon",
+	"OmegaRifle",
+	"Worldbreaker",
 }
 --[[
 	Evolved guns: one per Legendary-and-up forge gun. Each keeps its base gun's kind and rarity, is

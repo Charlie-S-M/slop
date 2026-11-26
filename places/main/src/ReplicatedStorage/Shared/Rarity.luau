@@ -78,6 +78,31 @@ const LIST: { RarityDef } = {
 		powerMultiplier = 800,
 		gunScale = 2.1,
 	},
+	-- Past Eternal, one tier per 50 stages: each needs a key ore from its own region (Balance).
+	{
+		tier = 9,
+		name = "Celestial",
+		color = Color3.fromRGB(150, 230, 255),
+		glow = Color3.fromRGB(255, 250, 200),
+		powerMultiplier = 2200,
+		gunScale = 2.3,
+	},
+	{
+		tier = 10,
+		name = "Cosmic",
+		color = Color3.fromRGB(90, 110, 255),
+		glow = Color3.fromRGB(230, 120, 255),
+		powerMultiplier = 6000,
+		gunScale = 2.5,
+	},
+	{
+		tier = 11,
+		name = "Omega",
+		color = Color3.fromRGB(255, 60, 80),
+		glow = Color3.fromRGB(255, 255, 255),
+		powerMultiplier = 16000,
+		gunScale = 2.7,
+	},
 }
 
 local Rarity = {}

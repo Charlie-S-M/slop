@@ -559,6 +559,236 @@ const LIST: { BiomeDef } = {
 	},
 }
 
+-- Health and speed by behavior, for the biomes past stage 80, which only list their enemies.
+const BEHAVIOR_STATS: { [Behavior]: { hp: number, speed: number } } = {
+	Melee = { hp = 1, speed = 10 },
+	Fast = { hp = 0.65, speed = 18 },
+	Ranged = { hp = 1.1, speed = 10 },
+	Tank = { hp = 2.8, speed = 5.5 },
+	Splitter = { hp = 1.2, speed = 9 },
+}
+
+type Roster = { id: string, name: string, shape: EnemyShape, behavior: Behavior, hat: string? }
+
+local function r(
+	id: string,
+	name: string,
+	shape: EnemyShape,
+	behavior: Behavior,
+	hat: string?
+): Roster
+	return { id = id, name = name, shape = shape, behavior = behavior, hat = hat }
+end
+
+--[[
+	A biome past stage 80 from three colors: `base` for the floor and walls, `accent` for trim and
+	the enemies' cloth, and `glow` for banners, glow strips, and eyes. Enemies take their health and
+	speed from their behavior; the boss is a crowned Humanoid.
+]]
+local function generated(
+	index: number,
+	name: string,
+	base: Color3,
+	accent: Color3,
+	glow: Color3,
+	roster: { Roster },
+	bossId: string,
+	bossName: string
+): BiomeDef
+	local enemies = {}
+	for order, entry in roster do
+		local stats = BEHAVIOR_STATS[entry.behavior]
+		table.insert(
+			enemies,
+			enemy(
+				entry.id,
+				entry.name,
+				entry.shape,
+				entry.behavior,
+				base:Lerp(Color3.new(1, 1, 1), 0.25 + 0.15 * order),
+				accent,
+				glow,
+				stats.hp,
+				stats.speed,
+				entry.hat
+			)
+		)
+	end
+	return {
+		index = index,
+		name = name,
+		floor = base:Lerp(Color3.new(1, 1, 1), 0.55),
+		floorAccent = glow:Lerp(Color3.new(1, 1, 1), 0.3),
+		wall = base,
+		wallAccent = accent,
+		trim = base:Lerp(Color3.new(1, 1, 1), 0.8),
+		glow = glow,
+		fogColor = base:Lerp(Color3.new(1, 1, 1), 0.4),
+		ambient = base:Lerp(Color3.new(0.5, 0.5, 0.5), 0.6),
+		enemies = enemies,
+		boss = enemy(
+			bossId,
+			bossName,
+			"Humanoid",
+			"Ranged",
+			base:Lerp(glow, 0.5),
+			accent,
+			glow,
+			1,
+			8,
+			"Crown"
+		),
+	}
+end
+
+-- Stages 81 to 250: the Celestial region (biomes 9 to 13), the Cosmic region (14 to 18), the
+-- Omega region (19 to 23), and the finale (24 and 25).
+for _, biome in
+	{
+		generated(
+			9,
+			"Skyharbor Isles",
+			rgb(120, 180, 230),
+			rgb(255, 255, 255),
+			rgb(255, 240, 170),
+			{
+				r("GustSprite", "Gust Sprite", "Floater", "Fast"),
+				r("CloudKnight", "Cloud Knight", "Humanoid", "Melee", "Helmet"),
+				r("SkyRam", "Sky Ram", "Brute", "Tank", "Horns"),
+			},
+			"TempestRoc",
+			"Tempest Roc"
+		),
+		generated(10, "Thunderspire", rgb(70, 75, 120), rgb(255, 230, 60), rgb(150, 220, 255), {
+			r("SparkImp", "Spark Imp", "Critter", "Fast", "Spikes"),
+			r("StormCaller", "Storm Caller", "Humanoid", "Ranged", "Wrap"),
+			r("VoltGolem", "Volt Golem", "Brute", "Tank"),
+		}, "ThunderKing", "Thunder King"),
+		generated(11, "Crystal Canopy", rgb(60, 150, 90), rgb(255, 150, 210), rgb(190, 255, 170), {
+			r("ThornSprout", "Thorn Sprout", "Blob", "Splitter"),
+			r("LeafRanger", "Leaf Ranger", "Humanoid", "Ranged", "Cap"),
+			r("BarkBeast", "Bark Beast", "Brute", "Tank", "Horns"),
+		}, "CanopyWarden", "Canopy Warden"),
+		generated(12, "Sunken Temple", rgb(40, 110, 140), rgb(255, 120, 110), rgb(110, 255, 240), {
+			r("ReefCrab", "Reef Crab", "Critter", "Fast", "Spikes"),
+			r("TideMage", "Tide Mage", "Humanoid", "Ranged", "Wrap"),
+			r("DeepGuardian", "Deep Guardian", "Brute", "Tank", "Helmet"),
+		}, "Leviathan", "Leviathan"),
+		generated(
+			13,
+			"Starlight Sanctum",
+			rgb(200, 190, 240),
+			rgb(255, 220, 120),
+			rgb(255, 255, 255),
+			{
+				r("Wisp", "Wisp", "Floater", "Fast"),
+				r("Seraph", "Seraph", "Humanoid", "Ranged", "Crown"),
+				r("HaloGolem", "Halo Golem", "Brute", "Tank"),
+			},
+			"ArchSeraph",
+			"Arch Seraph"
+		),
+		generated(
+			14,
+			"Moonbase Ruins",
+			rgb(120, 125, 140),
+			rgb(200, 210, 255),
+			rgb(150, 255, 230),
+			{
+				r("RoverBot", "Rover Bot", "Critter", "Fast", "Cap"),
+				r("LunarTrooper", "Lunar Trooper", "Humanoid", "Ranged", "Helmet"),
+				r("CraterHulk", "Crater Hulk", "Brute", "Tank"),
+			},
+			"MoonTyrant",
+			"Moon Tyrant"
+		),
+		generated(15, "Comet Belt", rgb(40, 60, 110), rgb(255, 240, 200), rgb(120, 220, 255), {
+			r("Stardrop", "Stardrop", "Blob", "Splitter"),
+			r("CometRider", "Comet Rider", "Humanoid", "Melee", "Helmet"),
+			r("RockShell", "Rock Shell", "Brute", "Tank", "Spikes"),
+		}, "CometWyrm", "Comet Wyrm"),
+		generated(
+			16,
+			"Nebula Gardens",
+			rgb(110, 60, 160),
+			rgb(255, 140, 200),
+			rgb(230, 150, 255),
+			{
+				r("GasJelly", "Gas Jelly", "Floater", "Ranged"),
+				r("StarGardener", "Star Gardener", "Humanoid", "Melee", "Cap"),
+				r("BloomBrute", "Bloom Brute", "Brute", "Tank", "Horns"),
+			},
+			"NebulaQueen",
+			"Nebula Queen"
+		),
+		generated(17, "Pulsar Forge", rgb(50, 60, 110), rgb(90, 130, 255), rgb(140, 255, 120), {
+			r("PulseDrone", "Pulse Drone", "Floater", "Fast"),
+			r("Forgeborn", "Forgeborn", "Humanoid", "Melee", "Helmet"),
+			r("NeutronOgre", "Neutron Ogre", "Brute", "Tank", "Horns"),
+		}, "PulsarSmith", "Pulsar Smith"),
+		generated(18, "Event Horizon", rgb(25, 20, 45), rgb(255, 160, 80), rgb(255, 255, 255), {
+			r("VoidMite", "Void Mite", "Critter", "Fast", "Spikes"),
+			r("GravityMonk", "Gravity Monk", "Humanoid", "Ranged", "Wrap"),
+			r("SingularityBeast", "Singularity Beast", "Blob", "Splitter"),
+		}, "HorizonEater", "Horizon Eater"),
+		generated(
+			19,
+			"Shattered Realm",
+			rgb(120, 90, 160),
+			rgb(120, 255, 220),
+			rgb(255, 200, 255),
+			{
+				r("ShardImp", "Shard Imp", "Critter", "Fast", "Spikes"),
+				r("RiftBlade", "Rift Blade", "Humanoid", "Melee", "Helmet"),
+				r("FractureGolem", "Fracture Golem", "Brute", "Tank"),
+			},
+			"ParadoxLord",
+			"Paradox Lord"
+		),
+		generated(
+			20,
+			"Clockwork Chasm",
+			rgb(130, 100, 60),
+			rgb(220, 170, 70),
+			rgb(120, 230, 210),
+			{
+				r("CogBug", "Cog Bug", "Critter", "Fast", "Cap"),
+				r("Gearwright", "Gearwright", "Humanoid", "Ranged", "Helmet"),
+				r("BrassColossus", "Brass Colossus", "Brute", "Tank", "Horns"),
+			},
+			"Chronarch",
+			"Chronarch"
+		),
+		generated(21, "Dreamscape", rgb(200, 150, 230), rgb(110, 100, 200), rgb(255, 230, 170), {
+			r("Daydream", "Daydream", "Floater", "Fast"),
+			r("Sleepwalker", "Sleepwalker", "Humanoid", "Melee", "Wrap"),
+			r("NightmareBlob", "Nightmare Blob", "Blob", "Splitter"),
+		}, "DreamWeaver", "Dream Weaver"),
+		generated(22, "Bone Wastes", rgb(180, 170, 150), rgb(200, 90, 90), rgb(150, 255, 200), {
+			r("BoneRat", "Bone Rat", "Critter", "Fast", "Spikes"),
+			r("Gravecaller", "Gravecaller", "Humanoid", "Ranged", "Horns"),
+			r("MarrowTitan", "Marrow Titan", "Brute", "Tank", "Helmet"),
+		}, "BoneEmperor", "Bone Emperor"),
+		generated(23, "Inferno Throne", rgb(120, 25, 20), rgb(255, 200, 40), rgb(255, 120, 40), {
+			r("Hellhound", "Hellhound", "Critter", "Fast", "Horns"),
+			r("Pyromancer", "Pyromancer", "Humanoid", "Ranged", "Wrap"),
+			r("DemonBrute", "Demon Brute", "Brute", "Tank", "Horns"),
+		}, "InfernoTyrant", "Inferno Tyrant"),
+		generated(24, "Primordial Chaos", rgb(90, 30, 70), rgb(255, 170, 60), rgb(255, 100, 200), {
+			r("ChaosSpawn", "Chaos Spawn", "Blob", "Splitter"),
+			r("EntropyKnight", "Entropy Knight", "Humanoid", "Melee", "Helmet"),
+			r("PrimalBehemoth", "Primal Behemoth", "Brute", "Tank", "Horns"),
+		}, "ChaosPrime", "Chaos Prime"),
+		generated(25, "Omega Gate", rgb(30, 15, 25), rgb(255, 60, 80), rgb(255, 255, 255), {
+			r("OmegaWisp", "Omega Wisp", "Floater", "Fast"),
+			r("GateWarden", "Gate Warden", "Humanoid", "Ranged", "Crown"),
+			r("Finalborn", "Finalborn", "Brute", "Tank", "Spikes"),
+		}, "TheOmega", "The Omega"),
+	}
+do
+	table.insert(LIST, biome)
+end
+
 local Biomes = {}
 
 Biomes.List = LIST

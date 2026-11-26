@@ -30,6 +30,9 @@ const SETS: { { name: string, body: Color3, trim: Color3 } } = {
 	{ name = "Bloodmoon", body = rgb(120, 20, 40), trim = rgb(255, 90, 90) },
 	{ name = "Prismatic", body = rgb(230, 250, 255), trim = rgb(255, 120, 250) },
 	{ name = "Dawnlight", body = rgb(255, 248, 230), trim = rgb(170, 210, 255) },
+	{ name = "Starweave", body = rgb(200, 235, 255), trim = rgb(255, 245, 180) },
+	{ name = "Nebula", body = rgb(50, 40, 120), trim = rgb(230, 120, 255) },
+	{ name = "Omegaplate", body = rgb(30, 20, 30), trim = rgb(255, 60, 80) },
 }
 
 const SLOTS: { Types.ArmorSlot } = { "Helmet", "Chestplate", "Boots" }

@@ -30,7 +30,8 @@ export type ForgeOdds = {
 local Balance = {}
 
 -- The flat damage every shot starts with, so a new player can clear stage 1 before training.
-Balance.GUN_DAMAGE_TIERS = { 1, 2, 3, 10, 25, 100, 500, 2000 }
+-- Past Eternal each tier hits 3x harder: a real upgrade that still leaves stages to grind.
+Balance.GUN_DAMAGE_TIERS = { 1, 2, 3, 10, 25, 100, 500, 2000, 6000, 18000, 54000 }
 Balance.GUN_DAMAGE_TUNING = {
 	BrickBlaster = 1.08,
 	ScrapScatter = 1.04,
@@ -286,13 +287,26 @@ end
 -- Health climbs about 150x per biome. Gun power climbs about 10x per biome from better ores and
 -- rarities, and training zones plus rebirths cover the rest, so every biome asks for a rebirth or
 -- two and some time on the pads.
+-- Past stage 80 there is a new tier only every 50 stages, so gun power climbs about 7x a biome
+-- (ores plus the tier bumps) instead of 10x. Health climbs 57x a biome there instead of 150x,
+-- keeping the same share for training and rebirths to cover: steady, and a little challenging.
+Balance.GROWTH_SHIFT_STAGE = 80
+
+local function shifted(stage: number, before: number, after: number): number
+	local shift = Balance.GROWTH_SHIFT_STAGE
+	if stage <= shift then
+		return before ^ (stage - 1)
+	end
+	return before ^ (shift - 1) * after ^ (stage - shift)
+end
+
 function Balance.enemyHealth(stage: number): number
-	return 30 * 1.65 ^ (stage - 1)
+	return 30 * shifted(stage, 1.65, 1.5)
 end
 
 -- Enemy hits grow slower than health so deep stages stay survivable with Toughness and levels.
 function Balance.enemyDamage(stage: number): number
-	return 8 * 1.15 ^ (stage - 1)
+	return 8 * shifted(stage, 1.15, 1.11)
 end
 
 function Balance.bossHealthMultiplier(): number
@@ -317,7 +331,7 @@ function Balance.enemyCount(stage: number): number
 end
 
 function Balance.enemyCoins(stage: number): number
-	return math.floor(4 * 1.32 ^ (stage - 1))
+	return math.floor(4 * shifted(stage, 1.32, 1.28))
 end
 
 function Balance.enemyXp(stage: number): number
@@ -429,6 +443,45 @@ end
 Balance.ETERNAL_TIER = 8
 Balance.ETERNAL_ORES = { Glasscore = true, Auroracore = true } :: { [string]: boolean }
 
+-- Key ores for each tier from Eternal up: the Cores of the region that tier belongs to.
+Balance.TIER_KEYS = {
+	[8] = Balance.ETERNAL_ORES,
+	[9] = {
+		Halocore = true,
+		Tempestcore = true,
+		Canopycore = true,
+		Tidecore = true,
+		Sanctumcore = true,
+	},
+	[10] = {
+		Mooncore = true,
+		Cometcore = true,
+		Nebulacore = true,
+		Pulsarcore = true,
+		Horizoncore = true,
+	},
+	[11] = {
+		Shattercore = true,
+		Chronocore = true,
+		Dreamcore = true,
+		Bonecore = true,
+		Infernocore = true,
+		Chaoscore = true,
+		Omegacore = true,
+	},
+} :: { [number]: { [string]: boolean } }
+
+-- True when a mix can reach `tier`: one of its ores is already that rare, or is the tier's key.
+function Balance.unlocksTier(ores: { OreDef }, tier: number): boolean
+	local keys = Balance.TIER_KEYS[tier]
+	for _, ore in ores do
+		if ore.rarity >= tier or (keys and keys[ore.id]) then
+			return true
+		end
+	end
+	return keys == nil
+end
+
 function Balance.forgeOdds(ores: { OreDef }, luck: number): ForgeOdds
 	local count = #ores
 	local chances = table.create(Rarity.Count, 0)
@@ -447,17 +500,9 @@ function Balance.forgeOdds(ores: { OreDef }, luck: number): ForgeOdds
 	end
 	local center = raritySum / count - 0.4 + 0.12 * (count - 1) + luck
 	local ceiling = math.min(best + 1, Rarity.Count)
-	if ceiling >= Balance.ETERNAL_TIER then
-		local hasKey = false
-		for _, ore in ores do
-			if Balance.ETERNAL_ORES[ore.id] then
-				hasKey = true
-				break
-			end
-		end
-		if not hasKey then
-			ceiling = Balance.ETERNAL_TIER - 1
-		end
+	-- From Eternal up, each tier needs an ore already at that tier or one of its key ores.
+	while ceiling >= Balance.ETERNAL_TIER and not Balance.unlocksTier(ores, ceiling) do
+		ceiling -= 1
 	end
 
 	local total = 0

@@ -22,7 +22,6 @@ end
 
 describe("the Eternal tier", function()
 	it("is the eighth rarity", function()
-		expect(Rarity.Count).toBe(8)
 		expect(Rarity.get(8).name).toBe("Eternal")
 	end)
 

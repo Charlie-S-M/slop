@@ -13,11 +13,10 @@ const Ores = require("@game/ReplicatedStorage/Shared/Ores")
 
 describe("Aurora Reach", function()
 	it("is the eighth biome, stages 71 to 80", function()
-		expect(Biomes.Count).toBe(8)
+		expect(Biomes.List[8].name).toBe("Aurora Reach")
 		expect(Biomes.forStage(71).name).toBe("Aurora Reach")
 		expect(Biomes.forStage(80).name).toBe("Aurora Reach")
-		expect(Biomes.forStage(81).index).toBe(1)
-		expect(Biomes.ascension(81)).toBe(1)
+		expect(Biomes.forStage(81).index).toBe(9)
 		expect(Biomes.forStage(75).boss.id).toBe("AuroraSentinel")
 	end)
 

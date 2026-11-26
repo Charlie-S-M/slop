@@ -16,7 +16,7 @@ end
 
 describe("the armor catalog", function()
 	it("has one piece per slot for every rarity", function()
-		expect(#Armor.List).toBe(24)
+		expect(#Armor.List).toBe(33)
 		expect(Armor.forSlot("Chestplate", 5).id).toBe("SunforgedChestplate")
 		expect(Armor.forSlot("Helmet", 8).name).toBe("Dawnlight Helmet")
 		expect(Armor.get("ScrapBoots") and (Armor.get("ScrapBoots") :: any).slot).toBe("Boots")
