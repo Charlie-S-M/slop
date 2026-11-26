@@ -12,7 +12,9 @@ const Players = game:GetService("Players")
 const ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 const Balance = require("@game/ReplicatedStorage/Shared/Balance")
+const Format = require("@game/ReplicatedStorage/Shared/Format")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
+const PackValues = require("@game/ReplicatedStorage/Shared/PackValues")
 const Pets = require("@game/ReplicatedStorage/Shared/Pets")
 const Products = require("@game/ReplicatedStorage/Shared/Products")
 const Types = require("@game/ReplicatedStorage/Shared/Types")
@@ -31,9 +33,6 @@ const RECEIPTS_KEPT = 100
 const SERVER_LUCK_SECONDS = 15 * 60
 -- How much stronger a limited gun is than the player's best gun.
 const LIMITED_GUN_EDGE = 1.6
-const COIN_PACKS = { Coins1 = 300, Coins2 = 1500, Coins3 = 6000, Coins4 = 25000 }
--- Power packs as a share of the next rebirth's cost.
-const POWER_PACKS = { Power1 = 0.1, Power2 = 0.4, Power3 = 1.2, Power4 = 4 }
 type PotionPack = { potion: string, count: number }
 const POTION_PACKS: { [string]: PotionPack } = {
 	LuckPotion = { potion = "LuckPotion", count = 1 },
@@ -128,13 +127,16 @@ local function grant(player: Player, profile: Types.Profile, key: string)
 	elseif key == "LuckyForge" or key == "LuckyForge5" then
 		profile.luckyForges += if key == "LuckyForge5" then 5 else 1
 		notify(player, "Lucky Forge ready! Your next forge rolls with 3× luck.")
-	elseif COIN_PACKS[key] then
-		PlayerData.addCoins(
-			player,
-			Balance.enemyCoins(math.max(profile.bestStage, 1)) * COIN_PACKS[key]
-		)
-	elseif POWER_PACKS[key] then
-		PlayerData.addPower(player, Balance.rebirthCost(profile.rebirths) * POWER_PACKS[key])
+	elseif PackValues.amount(profile, key) then
+		-- Sized to the player's own earning rate (PackValues), the same number the shop showed.
+		local amount, kind = PackValues.amount(profile, key)
+		if amount and kind == "Power" then
+			PlayerData.addPower(player, amount)
+			notify(player, `+{Format.abbreviate(amount)} Power! ⚡`)
+		elseif amount then
+			PlayerData.addCoins(player, amount)
+			notify(player, `+{Format.abbreviate(amount)} coins! 💰`)
+		end
 	elseif key == "Eggs3" or key == "Eggs10" then
 		hatch(player, profile, if key == "Eggs10" then 10 else 3)
 	elseif POTION_PACKS[key] then

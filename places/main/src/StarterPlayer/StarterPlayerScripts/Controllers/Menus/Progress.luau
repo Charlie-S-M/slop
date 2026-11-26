@@ -136,8 +136,8 @@ local function buildRebirth(content: Frame)
 			Net.event("Rebirth"):FireServer()
 		end,
 	})
-	-- Prestige: at 15 rebirths, reset rebirths and Power for 1.5x damage, +10% forge luck, and +25%
-	-- ore drops, for good, stacking each time.
+	-- Prestige: at 15 rebirths, a full restart for bonuses that double each time. It opens a
+	-- warning first, since it wipes almost everything.
 	prestigeButton = Kit.button({
 		name = "Prestige",
 		color = Kit.Colors.Gold,
@@ -147,10 +147,126 @@ local function buildRebirth(content: Frame)
 		text = "PRESTIGE",
 		parent = content,
 		onClick = function()
-			Net.event("Prestige"):FireServer()
+			local profile = ClientState.profile
+			if profile and Balance.canPrestige(profile.rebirths) then
+				Menus.open("PrestigeWarning")
+			end
 		end,
 	})
 	refreshRebirth()
+end
+
+------------------------------------------------------------------------------------------------
+-- Prestige warning
+------------------------------------------------------------------------------------------------
+
+local warningGains: TextLabel
+local confirmButton: TextButton
+-- Bumped each time the warning opens, so an older countdown stops when a newer one starts.
+local countdown = 0
+const CONFIRM_SECONDS = 3
+
+local function openWarning()
+	local profile = ClientState.profile
+	if not profile or not warningGains then
+		return
+	end
+	local coming = profile.prestige + 1
+	warningGains.Text =
+		`✨ You gain for good: damage ×{Balance.prestigeDamage(coming)}, ore drops ×{Balance.prestigeOres(
+			coming
+		)}, forge luck +{math.floor(Balance.prestigeLuck(coming) * 200 + 0.5)}%`
+	countdown += 1
+	local mine = countdown
+	task.spawn(function()
+		for left = CONFIRM_SECONDS, 1, -1 do
+			if countdown ~= mine then
+				return
+			end
+			Kit.setButtonColor(confirmButton, Kit.Colors.Grey, Kit.Colors.GreyDark)
+			Kit.setButtonText(confirmButton, `Prestige! ({left})`)
+			task.wait(1)
+		end
+		if countdown == mine then
+			Kit.setButtonColor(confirmButton, Kit.Colors.Gold, Kit.Colors.GoldDark)
+			Kit.setButtonText(confirmButton, "⭐ Prestige!")
+		end
+	end)
+end
+
+local function buildWarning(content: Frame)
+	Kit.text({
+		Text = "⚠️",
+		Size = UDim2.fromScale(0.2, 0.16),
+		Position = UDim2.fromScale(0.4, 0.01),
+		Stroke = 0,
+		Gradient = false,
+		FontFace = Kit.FONT_BODY,
+		Parent = content,
+	})
+	Kit.text({
+		Text = "This starts you over!",
+		Size = UDim2.fromScale(0.9, 0.09),
+		Position = UDim2.fromScale(0.05, 0.18),
+		TextColor3 = Color3.fromRGB(255, 110, 110),
+		Stroke = 3,
+		Parent = content,
+	})
+	Kit.text({
+		Text = "❌ You lose: every gun, ore, material, armor piece, attachment, and upgrade; "
+			.. "your coins, Power, rebirths, level, best stage, and Tower progress.",
+		Size = UDim2.fromScale(0.9, 0.17),
+		Position = UDim2.fromScale(0.05, 0.29),
+		TextColor3 = Color3.fromRGB(255, 200, 200),
+		Stroke = 2,
+		Parent = content,
+	})
+	Kit.text({
+		Text = "✅ You keep: your pets, the Index, quests and their rank, everything bought "
+			.. "with Robux, your settings, and your lifetime stats.",
+		Size = UDim2.fromScale(0.9, 0.14),
+		Position = UDim2.fromScale(0.05, 0.47),
+		TextColor3 = Color3.fromRGB(190, 255, 190),
+		Stroke = 2,
+		Parent = content,
+	})
+	warningGains = Kit.text({
+		Text = "",
+		Size = UDim2.fromScale(0.9, 0.12),
+		Position = UDim2.fromScale(0.05, 0.62),
+		TextColor3 = Color3.fromRGB(255, 220, 110),
+		Stroke = 2.5,
+		Parent = content,
+	})
+	Kit.button({
+		name = "Cancel",
+		color = Kit.Colors.Grey,
+		dark = Kit.Colors.GreyDark,
+		size = UDim2.fromScale(0.4, 0.14),
+		position = UDim2.fromScale(0.06, 0.8),
+		text = "Cancel",
+		parent = content,
+		onClick = function()
+			Menus.close()
+		end,
+	})
+	confirmButton = Kit.button({
+		name = "Confirm",
+		color = Kit.Colors.Grey,
+		dark = Kit.Colors.GreyDark,
+		size = UDim2.fromScale(0.44, 0.14),
+		position = UDim2.fromScale(0.5, 0.8),
+		text = "Prestige!",
+		parent = content,
+		onClick = function()
+			-- Unclickable until the countdown has run out.
+			if confirmButton.Text ~= "⭐ Prestige!" then
+				return
+			end
+			Net.event("Prestige"):FireServer()
+			Menus.close()
+		end,
+	})
 end
 
 ------------------------------------------------------------------------------------------------
@@ -395,6 +511,14 @@ function Progress:Init()
 		size = Vector2.new(0.42, 0.56),
 		build = buildRebirth,
 		onOpen = refreshRebirth,
+	})
+	Menus.register({
+		name = "PrestigeWarning",
+		title = "⭐ Prestige?",
+		color = Kit.Colors.Red,
+		size = Vector2.new(0.44, 0.6),
+		build = buildWarning,
+		onOpen = openWarning,
 	})
 	Menus.register({
 		name = "Daily",

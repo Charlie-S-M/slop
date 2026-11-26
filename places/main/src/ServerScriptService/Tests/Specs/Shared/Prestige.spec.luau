@@ -19,11 +19,17 @@ describe("prestige", function()
 		expect(Balance.prestigeOres(0)).toBe(1)
 	end)
 
-	it("stacks 1.5x damage, +10% forge luck, and +25% ore drops each time", function()
-		expect(Balance.prestigeDamage(1)).toBeCloseTo(1.5, 6)
-		expect(Balance.prestigeDamage(2)).toBeCloseTo(2, 6)
-		-- Forge Luck shows its effect doubled, so +10% on the card is 0.05 luck.
-		expect(Balance.prestigeLuck(1)).toBeCloseTo(0.05, 6)
-		expect(Balance.prestigeOres(2)).toBeCloseTo(1.5, 6)
+	it("doubles damage and ore drops with each prestige", function()
+		expect(Balance.prestigeDamage(1)).toBe(2)
+		expect(Balance.prestigeDamage(2)).toBe(4)
+		expect(Balance.prestigeDamage(3)).toBe(8)
+		expect(Balance.prestigeOres(2)).toBe(4)
+	end)
+
+	it("adds forge luck that doubles too: +25%, +75%, +175%", function()
+		-- Forge Luck shows its effect doubled, so +25% on the card is 0.125 luck.
+		expect(Balance.prestigeLuck(1)).toBeCloseTo(0.125, 6)
+		expect(Balance.prestigeLuck(2)).toBeCloseTo(0.375, 6)
+		expect(Balance.prestigeLuck(3)).toBeCloseTo(0.875, 6)
 	end)
 end)

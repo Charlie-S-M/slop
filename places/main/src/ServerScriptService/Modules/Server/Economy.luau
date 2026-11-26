@@ -332,14 +332,41 @@ local function onPrestige(player: Player)
 	if not profile or not Balance.canPrestige(profile.rebirths) then
 		return
 	end
-	profile.power = 0
-	profile.rebirths = 0
+	-- A full restart: everything earned in play goes back to a new player's. Kept: pets, the
+	-- Index, quests and their rank, everything bought with Robux (passes, potions, Lucky Forges,
+	-- wheel spins), settings, codes, and lifetime stats (kills, forges, playtime, Robux spent).
+	local fresh = PlayerData.newProfile()
+	for _, key in
+		{
+			"power",
+			"coins",
+			"rebirths",
+			"level",
+			"xp",
+			"guns",
+			"equipped",
+			"bag",
+			"upgrades",
+			"bestStage",
+			"materials",
+			"bossesDefeated",
+			"armor",
+			"equippedArmor",
+			"towerBest",
+			"attachments",
+		}
+	do
+		(profile :: any)[key] = (fresh :: any)[key]
+	end
+	profile.pendingForge = nil
 	profile.prestige += 1
 	PlayerData.markState(player)
 	PlayerData.LoadoutChanged:Fire(player)
 	notify(
 		player,
-		`Prestige {profile.prestige}! Damage ×{Balance.prestigeDamage(profile.prestige)} for good.`,
+		`Prestige {profile.prestige}! Damage and ore drops ×{Balance.prestigeDamage(
+			profile.prestige
+		)} for good.`,
 		Color3.fromRGB(255, 210, 90)
 	)
 end

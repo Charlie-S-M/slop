@@ -552,4 +552,7 @@ function PlayerData.fallbackUid(): string
 	return HttpService:GenerateGUID(false)
 end
 
+-- A brand-new profile, for resets like Prestige that start a player over.
+PlayerData.newProfile = defaultProfile
+
 return PlayerData

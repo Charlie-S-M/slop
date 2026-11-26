@@ -51,8 +51,10 @@ Balance.MAX_FORGE_ORES = 5
 Balance.MAX_GUNS = 60
 Balance.BOSS_EVERY = 5
 Balance.CHECKPOINT_EVERY = 10
-Balance.ORE_DROP_CHANCE = 0.45
-Balance.BOSS_ORE_DROPS = 4
+-- Ores are scarce on purpose: a third of what they once were, so ore pets and prestige (which
+-- multiply the chance) are what speed forging up.
+Balance.ORE_DROP_CHANCE = 0.15
+Balance.BOSS_ORE_DROPS = 2
 Balance.FORGE_SECONDS = 2.6
 
 -- The forging timing game. Each strike's ring shrinks over RING_SECONDS; a click's error is how
@@ -162,8 +164,9 @@ Balance.TRAINING_ZONES = {
 -- Player stats
 ------------------------------------------------------------------------------------------------
 
--- Prestige: at PRESTIGE_REBIRTHS rebirths a player can reset rebirths and Power for permanent bonuses
--- that stack with each prestige: damage, forge luck, and ore drops.
+-- Prestige: at PRESTIGE_REBIRTHS rebirths a player can wipe their progress (Economy.luau lists what
+-- resets) for permanent bonuses that double with each prestige: damage and ore drops x2, x4, x8...,
+-- and forge luck +25%, +75%, +175%...
 Balance.PRESTIGE_REBIRTHS = 15
 
 function Balance.canPrestige(rebirths: number): boolean
@@ -171,16 +174,16 @@ function Balance.canPrestige(rebirths: number): boolean
 end
 
 function Balance.prestigeDamage(prestige: number): number
-	return 1 + 0.5 * prestige
+	return 2 ^ prestige
 end
 
--- Forge luck units; the Forge Luck card shows them doubled, so 0.05 reads as +10%.
+-- Forge luck units; the Forge Luck card shows them doubled, so 0.125 reads as +25%.
 function Balance.prestigeLuck(prestige: number): number
-	return 0.05 * prestige
+	return 0.125 * (2 ^ prestige - 1)
 end
 
 function Balance.prestigeOres(prestige: number): number
-	return 1 + 0.25 * prestige
+	return 2 ^ prestige
 end
 
 function Balance.rebirthDamageMultiplier(rebirths: number): number

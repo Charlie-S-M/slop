@@ -14,6 +14,7 @@ const TweenService = game:GetService("TweenService")
 
 const Format = require("@game/ReplicatedStorage/Shared/Format")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
+const PackValues = require("@game/ReplicatedStorage/Shared/PackValues")
 const Products = require("@game/ReplicatedStorage/Shared/Products")
 const ClientState = require("../ClientState")
 const Kit = require("../UI/Kit")
@@ -59,7 +60,12 @@ local function refresh()
 		end
 		local note = card.note
 		if note then
-			if potion then
+			local amount, kind = PackValues.amount(profile, def.key)
+			if amount then
+				note.Text = if kind == "Power"
+					then `You get ⚡ {Format.abbreviate(amount)}`
+					else `You get 💰 {Format.abbreviate(amount)}`
+			elseif potion then
 				local owned = profile.potions[def.key] or 0
 				local ends = profile.boosts[potion] or 0
 				note.Text = if ends > now
@@ -154,6 +160,8 @@ local function productCard(def: Products.ProductDef, order: number, parent: Fram
 		or def.key == "LuckyForge"
 		or def.key == "NovaReaper"
 		or def.key == "DragonheartCannon"
+		or PackValues.POWER_MINUTES[def.key]
+		or PackValues.COIN_MINUTES[def.key]
 	then
 		note = Kit.text({
 			Text = "",
