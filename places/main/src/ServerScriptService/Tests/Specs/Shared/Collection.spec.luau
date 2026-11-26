@@ -4,11 +4,11 @@ local Balance = require("@game/ReplicatedStorage/Shared/Balance")
 local Guns = require("@game/ReplicatedStorage/Shared/Guns")
 local Ores = require("@game/ReplicatedStorage/Shared/Ores")
 Jest.it(
-	"indexes twenty-eight forgeable guns, seven evolutions, and the limited shop and wheel guns",
+	"indexes thirty-six forgeable guns, twelve evolutions, and the limited shop and wheel guns",
 	function()
-		Jest.expect(#Guns.List).toBe(35 + #Guns.LIMITED)
+		Jest.expect(#Guns.List).toBe(48 + #Guns.LIMITED)
 		Jest.expect(#Guns.LIMITED).toBe(3)
-		for tier, expected in { 5, 4, 3, 3, 3, 1, 1, 2, 2, 2, 2 } do
+		for tier, expected in { 5, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3 } do
 			Jest.expect(#Guns.pool(tier)).toBe(expected)
 		end
 		Jest.expect(Guns.get("Infinipew") ~= nil).toBe(true)
@@ -19,7 +19,9 @@ Jest.it("scales existing shot damage once, including spread pellets", function()
 	for _, def in Guns.List do
 		local baseline = Balance.shotDamage(7, 13, def.kind, 2, 3)
 		local actual = Balance.shotDamage(7, 13, def.kind, 2, 3, def.id)
-		local expected = tiers[def.rarity] * (Balance.GUN_DAMAGE_TUNING[def.id] or 1)
+		local expected = tiers[def.rarity]
+			* (Balance.GUN_DAMAGE_TUNING[def.id] or 1)
+			* Balance.focusTuning(def)
 		Jest.expect(math.abs(actual / baseline - expected) < 1e-7).toBe(true)
 	end
 end)

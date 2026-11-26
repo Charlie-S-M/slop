@@ -269,7 +269,12 @@ local function startForge(player: Player, request: unknown, slot: Types.ArmorSlo
 		slot = slot,
 		rarity = rarity,
 		basePower = basePower,
-		train = math.max(1, math.floor(basePower * GunStats.oreTrainingFactor(list) + 0.5)),
+		train = math.max(
+			1,
+			math.floor(
+				basePower * GunStats.oreTrainingFactor(list) * Balance.focusTraining(itemId) + 0.5
+			)
+		),
 		oreIds = oreIds,
 		startedAt = os.time(),
 	}

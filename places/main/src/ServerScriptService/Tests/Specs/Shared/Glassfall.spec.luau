@@ -36,7 +36,7 @@ describe("evolutions", function()
 				expect(table.find(Guns.pool(def.rarity), def)).toBeNil()
 			end
 		end
-		expect(evolvedCount).toBe(7)
+		expect(evolvedCount).toBe(12)
 	end)
 
 	it("charges coins worth stage-70 kills, only from Legendary up", function()

@@ -206,6 +206,39 @@ function Balance.baseShotDamage(
 		* Balance.levelDamageMultiplier(level)
 end
 
+-- What a gun's focus does to its hits: Damage guns hit 25% harder and Training guns 15% softer.
+-- FireRate guns are tuned so their damage per second matches their tier's Damage gun.
+Balance.FOCUS_DAMAGE = 1.25
+Balance.FOCUS_TRAINING_DAMAGE = 0.85
+-- Training guns give this much more Power per shot when training.
+Balance.FOCUS_TRAINING = 2.5
+
+local function kindDps(kind: Guns.GunKind): number
+	local stats = Guns.kindStats(kind)
+	return stats.damageScale * stats.pellets * stats.fireRate
+end
+
+function Balance.focusTuning(def: Guns.GunDef): number
+	if def.focus == "Damage" then
+		return Balance.FOCUS_DAMAGE
+	elseif def.focus == "Training" then
+		return Balance.FOCUS_TRAINING_DAMAGE
+	elseif def.focus == "FireRate" then
+		for _, other in Guns.pool(def.rarity) do
+			if other.focus == "Damage" then
+				return Balance.FOCUS_DAMAGE * kindDps(other.kind) / kindDps(def.kind)
+			end
+		end
+	end
+	return 1
+end
+
+-- How much a gun's focus multiplies the Training Power it's forged with.
+function Balance.focusTraining(gunId: string): number
+	local def = Guns.get(gunId)
+	return if def and def.focus == "Training" then Balance.FOCUS_TRAINING else 1
+end
+
 function Balance.pelletDamage(
 	power: number,
 	gunPower: number,
@@ -216,7 +249,8 @@ function Balance.pelletDamage(
 ): number
 	local def = if gunId then Guns.get(gunId) else nil
 	local tierScale = if def then Balance.GUN_DAMAGE_TIERS[def.rarity] else 1
-	local tuning = if gunId then Balance.GUN_DAMAGE_TUNING[gunId] or 1 else 1
+	local tuning = (if gunId then Balance.GUN_DAMAGE_TUNING[gunId] or 1 else 1)
+		* (if def then Balance.focusTuning(def) else 1)
 	return tierScale
 		* tuning
 		* Balance.baseShotDamage(power, gunPower, rebirths, level)

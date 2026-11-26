@@ -39,6 +39,8 @@ export type GunDef = {
 	trim: Color3,
 	-- Set on evolved guns: the id of the gun that evolves into this one.
 	evolvesFrom: string?,
+	-- Legendary and up: what the gun is best at (Damage, Training, or FireRate).
+	focus: string?,
 }
 
 const KINDS: { [GunKind]: KindStats } = {
@@ -566,10 +568,113 @@ for _, def in
 			rgb(255, 120, 60),
 			rgb(255, 230, 230)
 		),
+		-- Filling every tier from Legendary up to three guns, one per focus (FOCUS below).
+		gun(
+			"BloodmoonCannon",
+			"Bloodmoon Cannon",
+			6,
+			"Launcher",
+			rgb(90, 15, 30),
+			rgb(255, 70, 90),
+			rgb(255, 170, 90)
+		),
+		gun(
+			"Riftcaller",
+			"Riftcaller",
+			6,
+			"Rifle",
+			rgb(60, 25, 80),
+			rgb(255, 120, 200),
+			rgb(255, 180, 90)
+		),
+		gun(
+			"Godsplitter",
+			"Godsplitter",
+			7,
+			"Sniper",
+			rgb(30, 40, 60),
+			rgb(70, 240, 230),
+			rgb(255, 130, 250)
+		),
+		gun(
+			"HalcyonRifle",
+			"Halcyon Rifle",
+			7,
+			"Rifle",
+			rgb(225, 245, 250),
+			rgb(70, 240, 230),
+			rgb(255, 200, 250)
+		),
+		gun(
+			"EternityGatling",
+			"Eternity Gatling",
+			8,
+			"Minigun",
+			rgb(250, 240, 220),
+			rgb(170, 210, 255),
+			rgb(255, 230, 170)
+		),
+		gun(
+			"StarsongRifle",
+			"Starsong Rifle",
+			9,
+			"Rifle",
+			rgb(240, 248, 255),
+			rgb(150, 230, 255),
+			rgb(255, 245, 180)
+		),
+		gun(
+			"OrbitRifle",
+			"Orbit Rifle",
+			10,
+			"Rifle",
+			rgb(30, 30, 80),
+			rgb(90, 110, 255),
+			rgb(230, 120, 255)
+		),
+		gun(
+			"OmegaGatling",
+			"Omega Gatling",
+			11,
+			"Minigun",
+			rgb(20, 10, 15),
+			rgb(255, 60, 80),
+			rgb(255, 255, 255)
+		),
 	}
 do
 	table.insert(LIST, def)
 end
+
+--[[
+	What each Legendary-and-up gun is best at. Damage guns hit hardest; Training guns train much
+	faster but hit softer; FireRate guns shoot fast with lighter shots that add up to the same
+	damage per second as their tier's Damage gun. Balance.focusTuning and focusTraining apply it.
+]]
+export type Focus = "Damage" | "Training" | "FireRate"
+const FOCUS: { [string]: Focus } = {
+	TitanHowitzer = "Damage",
+	GildedHandcannon = "Training",
+	SolarFlare = "FireRate",
+	BloodmoonCannon = "Damage",
+	Riftcaller = "Training",
+	CosmicAnnihilator = "FireRate",
+	Godsplitter = "Damage",
+	HalcyonRifle = "Training",
+	Starforge = "FireRate",
+	EverlightCannon = "Damage",
+	Dawnbringer = "Training",
+	EternityGatling = "FireRate",
+	SeraphLance = "Damage",
+	StarsongRifle = "Training",
+	HaloRepeater = "FireRate",
+	QuasarCannon = "Damage",
+	OrbitRifle = "Training",
+	NebulaStorm = "FireRate",
+	Worldbreaker = "Damage",
+	OmegaRifle = "Training",
+	OmegaGatling = "FireRate",
+}
 local collectionIds = {
 	"PopPistol",
 	"BrickBlaster",
@@ -599,6 +704,14 @@ local collectionIds = {
 	"QuasarCannon",
 	"OmegaRifle",
 	"Worldbreaker",
+	"BloodmoonCannon",
+	"Riftcaller",
+	"Godsplitter",
+	"HalcyonRifle",
+	"EternityGatling",
+	"StarsongRifle",
+	"OrbitRifle",
+	"OmegaGatling",
 }
 --[[
 	Evolved guns: one per Legendary-and-up forge gun. Each keeps its base gun's kind and rarity, is
@@ -625,6 +738,47 @@ local function evolved(
 end
 
 const EVOLUTIONS: { GunDef } = {
+	-- The focus guns added to Mythic, Godly, and Eternal.
+	evolved(
+		"BloodmoonCannon",
+		"CrimsonEclipse",
+		"Crimson Eclipse",
+		rgb(60, 5, 20),
+		rgb(255, 40, 70),
+		rgb(255, 210, 120)
+	),
+	evolved(
+		"Riftcaller",
+		"RiftSovereign",
+		"Rift Sovereign",
+		rgb(40, 15, 60),
+		rgb(255, 90, 220),
+		rgb(255, 220, 120)
+	),
+	evolved(
+		"Godsplitter",
+		"Heavensplitter",
+		"Heavensplitter",
+		rgb(15, 25, 45),
+		rgb(120, 255, 240),
+		rgb(255, 160, 255)
+	),
+	evolved(
+		"HalcyonRifle",
+		"HalcyonAscendant",
+		"Halcyon Ascendant",
+		rgb(240, 255, 255),
+		rgb(120, 255, 230),
+		rgb(255, 220, 255)
+	),
+	evolved(
+		"EternityGatling",
+		"InfinityGatling",
+		"Infinity Gatling",
+		rgb(255, 250, 235),
+		rgb(150, 200, 255),
+		rgb(255, 240, 190)
+	),
 	evolved(
 		"Dawnbringer",
 		"SolsticeParagon",
@@ -689,9 +843,19 @@ const EVOLUTION_OF: { [string]: GunDef } = {}
 for _, def in LIST do
 	BY_ID[def.id] = def
 end
+for id, focus in FOCUS do
+	local def = BY_ID[id]
+	if def then
+		def.focus = focus
+	end
+end
 for _, def in EVOLUTIONS do
 	BY_ID[def.id] = def
 	EVOLUTION_OF[def.evolvesFrom :: string] = def
+end
+-- An evolved gun keeps its base gun's focus.
+for _, def in EVOLUTIONS do
+	def.focus = FOCUS[def.evolvesFrom :: string]
 end
 local collection: { GunDef } = {}
 for _, id in collectionIds do
