@@ -76,18 +76,31 @@ local function setControls(enabled: boolean)
 	end
 end
 
+-- The camera glide in progress. A new shot cancels it, or a skipped step's glide would keep
+-- dragging the camera back after the next shot had moved it.
+local cameraGlide: Tween? = nil
+
 local function shot(eye: Vector3, focus: Vector3, fieldOfView: number?)
+	if cameraGlide then
+		cameraGlide:Cancel()
+		cameraGlide = nil
+	end
 	camera.CameraType = Enum.CameraType.Scriptable
 	camera.FieldOfView = fieldOfView or 55
 	camera.CFrame = CFrame.lookAt(eye, focus)
 end
 
 local function glide(eye: Vector3, focus: Vector3, seconds: number)
-	TweenService
-		:Create(camera, TweenInfo.new(seconds, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {
-			CFrame = CFrame.lookAt(eye, focus),
-		})
-		:Play()
+	if cameraGlide then
+		cameraGlide:Cancel()
+	end
+	local tween = TweenService:Create(
+		camera,
+		TweenInfo.new(seconds, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut),
+		{ CFrame = CFrame.lookAt(eye, focus) }
+	)
+	cameraGlide = tween
+	tween:Play()
 end
 
 local function shake(strength: number)
@@ -180,6 +193,11 @@ local function layFlat(model: Model, at: CFrame)
 	model:PivotTo(
 		at * CFrame.Angles(0, math.rad(90), 0) * CFrame.Angles(0, 0, math.rad(90)) * offset
 	)
+	-- Turned on its side, a piece's bounds can sit off to one side (armor more than guns), so slide
+	-- it until its middle is over `at`.
+	local center = model:GetBoundingBox().Position
+	local shift = at.Position - center
+	model:PivotTo(model:GetPivot() + Vector3.new(shift.X, 0, shift.Z))
 end
 
 ------------------------------------------------------------------------------------------------
@@ -252,10 +270,11 @@ local function pour(set: ForgeSet.Set, gun: Model, paints: { Paint })
 	if not hold(0.45, true) then
 		return
 	end
+	-- The stream falls from the lip's height straight into the middle of the mold.
 	local lip = set.crucibleHinge.Position + Vector3.new(0, 0.5, 1.5)
 	local length = (lip.Y - mold.Y)
 	set.stream.Size = Vector3.new(1.1, length, 1.1)
-	set.stream.CFrame = CFrame.new(Vector3.new(lip.X, mold.Y + length / 2, lip.Z))
+	set.stream.CFrame = CFrame.new(Vector3.new(mold.X, mold.Y + length / 2, mold.Z))
 	set.stream.Transparency = 0.05
 	Kit.sound(Kit.Sounds.Whoosh, 0.3, 0.6)
 	-- The cavity fills: the glowing gun fades in from nothing.

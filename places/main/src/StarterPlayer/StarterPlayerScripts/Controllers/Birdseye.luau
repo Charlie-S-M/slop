@@ -441,7 +441,18 @@ local function inspect(item: Instance)
 			item.Size = UDim2.fromScale(13, 2.6)
 			item.AlwaysOnTop = true
 		elseif offset.Y > 2 and offset.Z == 0 then
-			item.StudsOffsetWorldSpace = Vector3.new(offset.X, 1, -offset.Y * 0.7)
+			-- A station's sign: drawn on the floor (so it doesn't slide like a high one would),
+			-- centered over the station, just north of its icon.
+			local adornee = item.Adornee
+			local floor = if adornee and adornee:IsA("BasePart")
+				then floorBelow(adornee.Position, adornee.Parent or adornee)
+				else nil
+			if adornee and adornee:IsA("BasePart") and floor and item.Name == "Label" then
+				item.StudsOffsetWorldSpace = Vector3.new(0, floor + 1 - adornee.Position.Y, -9)
+				item.AlwaysOnTop = true
+			else
+				item.StudsOffsetWorldSpace = Vector3.new(offset.X, 1, -offset.Y * 0.7)
+			end
 		end
 	elseif item:IsA("Model") then
 		style(item)

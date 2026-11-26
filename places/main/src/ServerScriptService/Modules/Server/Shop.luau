@@ -310,12 +310,17 @@ function Shop:Start()
 	for _, player in PlayerData.players() do
 		task.spawn(checkPasses, player)
 	end
-	-- Auto Rebirth: rebirths players with the pass whenever they can afford it.
+	-- Auto Rebirth: with the pass and the setting on, rebirths players whenever they can afford it.
 	task.spawn(function()
 		while true do
 			task.wait(3)
 			for _, player in PlayerData.players() do
-				if Boosts.hasPass(player, "AutoRebirth") then
+				local profile = PlayerData.get(player)
+				if
+					profile
+					and profile.settings.autoRebirth
+					and Boosts.hasPass(player, "AutoRebirth")
+				then
 					Economy.rebirth(player)
 				end
 			end

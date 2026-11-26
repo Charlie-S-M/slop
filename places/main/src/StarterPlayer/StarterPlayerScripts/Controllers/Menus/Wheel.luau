@@ -6,6 +6,7 @@
 	onto it, then the prize is announced. Paid spins come in packs of 1, 3, and 10.
 ]]
 
+const RunService = game:GetService("RunService")
 const TweenService = game:GetService("TweenService")
 
 const Format = require("@game/ReplicatedStorage/Shared/Format")
@@ -26,6 +27,8 @@ const CREAM = Color3.fromRGB(250, 235, 205)
 const SPIN_TIME = 4.5
 
 local built = false
+-- Each prize tile and its slice's angle, to keep the tiles upright as the wheel turns.
+local tiles: { { frame: Frame, angle: number } } = {}
 local spinning = false
 local wheel: Frame
 local spinButton: TextButton
@@ -79,13 +82,17 @@ local function slice(index: number)
 		Parent = turned(angle + SLICE / 2),
 	})
 	-- The slice's prize, read from the rim inward.
+	-- Square tiles out near the rim, small enough that neighbors never touch. Each one is turned
+	-- back against the wheel every frame, so its text always reads right side up.
 	local tile = Kit.new("Frame", {
 		BackgroundColor3 = if index % 2 == 1 then RED else CREAM,
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.fromScale(0.5, 0.05),
-		Size = UDim2.fromScale(0.25, 0.3),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.155),
+		Size = UDim2.fromScale(0.2, 0.2),
+		SizeConstraint = Enum.SizeConstraint.RelativeXX,
 		Parent = turned(angle),
 	})
+	table.insert(tiles, { frame = tile, angle = angle })
 	Kit.corner(14).Parent = tile
 	Kit.stroke(2, Color3.fromRGB(150, 100, 30), Enum.ApplyStrokeMode.Border).Parent = tile
 	local text = if index % 2 == 1 then Kit.Colors.White else Color3.fromRGB(110, 40, 40)
@@ -205,6 +212,13 @@ local function build(content: Frame)
 		end
 	end
 	refresh()
+	RunService.RenderStepped:Connect(function()
+		if Menus.isOpen("Wheel") then
+			for _, tile in tiles do
+				tile.frame.Rotation = -(tile.angle + wheel.Rotation)
+			end
+		end
+	end)
 	task.spawn(function()
 		while content.Parent do
 			if Menus.isOpen("Wheel") then

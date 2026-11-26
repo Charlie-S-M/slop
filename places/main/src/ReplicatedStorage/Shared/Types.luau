@@ -80,6 +80,8 @@ export type Settings = {
 	autoMode: boolean,
 	-- Skip the wait between stages and waves as soon as it starts.
 	autoSkip: boolean,
+	-- With the Auto Rebirth pass: rebirth by itself as soon as the player can.
+	autoRebirth: boolean,
 	sfx: number,
 	music: number,
 }

@@ -89,7 +89,7 @@ local function onSaveSetting(player: Player, key: unknown, value: unknown)
 	if not profile or typeof(key) ~= "string" then
 		return
 	end
-	if key == "autoMode" or key == "autoSkip" then
+	if key == "autoMode" or key == "autoSkip" or key == "autoRebirth" then
 		if typeof(value) == "boolean" then
 			(profile.settings :: any)[key] = value
 		end

@@ -222,9 +222,16 @@ local function build(content: Frame)
 		"⏩ Auto Skip Wave",
 		"Skip the wait between stages and waves right away"
 	)
-	addSlider(content, 3, "sfx", "🔊 Sound Effects", "Shots, hits, and menu sounds")
-	addSlider(content, 4, "music", "🎵 Music", "Lobby and Gauntlet tracks")
-	local frame = row(content, 5, "🎟️ Codes", "Type a code and press Redeem")
+	addToggle(
+		content,
+		3,
+		"autoRebirth",
+		"🔄 Auto Rebirth",
+		"Rebirth by itself when you can (needs the Auto Rebirth pass)"
+	)
+	addSlider(content, 4, "sfx", "🔊 Sound Effects", "Shots, hits, and menu sounds")
+	addSlider(content, 5, "music", "🎵 Music", "Lobby and Gauntlet tracks")
+	local frame = row(content, 6, "🎟️ Codes", "Type a code and press Redeem")
 	codeBox = Kit.new("TextBox", {
 		Text = "",
 		PlaceholderText = "Enter code",
@@ -263,7 +270,7 @@ function SettingsMenu:Init()
 		name = "Settings",
 		title = "⚙️ Settings",
 		color = Kit.Colors.Grey,
-		size = Vector2.new(0.46, 0.66),
+		size = Vector2.new(0.46, 0.78),
 		build = build,
 		onOpen = refresh,
 	})
