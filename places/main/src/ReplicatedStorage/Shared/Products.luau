@@ -351,6 +351,8 @@ const IDS: { [number]: { [string]: number } } = {
 	-- 2D Gun Exponential! (ALPHA), owned by FarSource Development.
 	[10779068698] = {
 		VIP = 2098626200,
+		ForgeSkip = 2099334273,
+		AutoPerfectForge = 2101841555,
 		DoubleCoins = 2098656216,
 		SpeedBoost = 2099928165,
 		ExtraLuck = 2102099382,
@@ -413,8 +415,6 @@ Products.POTIONS = { LuckPotion = "Luck", PowerPotion = "Power", CoinPotion = "C
 Products.POTION_SECONDS = 15 * 60
 -- The limited guns' sale ends at this time (UTC), shown as a countdown.
 Products.LIMITED_ENDS = 1797465600
-
-Products.PENDING_PASSES = { ForgeSkip = true, AutoPerfectForge = true } :: { [string]: boolean }
 
 local byKey: { [string]: ProductDef } = {}
 for _, def in PRODUCTS do
