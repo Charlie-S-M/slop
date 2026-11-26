@@ -21,12 +21,54 @@ const Kit = require("../UI/Kit")
 const Purchases = require("../UI/Purchases")
 const Menus = require("../Menus")
 
+const ICONS: { [string]: string } = {
+	VIP = "rbxassetid://75082206768069",
+	ForgeSkip = "rbxassetid://107491437957675",
+	AutoPerfectForge = "rbxassetid://74931791150498",
+	DoubleCoins = "rbxassetid://129240356882843",
+	SpeedBoost = "rbxassetid://91049851600984",
+	ExtraLuck = "rbxassetid://120939241537738",
+	SuperLuck = "rbxassetid://119635048464725",
+	AutoCollect = "rbxassetid://132765503741360",
+	KeepOres = "rbxassetid://106213568812684",
+	DoubleBossLoot = "rbxassetid://129417140537604",
+	AutoRebirth = "rbxassetid://118310728453503",
+	PetStorage30 = "rbxassetid://113040957963786",
+	PetStorage60 = "rbxassetid://88418366752160",
+	StarterPack = "rbxassetid://130827733906026",
+	NovaReaper = "rbxassetid://105357955856386",
+	DragonheartCannon = "rbxassetid://96414104804423",
+	ServerLuck = "rbxassetid://108415526433412",
+	LuckyForge = "rbxassetid://89847424186181",
+	LuckyForge5 = "rbxassetid://124708381194995",
+	Power1 = "rbxassetid://104178201178184",
+	Power2 = "rbxassetid://73920252810601",
+	Power3 = "rbxassetid://99878191341049",
+	Power4 = "rbxassetid://109647640405739",
+	Coins1 = "rbxassetid://81644951723199",
+	Coins2 = "rbxassetid://95194189899062",
+	Coins3 = "rbxassetid://126987145787059",
+	Coins4 = "rbxassetid://119771257444042",
+	Eggs3 = "rbxassetid://139736038356674",
+	Eggs10 = "rbxassetid://121938876395306",
+	LuckPotion = "rbxassetid://73938991494833",
+	LuckPotion5 = "rbxassetid://80370437321900",
+	PowerPotion = "rbxassetid://95040728632073",
+	PowerPotion5 = "rbxassetid://106589231895557",
+	CoinPotion = "rbxassetid://123756723964763",
+	CoinPotion5 = "rbxassetid://130471800289012",
+	WheelSpin1 = "rbxassetid://83412254646547",
+	WheelSpin3 = "rbxassetid://98740610747289",
+	WheelSpin10 = "rbxassetid://99080256700893",
+	NewQuests = "rbxassetid://139381574117591",
+}
+
 local ShopMenu = {}
 
-const PAGE_COLOR = Color3.fromRGB(70, 40, 120)
+const PAGE_COLOR = Color3.fromRGB(52, 32, 78)
 const STALL = Vector3.new(88, 0, 48)
 const RAIN_RANGE = 34
-const RAIN_GLYPHS = { "$", "💵", "💰", "$", "🪙" }
+const RAIN_GLYPHS = { "$", "R$", "$" }
 
 type Card = { def: Products.ProductDef, button: TextButton, note: TextLabel? }
 
@@ -50,10 +92,16 @@ local function refresh()
 		local potion = Products.POTIONS[def.key]
 		if def.kind == "pass" and ownsPass(def.key) then
 			Kit.setButtonColor(card.button, Kit.Colors.Grey, Kit.Colors.GreyDark)
-			Kit.setButtonText(card.button, "✓ Owned")
+			Kit.setButtonText(card.button, "Owned")
 		elseif def.key == "StarterPack" and profile.starterPackBought then
 			Kit.setButtonColor(card.button, Kit.Colors.Grey, Kit.Colors.GreyDark)
-			Kit.setButtonText(card.button, "✓ Bought")
+			Kit.setButtonText(card.button, "Bought")
+		elseif
+			(def.key == "NovaReaper" or def.key == "DragonheartCannon")
+			and now >= Products.LIMITED_ENDS
+		then
+			Kit.setButtonText(card.button, "Sold out")
+			Kit.setButtonColor(card.button, Kit.Colors.Grey, Kit.Colors.GreyDark)
 		else
 			Kit.setButtonColor(card.button, Kit.Colors.Green, Kit.Colors.GreenDark)
 			Kit.setButtonText(card.button, `R$ {Format.commas(def.price)}`)
@@ -63,13 +111,13 @@ local function refresh()
 			local amount, kind = PackValues.amount(profile, def.key)
 			if amount then
 				note.Text = if kind == "Power"
-					then `You get ⚡ {Format.abbreviate(amount)}`
-					else `You get 💰 {Format.abbreviate(amount)}`
+					then `You get {Format.abbreviate(amount)} Power`
+					else `You get {Format.abbreviate(amount)} coins`
 			elseif potion then
 				local owned = profile.potions[def.key] or 0
 				local ends = profile.boosts[potion] or 0
 				note.Text = if ends > now
-					then `Active {Format.duration(ends - now)} · Own {owned}`
+					then `Active {Format.duration(ends - now)} | Own {owned}`
 					else `You own {owned}`
 			elseif def.key == "ServerLuck" then
 				local ends = ReplicatedStorage:GetAttribute("ServerLuckUntil")
@@ -81,7 +129,7 @@ local function refresh()
 			elseif def.key == "NovaReaper" or def.key == "DragonheartCannon" then
 				local left = Products.LIMITED_ENDS - now
 				note.Text = if left > 0
-					then `LIMITED · Ends in {Format.duration(left)}`
+					then `LIMITED - Ends in {Format.duration(left)}`
 					else "Sold out"
 			end
 		end
@@ -91,8 +139,9 @@ end
 local function sectionFrame(order: number, label: string, glyph: string, columns: number): Frame
 	Kit.text({
 		Name = `{label}Header`,
-		Text = `{glyph}  {label}  {glyph}`,
-		Size = UDim2.new(1, 0, 0, 44),
+		Text = `{glyph}   {string.upper(label)}`,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Size = UDim2.new(0.94, 0, 0, 36),
 		LayoutOrder = order * 2 - 1,
 		Stroke = 3,
 		Parent = page,
@@ -105,45 +154,58 @@ local function sectionFrame(order: number, label: string, glyph: string, columns
 		LayoutOrder = order * 2,
 		Parent = page,
 	})
-	Kit.new("UIGridLayout", {
+	local layout = Kit.new("UIGridLayout", {
 		CellSize = UDim2.new(1 / columns - 0.02, 0, 0, if columns == 1 then 150 else 190),
-		CellPadding = UDim2.new(0.02, 0, 0, 12),
+		CellPadding = UDim2.fromOffset(8, 12),
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		HorizontalAlignment = Enum.HorizontalAlignment.Center,
 		Parent = grid,
 	})
+	local function resize()
+		local width = page.AbsoluteWindowSize.X
+		local n = math.min(columns, math.max(1, math.floor(width / 138)))
+		layout.CellSize = UDim2.new(
+			1 / n,
+			-8,
+			0,
+			if columns == 1 then (if width < 400 then 156 else 124) else 182
+		)
+	end
+	page:GetPropertyChangedSignal("AbsoluteWindowSize"):Connect(resize)
+	resize()
 	return grid
 end
 
 local function productCard(def: Products.ProductDef, order: number, parent: Frame, wide: boolean)
 	local card = Kit.new("Frame", {
 		Name = def.key,
-		BackgroundColor3 = def.color,
+		BackgroundColor3 = Color3.new(1, 1, 1),
 		LayoutOrder = order,
 		Parent = parent,
 	})
-	Kit.corner(16).Parent = card
-	Kit.stroke(3, Kit.Colors.Ink, Enum.ApplyStrokeMode.Border).Parent = card
+	Kit.corner(9).Parent = card
+	Kit.stroke(2, def.color:Lerp(Color3.new(1, 1, 1), 0.55), Enum.ApplyStrokeMode.Border).Parent =
+		card
 	Kit.gradient(def.color:Lerp(Color3.new(1, 1, 1), 0.25), def.color:Lerp(Color3.new(), 0.3)).Parent =
 		card
-	Kit.text({
-		Text = def.glyph,
-		Size = if wide then UDim2.fromScale(0.22, 0.8) else UDim2.fromScale(0.5, 0.36),
-		Position = if wide then UDim2.fromScale(0.02, 0.1) else UDim2.fromScale(0.25, 0.04),
-		Stroke = 0,
-		Gradient = false,
-		FontFace = Kit.FONT_BODY,
+	Kit.new("ImageLabel", {
+		Name = "ProductIcon",
+		BackgroundTransparency = 1,
+		Image = ICONS[def.key],
+		ScaleType = Enum.ScaleType.Fit,
+		Size = if wide then UDim2.fromScale(0.23, 0.84) else UDim2.fromScale(0.72, 0.36),
+		Position = if wide then UDim2.fromScale(0.015, 0.08) else UDim2.fromScale(0.14, 0.2),
 		Parent = card,
 	})
-	Kit.text({
+	local title = Kit.text({
 		Text = def.name,
 		Size = if wide then UDim2.fromScale(0.5, 0.28) else UDim2.fromScale(0.94, 0.16),
-		Position = if wide then UDim2.fromScale(0.26, 0.08) else UDim2.fromScale(0.03, 0.4),
+		Position = if wide then UDim2.fromScale(0.26, 0.08) else UDim2.fromScale(0.03, 0.035),
 		TextXAlignment = if wide then Enum.TextXAlignment.Left else Enum.TextXAlignment.Center,
 		Stroke = 3,
 		Parent = card,
 	})
-	Kit.text({
+	local description = Kit.text({
 		Text = def.description,
 		Size = if wide then UDim2.fromScale(0.5, 0.22) else UDim2.fromScale(0.94, 0.14),
 		Position = if wide then UDim2.fromScale(0.26, 0.4) else UDim2.fromScale(0.03, 0.56),
@@ -177,25 +239,57 @@ local function productCard(def: Products.ProductDef, order: number, parent: Fram
 		name = "Buy",
 		color = Kit.Colors.Green,
 		dark = Kit.Colors.GreenDark,
-		size = if wide then UDim2.fromScale(0.2, 0.42) else UDim2.fromScale(0.62, 0.16),
-		position = if wide then UDim2.fromScale(0.77, 0.29) else UDim2.fromScale(0.04, 0.82),
+		size = if wide
+			then UDim2.fromScale(0.2, 0.42)
+			else UDim2.fromScale(if Products.POTIONS[def.key] then 0.58 else 0.92, 0.19),
+		position = if wide then UDim2.fromScale(0.77, 0.29) else UDim2.fromScale(0.04, 0.79),
 		text = `R$ {def.price}`,
 		parent = card,
 		onClick = function()
-			if def.kind == "pass" and ownsPass(def.key) then
+			if
+				(def.kind == "pass" and ownsPass(def.key))
+				or (def.key == "StarterPack" and ClientState.profile and ClientState.profile.starterPackBought)
+				or (
+					(def.key == "NovaReaper" or def.key == "DragonheartCannon")
+					and os.time() >= Products.LIMITED_ENDS
+				)
+			then
 				return
 			end
 			Purchases.prompt(def.key)
 		end,
 	})
+	if wide then
+		local function arrange()
+			local compact = card.AbsoluteSize.X < 380
+			title.Size = UDim2.fromScale(if compact then 0.71 else 0.50, 0.24)
+			description.Size =
+				UDim2.fromScale(if compact then 0.70 else 0.5, if compact then 0.32 else 0.22)
+			description.Position = UDim2.fromScale(0.26, if compact then 0.31 else 0.4)
+			button.Size = if compact
+				then UDim2.fromScale(0.42, 0.27)
+				else UDim2.fromScale(0.20, 0.42)
+			button.Position = if compact
+				then UDim2.fromScale(0.55, 0.69)
+				else UDim2.fromScale(0.77, 0.29)
+			if note then
+				note.Position = if compact
+					then UDim2.fromScale(0.04, 0.69)
+					else UDim2.fromScale(0.26, 0.66)
+				note.Size = UDim2.fromScale(0.50, if compact then 0.26 else 0.18)
+			end
+		end
+		card:GetPropertyChangedSignal("AbsoluteSize"):Connect(arrange)
+		arrange()
+	end
 	if Products.POTIONS[def.key] then
 		-- Potions you own are used from here.
 		Kit.button({
 			name = "Use",
 			color = Kit.Colors.Blue,
 			dark = Kit.Colors.BlueDark,
-			size = UDim2.fromScale(0.28, 0.16),
-			position = UDim2.fromScale(0.68, 0.82),
+			size = UDim2.fromScale(0.30, 0.19),
+			position = UDim2.fromScale(0.66, 0.79),
 			text = "Use",
 			parent = card,
 			onClick = function()
@@ -320,9 +414,9 @@ end
 function ShopMenu:Init()
 	Menus.register({
 		name = "Shop",
-		title = "🛒 Shop",
+		title = "Shop",
 		color = Kit.Colors.Gold,
-		size = Vector2.new(0.74, 0.8),
+		size = Vector2.new(0.93, 0.78),
 		build = build,
 		onOpen = refresh,
 	})

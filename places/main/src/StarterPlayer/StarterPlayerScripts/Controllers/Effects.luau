@@ -642,7 +642,10 @@ function Effects:Start()
 	local lastStage = 0
 	ClientState.RunChanged:Connect(function(run)
 		if run.cleared then
-			Kit.sound(Kit.Sounds.Ding, 0.4)
+			-- A boss stage has its own celebration music, so only other stages ding.
+			if not run.isBoss then
+				Kit.sound(Kit.Sounds.Ding, 0.4)
+			end
 			Effects.banner(
 				"CLEAR!",
 				Color3.fromRGB(170, 255, 140),

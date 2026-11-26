@@ -2,6 +2,7 @@
 
 -- Coin upgrades: a scrolling list of cards, each with its current and next effect and a buy button.
 
+const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const Format = require("@game/ReplicatedStorage/Shared/Format")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
 const Upgrades = require("@game/ReplicatedStorage/Shared/Upgrades")
@@ -31,6 +32,16 @@ local built = false
 local amount = 1
 local amountButtons: { [number]: TextButton } = {}
 
+local function describe(def: Upgrades.UpgradeDef, level: number): string
+	local profile = ClientState.profile
+	if def.id == "Toughness" and profile then
+		return Format.abbreviate(
+			Balance.maxHealth(profile.level, profile.rebirths, level, profile.bestStage)
+		) .. " HP"
+	end
+	return Upgrades.describe(def, level)
+end
+
 local function refresh()
 	local profile = ClientState.profile
 	if not profile or not built then
@@ -41,15 +52,13 @@ local function refresh()
 		local level = profile.upgrades[card.def.id] or 0
 		card.level.Text = `Lv {level} / {card.def.maxLevel}`
 		if level >= card.def.maxLevel then
-			card.effect.Text = `{Upgrades.describe(card.def, level)}  (MAX)`
+			card.effect.Text = `{describe(card.def, level)}  (MAX)`
 			Kit.setButtonText(card.buy, "MAX")
 			Kit.setButtonColor(card.buy, Kit.Colors.Gold, Kit.Colors.GoldDark)
 		else
 			local cost, levels = Upgrades.bulkCost(card.def, level, amount)
-			card.effect.Text = `{Upgrades.describe(card.def, level)}  >>>  {Upgrades.describe(
-				card.def,
-				level + levels
-			)}`
+			card.effect.Text =
+				`{describe(card.def, level)}  >>>  {describe(card.def, level + levels)}`
 			Kit.setButtonText(
 				card.buy,
 				if levels > 1

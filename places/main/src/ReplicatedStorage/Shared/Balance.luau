@@ -28,6 +28,9 @@ export type ForgeOdds = {
 }
 
 local Balance = {}
+Balance.DAY_SECONDS = 300
+Balance.NIGHT_SECONDS = 360
+Balance.LUCK_BONUS = { ExtraLuck = 0.25, SuperLuck = 0.6, Potion = 0.3, Server = 0.5, Charge = 1 }
 
 -- The flat damage every shot starts with, so a new player can clear stage 1 before training.
 -- Past Eternal each tier hits 3x harder: a real upgrade that still leaves stages to grind.
@@ -285,12 +288,21 @@ function Balance.trainingGain(
 	return perShot * zoneMultiplier * Upgrades.value("Training", trainingLevel)
 end
 
-function Balance.maxHealth(level: number, rebirths: number, toughnessLevel: number): number
+function Balance.maxHealth(
+	level: number,
+	rebirths: number,
+	toughnessLevel: number,
+	bestStage: number?
+): number
+	local toughness = Upgrades.value("Toughness", toughnessLevel) - 1
+	local stageHealth = Balance.enemyDamage(math.max(bestStage or 1, 1))
+		* math.min(toughness * 0.5, 5)
 	return math.floor(
-		100
-			* (1 + 0.06 * (level - 1))
-			* (1 + 0.25 * rebirths)
-			* Upgrades.value("Toughness", toughnessLevel)
+		stageHealth
+			+ 100
+				* (1 + 0.06 * (level - 1))
+				* (1 + 0.25 * rebirths)
+				* Upgrades.value("Toughness", toughnessLevel)
 	)
 end
 
@@ -527,10 +539,12 @@ function Balance.forgeOdds(ores: { OreDef }, luck: number): ForgeOdds
 		return { chances = chances, basePower = 0, oreCount = 0 }
 	end
 
+	local rankSum = 0
 	local raritySum = 0
 	local best = 1
 	local basePower = 0
 	for _, ore in ores do
+		rankSum += ore.index
 		raritySum += ore.rarity
 		best = math.max(best, ore.rarity)
 		basePower += ore.value
@@ -542,15 +556,29 @@ function Balance.forgeOdds(ores: { OreDef }, luck: number): ForgeOdds
 		ceiling -= 1
 	end
 
+	-- Reserve a separate Eternal draw. Compare the rest in log space so even extreme luck
+	-- values leave a normalized distribution among the eligible tiers.
+	local eternal = Balance.ETERNAL_TIER
+	local strength = rankSum / (Balance.MAX_FORGE_ORES * #Ores.List)
+	local eternalChance = if ceiling >= eternal then 0.05 * math.clamp(strength, 0, 1) ^ 5 else 0
+	local peak = math.clamp(math.round(center), 1, ceiling)
+	if peak == eternal then
+		peak = if ceiling > eternal and center > eternal then eternal + 1 else eternal - 1
+	end
 	local total = 0
 	for tier = 1, ceiling do
-		local distance = tier - center
-		local weight = math.exp(-(distance * distance) / (2 * FORGE_SPREAD * FORGE_SPREAD))
+		if tier == eternal then
+			continue
+		end
+		local relative = (tier - peak) * (tier + peak - 2 * center)
+		local weight = math.exp(-relative / (2 * FORGE_SPREAD * FORGE_SPREAD))
 		chances[tier] = weight
 		total += weight
 	end
 	for tier = 1, Rarity.Count do
-		chances[tier] = if total > 0 then chances[tier] / total else 0
+		chances[tier] = if tier == eternal
+			then eternalChance
+			else chances[tier] / total * (1 - eternalChance)
 	end
 	return { chances = chances, basePower = basePower, oreCount = count }
 end

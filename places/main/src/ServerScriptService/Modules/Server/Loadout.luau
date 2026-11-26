@@ -62,8 +62,12 @@ function Loadout.refreshStats(player: Player)
 		return
 	end
 	local share = if humanoid.MaxHealth > 0 then humanoid.Health / humanoid.MaxHealth else 1
-	local maxHealth =
-		Balance.maxHealth(profile.level, profile.rebirths, profile.upgrades.Toughness or 0)
+	local maxHealth = Balance.maxHealth(
+		profile.level,
+		profile.rebirths,
+		profile.upgrades.Toughness or 0,
+		profile.bestStage
+	)
 	humanoid.MaxHealth = maxHealth
 	humanoid.Health = math.clamp(maxHealth * share, 1, maxHealth)
 	humanoid.WalkSpeed = Upgrades.value("WalkSpeed", profile.upgrades.WalkSpeed or 0)
@@ -89,8 +93,12 @@ local function onCharacterAdded(player: Player, character: Model)
 	task.wait(0.1)
 	local profile = PlayerData.get(player)
 	if profile then
-		humanoid.MaxHealth =
-			Balance.maxHealth(profile.level, profile.rebirths, profile.upgrades.Toughness or 0)
+		humanoid.MaxHealth = Balance.maxHealth(
+			profile.level,
+			profile.rebirths,
+			profile.upgrades.Toughness or 0,
+			profile.bestStage
+		)
 		humanoid.Health = humanoid.MaxHealth
 	end
 	Loadout.refreshStats(player)

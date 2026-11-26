@@ -24,10 +24,11 @@ describe("raised upgrade caps", function()
 		expect(def("Magnet").maxLevel).toBe(30)
 	end)
 
-	it("leave every level up to the old cap exactly as it was", function()
+	it("retain pre-cap effects and apply the new Luck and Training prices", function()
 		expect(Upgrades.value("BagSize", 40)).toBe(6 + 2 * 40)
 		expect(Upgrades.value("Luck", 25)).toBeCloseTo(0.03 * 25, 6)
-		expect(Upgrades.cost(def("Training"), 39)).toBe(math.floor(150 * 1.38 ^ 39))
+		expect(Upgrades.cost(def("Training"), 39)).toBe(math.floor(300 * 1.43 ^ 39))
+		expect(Upgrades.cost(def("Luck"), 24)).toBe(math.floor(500 * 1.50 ^ 24))
 	end)
 
 	it("give part of the effect past the old cap", function()

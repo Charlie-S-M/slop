@@ -3,6 +3,7 @@
 -- Makes sure the lobby exists and sets the world's lighting, sky, and settings before players
 -- arrive, so the look lives in code rather than only in the place file.
 
+const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const Lighting = game:GetService("Lighting")
 const Players = game:GetService("Players")
 
@@ -85,6 +86,21 @@ function WorldSetup:Init()
 	applyLighting()
 	Players.RespawnTime = 3
 	workspace.Gravity = 160
+end
+
+function WorldSetup:Start()
+	task.spawn(function()
+		local epoch = workspace:GetServerTimeNow()
+		while true do
+			local elapsed = (workspace:GetServerTimeNow() - epoch)
+				% (Balance.DAY_SECONDS + Balance.NIGHT_SECONDS)
+			local progress = if elapsed < Balance.DAY_SECONDS
+				then elapsed / Balance.DAY_SECONDS
+				else 1 + (elapsed - Balance.DAY_SECONDS) / Balance.NIGHT_SECONDS
+			Lighting.ClockTime = (6 + progress * 12) % 24
+			task.wait(1)
+		end
+	end)
 end
 
 return WorldSetup

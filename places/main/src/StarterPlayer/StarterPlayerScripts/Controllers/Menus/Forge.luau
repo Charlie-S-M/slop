@@ -72,15 +72,35 @@ local function refreshOdds()
 	local profile = ClientState.profile
 	local luck = Upgrades.value("Luck", if profile then profile.upgrades.Luck or 0 else 0)
 		+ (if profile then Balance.prestigeLuck(profile.prestige) else 0)
+	local player = Players.LocalPlayer
+	local now = os.time()
+	local bonus = Balance.LUCK_BONUS
+	local serverLuck = game.ReplicatedStorage:GetAttribute("ServerLuckUntil")
+	if player:GetAttribute("Pass_ExtraLuck") then
+		luck += bonus.ExtraLuck
+	end
+	if player:GetAttribute("Pass_SuperLuck") then
+		luck += bonus.SuperLuck
+	end
+	if typeof(serverLuck) == "number" and serverLuck > now then
+		luck += bonus.Server
+	end
+	if profile and (profile.boosts.Luck or 0) > now then
+		luck += bonus.Potion
+	end
+	if profile and profile.luckyForges > 0 then
+		luck += bonus.Charge
+	end
 	local odds = Balance.forgeOdds(selectedDefs(), luck)
 	local bestTier = 1
 	for tier, row in oddsRows do
 		local chance = odds.chances[tier] or 0
-		row.frame.Visible = chance > 0.0005 or #selected == 0 and tier <= 2
+		row.frame.Visible = chance > 0 or #selected == 0 and tier <= 2
 		TweenService
 			:Create(row.fill, Kit.FAST, { Size = UDim2.fromScale(math.clamp(chance, 0, 1), 1) })
 			:Play()
-		row.label.Text = `{Rarity.get(tier).name}  {Format.percent(chance)}`
+		local percent = if chance > 0 and chance < 0.0005 then "<0.05%" else Format.percent(chance)
+		row.label.Text = `{Rarity.get(tier).name}  {percent}`
 		if chance > (odds.chances[bestTier] or 0) then
 			bestTier = tier
 		end
@@ -541,6 +561,13 @@ function Forge:Init()
 end
 
 function Forge:Start()
+	task.spawn(function()
+		while task.wait(1) do
+			if built and Menus.isOpen("Forge") and not forging then
+				refreshOdds()
+			end
+		end
+	end)
 	local function abort()
 		local token = activeToken
 		activeToken = nil
@@ -580,6 +607,11 @@ function Forge:Start()
 			Cutscene.play(start, function(index)
 				local screen =
 					Players.LocalPlayer.PlayerGui:FindFirstChild("ForgeCutscene") :: ScreenGui
+				if Players.LocalPlayer:GetAttribute("Pass_AutoPerfectForge") == true then
+					strikes[index] = 1
+					task.wait(0.35)
+					return 1
+				end
 				local score = Timing.strike(screen, index, Cutscene.anvilScreenPoint(), function()
 					return activeToken == start.token
 				end, function(value)
@@ -590,6 +622,10 @@ function Forge:Start()
 		end)
 		if not ok then
 			warn("Forge playback: ", err)
+		end
+		local remaining = Balance.FORGE_MIN_SECONDS - (os.clock() - beganAt)
+		if remaining > 0 then
+			task.wait(remaining)
 		end
 		if activeToken == start.token then
 			Net.event("ForgeFinish"):FireServer(start.token, strikes)

@@ -69,7 +69,7 @@ const PRODUCTS: { ProductDef } = {
 		"Featured",
 		"Starter Pack",
 		"Coins, 3 Luck Potions, and a Lucky Forge. Once per player!",
-		"🎁",
+		"\u{1F381}",
 		PINK,
 		29
 	),
@@ -78,8 +78,8 @@ const PRODUCTS: { ProductDef } = {
 		"product",
 		"Featured",
 		"Nova Reaper",
-		"Limited Eternal rifle, 1.6× stronger than your best gun.",
-		"🔫",
+		"Limited Eternal rifle, 1.6x stronger than your best gun.",
+		"\u{1F320}",
 		PURPLE,
 		499
 	),
@@ -88,8 +88,8 @@ const PRODUCTS: { ProductDef } = {
 		"product",
 		"Featured",
 		"Dragonheart Cannon",
-		"Limited Eternal launcher, 1.6× stronger than your best gun.",
-		"🐉",
+		"Limited Eternal launcher, 1.6x stronger than your best gun.",
+		"\u{1F409}",
 		RED,
 		799
 	),
@@ -99,8 +99,8 @@ const PRODUCTS: { ProductDef } = {
 		"product",
 		"ServerLuck",
 		"Server Luck",
-		"2× forge luck for everyone in the server, 15 minutes. Stacks!",
-		"🍀",
+		"2x forge luck for everyone in the server, 15 minutes. Stacks!",
+		"\u{1F340}",
 		GREEN,
 		49
 	),
@@ -109,8 +109,8 @@ const PRODUCTS: { ProductDef } = {
 		"product",
 		"ServerLuck",
 		"Lucky Forge",
-		"3× luck on your next forge.",
-		"🔨",
+		"3x luck on your next forge.",
+		"\u{1F528}",
 		GOLD,
 		9
 	),
@@ -118,34 +118,54 @@ const PRODUCTS: { ProductDef } = {
 		"LuckyForge5",
 		"product",
 		"ServerLuck",
-		"Lucky Forge ×5",
-		"3× luck on your next five forges.",
-		"🔨",
+		"Lucky Forge x5",
+		"3x luck on your next five forges.",
+		"\u{1F528}",
 		GOLD,
 		39
 	),
 	-- Game passes.
-	item("VIP", "pass", "Passes", "VIP", "+25% Power and coins, forever.", "👑", GOLD, 399),
+	item("VIP", "pass", "Passes", "VIP", "+25% Power and coins, forever.", "\u{1F451}", GOLD, 399),
 	item(
 		"DoubleCoins",
 		"pass",
 		"Passes",
-		"2× Coins",
+		"2x Coins",
 		"Double coins from monsters and chests.",
-		"💰",
+		"\u{1FA99}",
 		GREEN,
 		249
 	),
-	item("SpeedBoost", "pass", "Passes", "Speed Boost", "Walk 50% faster.", "👟", BLUE, 149),
-	item("ExtraLuck", "pass", "Passes", "Extra Luck", "+25% forge luck.", "🍀", GREEN, 99),
-	item("SuperLuck", "pass", "Passes", "Super Luck", "+60% forge luck.", "🌟", TEAL, 349),
+	item(
+		"ForgeSkip",
+		"pass",
+		"Passes",
+		"Forge Skip",
+		"Skip the melt and pour scenes.",
+		"\u{23E9}",
+		BLUE,
+		99
+	),
+	item(
+		"AutoPerfectForge",
+		"pass",
+		"Passes",
+		"Auto Perfect Forge",
+		"Automatically land perfect forge strikes.",
+		"\u{1F3AF}",
+		GOLD,
+		299
+	),
+	item("SpeedBoost", "pass", "Passes", "Speed Boost", "Walk 50% faster.", "\u{1F45F}", BLUE, 149),
+	item("ExtraLuck", "pass", "Passes", "Extra Luck", "+25% forge luck.", "\u{1F340}", GREEN, 99),
+	item("SuperLuck", "pass", "Passes", "Super Luck", "+60% forge luck.", "\u{1F340}", TEAL, 349),
 	item(
 		"AutoCollect",
 		"pass",
 		"Passes",
 		"Auto Collect",
 		"Ores fly to you from anywhere in the stage.",
-		"🧲",
+		"\u{1F9F2}",
 		BLUE,
 		199
 	),
@@ -155,7 +175,7 @@ const PRODUCTS: { ProductDef } = {
 		"Passes",
 		"Keep Ores",
 		"Keep your ore bag when you fall in a stage.",
-		"🎒",
+		"\u{1F392}",
 		rgb(230, 140, 60),
 		149
 	),
@@ -163,9 +183,9 @@ const PRODUCTS: { ProductDef } = {
 		"DoubleBossLoot",
 		"pass",
 		"Passes",
-		"2× Boss Loot",
+		"2x Boss Loot",
 		"Double coins from boss chests.",
-		"👹",
+		"\u{1F48E}",
 		RED,
 		199
 	),
@@ -175,7 +195,7 @@ const PRODUCTS: { ProductDef } = {
 		"Passes",
 		"Auto Rebirth",
 		"Rebirths by itself as soon as you can.",
-		"🔄",
+		"\u{1F504}",
 		PURPLE,
 		299
 	),
@@ -185,7 +205,7 @@ const PRODUCTS: { ProductDef } = {
 		"Passes",
 		"+30 Pet Storage",
 		"Keep 30 more pets.",
-		"🐾",
+		"\u{1F43E}",
 		PINK,
 		99
 	),
@@ -195,29 +215,38 @@ const PRODUCTS: { ProductDef } = {
 		"Passes",
 		"+60 Pet Storage",
 		"Keep 60 more pets.",
-		"🐾",
+		"\u{1F43E}",
 		PINK,
 		249
 	),
 	-- Power packs, scaled to the next rebirth.
-	item("Power1", "product", "Power", "Power Pack", "Instant Power.", "⚡", RED, 19),
-	item("Power2", "product", "Power", "Power Crate", "Lots of Power.", "⚡", RED, 79),
-	item("Power3", "product", "Power", "Power Chest", "A chest of Power.", "⚡", RED, 239),
-	item("Power4", "product", "Power", "Power Vault", "A vault of Power.", "⚡", RED, 639),
+	item("Power1", "product", "Power", "Power Pack", "Instant Power.", "\u{26A1}", RED, 19),
+	item("Power2", "product", "Power", "Power Crate", "Lots of Power.", "\u{26A1}", RED, 79),
+	item("Power3", "product", "Power", "Power Chest", "A chest of Power.", "\u{26A1}", RED, 239),
+	item("Power4", "product", "Power", "Power Vault", "A vault of Power.", "\u{26A1}", RED, 639),
 	-- Coin packs, scaled to your best stage.
-	item("Coins1", "product", "Coins", "Coin Pouch", "Instant coins.", "💰", GREEN, 29),
-	item("Coins2", "product", "Coins", "Coin Stack", "Lots of coins.", "💰", GREEN, 79),
-	item("Coins3", "product", "Coins", "Coin Bag", "A bag of coins.", "💰", GREEN, 239),
-	item("Coins4", "product", "Coins", "Coin Vault", "A vault of coins.", "💰", GREEN, 639),
+	item("Coins1", "product", "Coins", "Coin Pouch", "Instant coins.", "\u{1FA99}", GREEN, 29),
+	item("Coins2", "product", "Coins", "Coin Stack", "Lots of coins.", "\u{1FA99}", GREEN, 79),
+	item("Coins3", "product", "Coins", "Coin Bag", "A bag of coins.", "\u{1FA99}", GREEN, 239),
+	item("Coins4", "product", "Coins", "Coin Vault", "A vault of coins.", "\u{1FA99}", GREEN, 639),
 	-- Free hatches from your best unlocked egg.
-	item("Eggs3", "product", "Eggs", "3 Eggs", "Hatch your best egg 3 times.", "🥚", PINK, 79),
+	item(
+		"Eggs3",
+		"product",
+		"Eggs",
+		"3 Eggs",
+		"Hatch your best egg 3 times.",
+		"\u{1F95A}",
+		PINK,
+		79
+	),
 	item(
 		"Eggs10",
 		"product",
 		"Eggs",
 		"10 Eggs",
 		"Hatch your best egg 10 times.",
-		"🥚",
+		"\u{1F95A}",
 		PINK,
 		239
 	),
@@ -228,7 +257,7 @@ const PRODUCTS: { ProductDef } = {
 		"Potions",
 		"Luck Potion",
 		"+30% forge luck for 15 minutes.",
-		"🧪",
+		"\u{1F9EA}",
 		GREEN,
 		19
 	),
@@ -236,9 +265,9 @@ const PRODUCTS: { ProductDef } = {
 		"LuckPotion5",
 		"product",
 		"Potions",
-		"Luck Potion ×5",
+		"Luck Potion x5",
 		"Five Luck Potions.",
-		"🧪",
+		"\u{1F9EA}",
 		GREEN,
 		76
 	),
@@ -247,8 +276,8 @@ const PRODUCTS: { ProductDef } = {
 		"product",
 		"Potions",
 		"Power Potion",
-		"2× training Power for 15 minutes.",
-		"🧪",
+		"2x training Power for 15 minutes.",
+		"\u{1F9EA}",
 		RED,
 		19
 	),
@@ -256,9 +285,9 @@ const PRODUCTS: { ProductDef } = {
 		"PowerPotion5",
 		"product",
 		"Potions",
-		"Power Potion ×5",
+		"Power Potion x5",
 		"Five Power Potions.",
-		"🧪",
+		"\u{1F9EA}",
 		RED,
 		76
 	),
@@ -267,8 +296,8 @@ const PRODUCTS: { ProductDef } = {
 		"product",
 		"Potions",
 		"Coin Potion",
-		"2× coins for 15 minutes.",
-		"🧪",
+		"2x coins for 15 minutes.",
+		"\u{1F9EA}",
 		GOLD,
 		19
 	),
@@ -276,9 +305,9 @@ const PRODUCTS: { ProductDef } = {
 		"CoinPotion5",
 		"product",
 		"Potions",
-		"Coin Potion ×5",
+		"Coin Potion x5",
 		"Five Coin Potions.",
-		"🧪",
+		"\u{1F9EA}",
 		GOLD,
 		76
 	),
@@ -289,7 +318,7 @@ const PRODUCTS: { ProductDef } = {
 		nil,
 		"1 Wheel Spin",
 		"One spin of the Lucky Wheel.",
-		"🎡",
+		"\u{1F3A1}",
 		GOLD,
 		24
 	),
@@ -299,7 +328,7 @@ const PRODUCTS: { ProductDef } = {
 		nil,
 		"3 Wheel Spins",
 		"Three Lucky Wheel spins.",
-		"🎡",
+		"\u{1F3A1}",
 		GOLD,
 		105
 	),
@@ -309,7 +338,7 @@ const PRODUCTS: { ProductDef } = {
 		nil,
 		"10 Wheel Spins",
 		"Ten Lucky Wheel spins.",
-		"🎡",
+		"\u{1F3A1}",
 		GOLD,
 		319
 	),
@@ -320,7 +349,7 @@ const PRODUCTS: { ProductDef } = {
 		nil,
 		"New Quests",
 		"Deal a fresh set of daily quests.",
-		"🔁",
+		"\u{1F4DC}",
 		GREEN,
 		49
 	),
@@ -331,6 +360,8 @@ const IDS: { [number]: { [string]: number } } = {
 	-- 2D Gun Exponential! (ALPHA), owned by FarSource Development.
 	[10779068698] = {
 		VIP = 2098626200,
+		ForgeSkip = 2099334273,
+		AutoPerfectForge = 2101841555,
 		DoubleCoins = 2098656216,
 		SpeedBoost = 2099928165,
 		ExtraLuck = 2102099382,
@@ -380,13 +411,13 @@ local Products = {}
 Products.List = PRODUCTS
 -- The shop's tabs, in order, with their labels.
 Products.SECTIONS = {
-	{ key = "Featured", label = "Featured", glyph = "⭐", color = RED },
-	{ key = "ServerLuck", label = "Server Luck", glyph = "🍀", color = GOLD },
-	{ key = "Passes", label = "Passes", glyph = "🎫", color = BLUE },
-	{ key = "Power", label = "Power", glyph = "⚡", color = rgb(245, 120, 50) },
-	{ key = "Coins", label = "Coins", glyph = "💰", color = GREEN },
-	{ key = "Eggs", label = "Eggs", glyph = "🥚", color = PINK },
-	{ key = "Potions", label = "Potions", glyph = "🧪", color = PURPLE },
+	{ key = "Featured", label = "Featured", glyph = "\u{2B50}", color = RED },
+	{ key = "ServerLuck", label = "Server Luck", glyph = "\u{1F340}", color = GOLD },
+	{ key = "Passes", label = "Passes", glyph = "\u{1F39F}", color = BLUE },
+	{ key = "Power", label = "Power", glyph = "\u{26A1}", color = rgb(245, 120, 50) },
+	{ key = "Coins", label = "Coins", glyph = "\u{1FA99}", color = GREEN },
+	{ key = "Eggs", label = "Eggs", glyph = "\u{1F95A}", color = PINK },
+	{ key = "Potions", label = "Potions", glyph = "\u{1F9EA}", color = PURPLE },
 }
 -- Potions by the boost they start, and how long one lasts.
 Products.POTIONS = { LuckPotion = "Luck", PowerPotion = "Power", CoinPotion = "Coins" }

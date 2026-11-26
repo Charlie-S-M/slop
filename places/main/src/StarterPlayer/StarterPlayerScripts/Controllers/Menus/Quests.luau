@@ -520,7 +520,72 @@ function QuestsMenu:Init()
 end
 
 function QuestsMenu:Start()
+	local player = game:GetService("Players").LocalPlayer
+	local guide = Kit.new("ScreenGui", {
+		Name = "ForgeTutorial",
+		ResetOnSpawn = false,
+		DisplayOrder = 11,
+		Enabled = false,
+		Parent = player:WaitForChild("PlayerGui"),
+	}) :: ScreenGui
+	local card = Kit.panel({
+		Position = UDim2.fromScale(0.98, 0.12),
+		AnchorPoint = Vector2.new(1, 0),
+		Size = UDim2.new(0.62, 0, 0, 82),
+		Parent = guide,
+	})
+	Kit.new("UISizeConstraint", { MaxSize = Vector2.new(300, 82), Parent = card })
+	local portrait = Kit.new("ViewportFrame", {
+		Size = UDim2.fromOffset(62, 68),
+		Position = UDim2.fromOffset(3, 7),
+		BackgroundTransparency = 1,
+		Parent = card,
+	})
+	buildKnight(portrait)
+	Kit.text({
+		Text = KNIGHT_NAME,
+		TextColor3 = Kit.Colors.Gold,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Position = UDim2.fromOffset(66, 4),
+		Size = UDim2.new(1, -72, 0, 18),
+		Parent = card,
+	})
+	local instruction = Kit.text({
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Position = UDim2.fromOffset(66, 23),
+		Size = UDim2.new(1, -72, 0, 53),
+		Stroke = 1.5,
+		Parent = card,
+	})
+	local function refreshGuide()
+		local profile = ClientState.profile
+		guide.Enabled = profile ~= nil
+			and profile.forges == 0
+			and profile.prestige == 0
+			and not player:GetAttribute("ForgeCamera")
+			and (not Menus.isOpen() or Menus.isOpen("Forge"))
+		if not guide.Enabled then
+			return
+		end
+		if Menus.isOpen("Forge") then
+			instruction.Text =
+				"Select Gun, add ore, then hit Forge. Tap when the hammer rings line up."
+		elseif ClientState.bagCount() > 0 then
+			instruction.Text = if ClientState.run.active
+				then "You have ore! Leave the Gauntlet and head to the Forge."
+				else "Open the Forge stall to craft your first gun."
+		elseif ClientState.run.active then
+			instruction.Text = "Shoot the enemies and pick up a dropped ore."
+		else
+			instruction.Text = "Open Gauntlet and enter Stage 1 to find ore."
+		end
+	end
+	Menus.Opened:Connect(refreshGuide)
+	ClientState.RunChanged:Connect(refreshGuide)
+	player:GetAttributeChangedSignal("ForgeCamera"):Connect(refreshGuide)
+	refreshGuide()
 	ClientState.ProfileChanged:Connect(function()
+		refreshGuide()
 		if Menus.isOpen("Quests") then
 			refresh()
 		end

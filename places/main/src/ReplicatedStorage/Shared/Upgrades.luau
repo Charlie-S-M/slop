@@ -62,8 +62,8 @@ const LIST: { UpgradeDef } = {
 		maxLevel = 75,
 		softCap = 25,
 		overflow = 0.35,
-		baseCost = 250,
-		costGrowth = 1.45,
+		baseCost = 500,
+		costGrowth = 1.50,
 		effect = function(level)
 			return 0.03 * level
 		end,
@@ -80,8 +80,8 @@ const LIST: { UpgradeDef } = {
 		maxLevel = 160,
 		softCap = 40,
 		overflow = 0.5,
-		baseCost = 150,
-		costGrowth = 1.38,
+		baseCost = 300,
+		costGrowth = 1.43,
 		effect = function(level)
 			return 1 + 0.15 * level
 		end,

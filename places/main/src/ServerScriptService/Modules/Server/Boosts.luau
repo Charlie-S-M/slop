@@ -58,22 +58,22 @@ end
 function Boosts.luck(player: Player, profile: Types.Profile): number
 	local bonus = 0
 	if Boosts.hasPass(player, "ExtraLuck") then
-		bonus += 0.25
+		bonus += Balance.LUCK_BONUS.ExtraLuck
 	end
 	if Boosts.hasPass(player, "SuperLuck") then
-		bonus += 0.6
+		bonus += Balance.LUCK_BONUS.SuperLuck
 	end
 	if Boosts.potionActive(profile, "Luck") then
-		bonus += 0.3
+		bonus += Balance.LUCK_BONUS.Potion
 	end
 	if Boosts.serverLuckActive() then
-		bonus += 0.5
+		bonus += Balance.LUCK_BONUS.Server
 	end
 	return bonus
 end
 
 -- Extra luck for a Lucky Forge, used up one forge at a time.
-Boosts.LUCKY_FORGE_LUCK = 1
+Boosts.LUCKY_FORGE_LUCK = Balance.LUCK_BONUS.Charge
 
 function Boosts.walkSpeed(player: Player): number
 	return if Boosts.hasPass(player, "SpeedBoost") then 1.5 else 1
