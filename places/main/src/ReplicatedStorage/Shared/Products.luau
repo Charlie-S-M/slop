@@ -326,6 +326,55 @@ const PRODUCTS: { ProductDef } = {
 	),
 }
 
+-- Each experience's ids, by universe id and then product key. Created with Open Cloud.
+const IDS: { [number]: { [string]: number } } = {
+	-- 2D Gun Exponential! (ALPHA), owned by FarSource Development.
+	[10779068698] = {
+		VIP = 2098626200,
+		DoubleCoins = 2098656216,
+		SpeedBoost = 2099928165,
+		ExtraLuck = 2102099382,
+		SuperLuck = 2101931412,
+		AutoCollect = 2099124220,
+		KeepOres = 2098620154,
+		DoubleBossLoot = 2098614236,
+		AutoRebirth = 2098476155,
+		PetStorage30 = 2099550185,
+		PetStorage60 = 2098380207,
+		StarterPack = 3736383457,
+		NovaReaper = 3736383461,
+		DragonheartCannon = 3736383465,
+		ServerLuck = 3736383471,
+		LuckyForge = 3736383474,
+		LuckyForge5 = 3736383481,
+		Power1 = 3736383483,
+		Power2 = 3736383488,
+		Power3 = 3736383490,
+		Power4 = 3736383493,
+		Coins1 = 3736383497,
+		Coins2 = 3736383503,
+		Coins3 = 3736383507,
+		Coins4 = 3736383510,
+		Eggs3 = 3736383626,
+		Eggs10 = 3736383629,
+		LuckPotion = 3736383630,
+		LuckPotion5 = 3736383634,
+		PowerPotion = 3736383637,
+		PowerPotion5 = 3736383639,
+		CoinPotion = 3736383640,
+		CoinPotion5 = 3736383642,
+		WheelSpin1 = 3736383644,
+		WheelSpin3 = 3736383646,
+		WheelSpin10 = 3736383649,
+		NewQuests = 3736383651,
+	},
+}
+for universe, ids in IDS do
+	for _, def in PRODUCTS do
+		def.ids[universe] = ids[def.key]
+	end
+end
+
 local Products = {}
 
 Products.List = PRODUCTS
