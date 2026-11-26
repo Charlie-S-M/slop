@@ -641,7 +641,7 @@ function Effects:Start()
 	end)
 	local lastStage = 0
 	ClientState.RunChanged:Connect(function(run)
-		if run.cleared then
+		if run.cleared and not run.isBoss then
 			Kit.sound(Kit.Sounds.Ding, 0.4)
 			Effects.banner(
 				"CLEAR!",

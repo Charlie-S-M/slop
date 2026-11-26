@@ -77,7 +77,7 @@ type Run = {
 	totalEnemies: number,
 	container: Folder,
 	connections: { RBXScriptConnection },
-	lastBagNotice: number,
+	bagFullWarned: boolean,
 	bossName: string?,
 	-- A Tower run: stages are floors (stage - TOWER_STAGE_OFFSET) and clears raise towerBest.
 	tower: boolean,
@@ -680,7 +680,7 @@ local function startRun(player: Player, startStage: number, tower: boolean?)
 		totalEnemies = 0,
 		container = container,
 		connections = {},
-		lastBagNotice = 0,
+		bagFullWarned = false,
 		bossName = nil,
 		tower = tower == true,
 		crystal = nil,
@@ -918,14 +918,17 @@ local function collectPickups(run: Run)
 	local radius = Boosts.collectRadius(run.player)
 		or Upgrades.value("Magnet", profile.upgrades.Magnet or 0)
 	local capacity = Upgrades.value("BagSize", profile.upgrades.BagSize or 0)
+	local carried = PlayerData.bagCount(profile)
+	if carried < capacity then
+		run.bagFullWarned = false
+	end
 	local index = 1
 	while index <= #run.pickups do
 		local pickup = run.pickups[index]
 		if (pickup.position - root.Position).Magnitude <= radius then
-			if PlayerData.bagCount(profile) >= capacity then
-				local now = os.clock()
-				if now - run.lastBagNotice > 4 then
-					run.lastBagNotice = now
+			if carried >= capacity then
+				if not run.bagFullWarned then
+					run.bagFullWarned = true
 					notify(
 						run.player,
 						"Your ore bag is full! Head back to forge or sell.",
@@ -936,6 +939,7 @@ local function collectPickups(run: Run)
 			end
 			table.remove(run.pickups, index)
 			profile.bag[pickup.ore.id] = (profile.bag[pickup.ore.id] or 0) + 1
+			carried += 1
 			QuestKeeper.record(run.player, "Ores", 1)
 			local isNew = not profile.oreIndex[pickup.ore.id]
 			profile.oreIndex[pickup.ore.id] = true

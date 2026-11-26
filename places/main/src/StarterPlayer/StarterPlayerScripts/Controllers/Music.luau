@@ -15,6 +15,7 @@ const LOBBY_TRACKS = {
 	"rbxassetid://1848344860",
 }
 const GAUNTLET_TRACK = "rbxassetid://1837581633"
+const BOSS_TRACK = "rbxassetid://1843463175"
 const VOLUME = 0.22
 
 local Music = {}
@@ -22,10 +23,11 @@ local Music = {}
 local ambience: SoundGroup
 local forging = false
 local sound: Sound
+local bossSound: Sound
+local regularMix: SoundGroup
 local trackIndex = 1
 local inGauntlet = false
 local eliteActive = false
-local eliteStage = 0
 local musicVersion = 0
 local towerMusic = false
 local rhythmVersion = 0
@@ -60,7 +62,7 @@ local function setTowerMusic(active: boolean)
 	end)
 end
 
-local function play(id: string, volume: number?)
+local function play(id: string)
 	musicVersion += 1
 	local version = musicVersion
 	local fadeOut = TweenService:Create(sound, TweenInfo.new(0.6), { Volume = 0 })
@@ -72,7 +74,7 @@ local function play(id: string, volume: number?)
 	sound.SoundId = id
 	sound.TimePosition = 0
 	sound:Play()
-	TweenService:Create(sound, TweenInfo.new(1.2), { Volume = volume or VOLUME }):Play()
+	TweenService:Create(sound, TweenInfo.new(1.2), { Volume = VOLUME }):Play()
 end
 
 local function nextLobbyTrack()
@@ -97,8 +99,23 @@ function Music:Init()
 	sound = Instance.new("Sound")
 	sound.Name = "Music"
 	sound.Volume = 0
-	sound.SoundGroup = ambience
+	regularMix = Instance.new("SoundGroup")
+	regularMix.Name = "RegularMusicMix"
+	regularMix.Volume = 1
+	regularMix.Parent = ambience
+	sound.SoundGroup = regularMix
 	sound.Parent = SoundService
+
+	bossSound = Instance.new("Sound")
+	bossSound.Name = "BossMusic"
+	bossSound.SoundId = BOSS_TRACK
+	bossSound.Volume = 0
+	bossSound.Looped = true
+	bossSound.SoundGroup = ambience
+	bossSound.Parent = SoundService
+	task.spawn(function()
+		game:GetService("ContentProvider"):PreloadAsync({ bossSound })
+	end)
 end
 
 local function celebrationNote(pitch: number, fade: number)
@@ -131,24 +148,33 @@ function Music:Start()
 	end)
 	ClientState.RunChanged:Connect(function(run)
 		local active = run.active == true
-		setTowerMusic(active and run.tower == true)
-		sound.PlaybackSpeed = if towerMusic then 1.24 else 1
 		local elite = active and run.elite == true
-		if eliteActive and active and (not elite or run.stage ~= eliteStage) then
-			celebrate()
-		end
-		if elite ~= eliteActive or active ~= inGauntlet then
-			inGauntlet = active
+		setTowerMusic(active and run.tower == true and not elite)
+		sound.PlaybackSpeed = if active and run.tower then 1.24 else 1
+		if elite ~= eliteActive then
 			eliteActive = elite
-			eliteStage = run.stage
-			task.spawn(
-				play,
-				if elite
-					then "rbxassetid://1843463175"
-					elseif active then GAUNTLET_TRACK
-					else LOBBY_TRACKS[trackIndex],
-				if elite then 0.58 else VOLUME
-			)
+			local fade = TweenInfo.new(if elite then 0.28 else 0.55)
+			TweenService:Create(regularMix, fade, { Volume = if elite then 0 else 1 }):Play()
+			if elite and not bossSound.IsPlaying then
+				bossSound:Play()
+			end
+			local bossFade =
+				TweenService:Create(bossSound, fade, { Volume = if elite then 0.42 else 0 })
+			bossFade:Play()
+			if not elite then
+				if active then
+					celebrate()
+				end
+				bossFade.Completed:Once(function(state)
+					if state == Enum.PlaybackState.Completed and not eliteActive then
+						bossSound:Stop()
+					end
+				end)
+			end
+		end
+		if active ~= inGauntlet then
+			inGauntlet = active
+			task.spawn(play, if active then GAUNTLET_TRACK else LOBBY_TRACKS[trackIndex])
 		end
 	end)
 	task.spawn(play, LOBBY_TRACKS[trackIndex])

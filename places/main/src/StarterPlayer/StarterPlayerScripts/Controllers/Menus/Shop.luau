@@ -82,7 +82,7 @@ local ShopMenu = {}
 const PAGE_COLOR = Color3.fromRGB(52, 32, 78)
 const STALL = Vector3.new(88, 0, 48)
 const RAIN_RANGE = 34
-const RAIN_GLYPHS = { "$", "💵", "💰", "$", "🪙" }
+const RAIN_GLYPHS = { "$", "R$", "$" }
 
 type Card = { def: Products.ProductDef, button: TextButton, note: TextLabel? }
 
@@ -106,10 +106,10 @@ local function refresh()
 		local potion = Products.POTIONS[def.key]
 		if def.kind == "pass" and ownsPass(def.key) then
 			Kit.setButtonColor(card.button, Kit.Colors.Grey, Kit.Colors.GreyDark)
-			Kit.setButtonText(card.button, "✓ Owned")
+			Kit.setButtonText(card.button, "Owned")
 		elseif def.key == "StarterPack" and profile.starterPackBought then
 			Kit.setButtonColor(card.button, Kit.Colors.Grey, Kit.Colors.GreyDark)
-			Kit.setButtonText(card.button, "✓ Bought")
+			Kit.setButtonText(card.button, "Bought")
 		elseif
 			(def.key == "NovaReaper" or def.key == "DragonheartCannon")
 			and now >= Products.LIMITED_ENDS
@@ -125,13 +125,13 @@ local function refresh()
 			local amount, kind = PackValues.amount(profile, def.key)
 			if amount then
 				note.Text = if kind == "Power"
-					then `You get ⚡ {Format.abbreviate(amount)}`
-					else `You get 💰 {Format.abbreviate(amount)}`
+					then `You get {Format.abbreviate(amount)} Power`
+					else `You get {Format.abbreviate(amount)} coins`
 			elseif potion then
 				local owned = profile.potions[def.key] or 0
 				local ends = profile.boosts[potion] or 0
 				note.Text = if ends > now
-					then `Active {Format.duration(ends - now)} · Own {owned}`
+					then `Active {Format.duration(ends - now)} | Own {owned}`
 					else `You own {owned}`
 			elseif def.key == "ServerLuck" then
 				local ends = ReplicatedStorage:GetAttribute("ServerLuckUntil")
@@ -143,7 +143,7 @@ local function refresh()
 			elseif def.key == "NovaReaper" or def.key == "DragonheartCannon" then
 				local left = Products.LIMITED_ENDS - now
 				note.Text = if left > 0
-					then `LIMITED · Ends in {Format.duration(left)}`
+					then `LIMITED - Ends in {Format.duration(left)}`
 					else "Sold out"
 			end
 		end
@@ -439,7 +439,7 @@ end
 function ShopMenu:Init()
 	Menus.register({
 		name = "Shop",
-		title = "🛒 Shop",
+		title = "Shop",
 		color = Kit.Colors.Gold,
 		size = Vector2.new(0.93, 0.78),
 		build = build,
