@@ -69,7 +69,7 @@ The person's list, with their answers to the open questions. Branch: `feat/hotba
 | Lucky Wheel station: a free spin a day, paid spins (1/3/10), 0.5% exclusive gun | Done, f24009a |
 | Enemies spawn at least 40 studs from the player | Done, 626bc3f |
 | Stages up to 250, one new rarity per 50 stages past 80, balanced damage, a cutscene for each new rarity (added while the person was away) | Done, 3f30f73 and the next commit |
-| Create the real developer products and game passes ("create them now") | Blocked on an Open Cloud key |
+| Create the real developer products and game passes ("create them now") | Done 2026-11-26: 11 passes, 26 products, ids in Products.luau |
 
 Codes: `release`, `update_0`, `pewpew`, `forgefire`, `thankyou`; `dev_everything` is the testing kit
 (Studio or the owning group's rank 255 only). They live in `Modules/Server/Settings.luau`.
