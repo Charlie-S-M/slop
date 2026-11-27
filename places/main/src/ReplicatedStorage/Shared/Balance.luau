@@ -647,4 +647,11 @@ Balance.biomeForStage = Biomes.forStage
 Balance.TOWER_WAVE_SECONDS = 23
 Balance.CRYSTAL_HITS = 40
 
+-- Players without the Auto Perfect pass are shown it after every this many forges.
+Balance.FORGES_PER_RECOMMENDATION = 5
+
+function Balance.recommendsAutoPerfect(forges: number, owned: boolean): boolean
+	return not owned and forges > 0 and forges % Balance.FORGES_PER_RECOMMENDATION == 0
+end
+
 return Balance

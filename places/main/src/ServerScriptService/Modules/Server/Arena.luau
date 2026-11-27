@@ -20,6 +20,7 @@ const PetStats = require("@game/ReplicatedStorage/Shared/PetStats")
 const OreBuilder = require("@game/ReplicatedStorage/Shared/OreBuilder")
 const Ores = require("@game/ReplicatedStorage/Shared/Ores")
 const Rarity = require("@game/ReplicatedStorage/Shared/Rarity")
+const Strike = require("@game/ReplicatedStorage/Shared/Strike")
 const Types = require("@game/ReplicatedStorage/Shared/Types")
 const Upgrades = require("@game/ReplicatedStorage/Shared/Upgrades")
 const ArenaBuilder = require("./World/ArenaBuilder")
@@ -88,6 +89,8 @@ type Run = {
 	-- When the current break ends, and a token that a skip bumps so a stale timer can't also fire.
 	nextAt: number,
 	breakToken: number,
+	-- Where the player was at the last step, so mobs can swing at anyone running past.
+	lastSpot: Vector3?,
 }
 
 const MAX_SLOTS = 16
@@ -97,6 +100,8 @@ const LOBBY_RETURN = CFrame.new(0, 4, 108) * CFrame.Angles(0, 0, 0)
 const PROJECTILE_SPEED = 60
 const MAX_PICKUPS = 70
 const MELEE_COOLDOWN = 1.25
+-- How far past a mob's own reach its swing catches a player.
+const PASSING_REACH = 4
 
 local Arena = {}
 
@@ -690,6 +695,7 @@ local function startRun(player: Player, startStage: number, tower: boolean?)
 		nextWave = math.huge,
 		nextAt = 0,
 		breakToken = 0,
+		lastSpot = nil,
 	}
 	if run.tower then
 		local crystal = Instance.new("Part")
@@ -821,6 +827,9 @@ local function stepRun(run: Run, dt: number, now: number, roots: { BasePart }, c
 	local flatTarget = Vector3.new(target.X, run.origin.Y, target.Z)
 	local halfWidth = ArenaBuilder.WIDTH / 2 - 3
 	local halfLength = ArenaBuilder.LENGTH / 2 - 3
+	local spot = playerRoot.Position
+	local from = run.lastSpot or spot
+	run.lastSpot = spot
 
 	for _, enemy in run.enemies do
 		if not enemy.alive then
@@ -886,6 +895,16 @@ local function stepRun(run: Run, dt: number, now: number, roots: { BasePart }, c
 		if run.state ~= "fighting" then
 			continue
 		end
+		-- In the Gauntlet a swing catches anyone who comes close, running past included. In the
+		-- Tower the mobs are after the crystal.
+		local close = if run.tower
+			then not isRanged and distance <= enemy.reach + 1
+			else Strike.reaches(enemy.position, from, spot, enemy.reach + PASSING_REACH)
+		if close and now - enemy.lastAttack >= MELEE_COOLDOWN then
+			enemy.lastAttack = now
+			attackRemote:FireClient(run.player, { kind = "melee", enemy = enemy.model })
+			damageObjective(run, enemy.damage)
+		end
 		if isRanged then
 			if now >= enemy.nextRanged and distance < 140 then
 				enemy.nextRanged = now
@@ -899,10 +918,6 @@ local function stepRun(run: Run, dt: number, now: number, roots: { BasePart }, c
 					launchProjectile(run, enemy, target - side * 9)
 				end
 			end
-		elseif distance <= enemy.reach + 1 and now - enemy.lastAttack >= MELEE_COOLDOWN then
-			enemy.lastAttack = now
-			attackRemote:FireClient(run.player, { kind = "melee", enemy = enemy.model })
-			damageObjective(run, enemy.damage)
 		end
 	end
 end

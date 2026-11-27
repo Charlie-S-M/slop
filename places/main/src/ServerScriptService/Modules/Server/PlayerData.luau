@@ -108,7 +108,14 @@ local function defaultProfile(): Profile
 		prestige = 0,
 		attachments = {},
 		robuxSpent = 0,
-		settings = { autoMode = false, autoSkip = false, autoRebirth = false, sfx = 1, music = 1 },
+		settings = {
+			autoMode = false,
+			autoSkip = false,
+			autoRebirth = false,
+			showLoadout = true,
+			sfx = 1,
+			music = 1,
+		},
 		redeemedCodes = {},
 		quests = {
 			day = 0,

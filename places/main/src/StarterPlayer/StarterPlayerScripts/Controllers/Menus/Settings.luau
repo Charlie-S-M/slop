@@ -11,6 +11,7 @@ const UserInputService = game:GetService("UserInputService")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
 const Types = require("@game/ReplicatedStorage/Shared/Types")
 const ClientState = require("../ClientState")
+const Hotbar = require("../Hotbar")
 const Kit = require("../UI/Kit")
 const Menus = require("../Menus")
 
@@ -72,8 +73,8 @@ end
 local function row(content: Frame, order: number, title: string, hint: string): Frame
 	local frame = Kit.new("Frame", {
 		BackgroundColor3 = Kit.Colors.Card,
-		Position = UDim2.fromScale(0.03, 0.02 + (order - 1) * 0.155),
-		Size = UDim2.fromScale(0.94, 0.135),
+		Position = UDim2.fromScale(0.03, 0.01 + (order - 1) * 0.141),
+		Size = UDim2.fromScale(0.94, 0.128),
 		Parent = content,
 	})
 	Kit.corner(12).Parent = frame
@@ -116,6 +117,9 @@ local function addToggle(content: Frame, order: number, key: string, title: stri
 			end
 			current[key] = not current[key]
 			paintToggle(toggle, current[key])
+			if key == "showLoadout" then
+				Hotbar.show(current[key])
+			end
 			Net.event("SaveSetting"):FireServer(key, current[key])
 		end,
 	})
@@ -229,9 +233,16 @@ local function build(content: Frame)
 		"🔄 Auto Rebirth",
 		"Rebirth by itself when you can (needs the Auto Rebirth pass)"
 	)
-	addSlider(content, 4, "sfx", "🔊 Sound Effects", "Shots, hits, and menu sounds")
-	addSlider(content, 5, "music", "🎵 Music", "Lobby and Gauntlet tracks")
-	local frame = row(content, 6, "🎟️ Codes", "Type a code and press Redeem")
+	addToggle(
+		content,
+		4,
+		"showLoadout",
+		"🎒 Show Loadout",
+		"The bar showing your gun, armor, and pets"
+	)
+	addSlider(content, 5, "sfx", "🔊 Sound Effects", "Shots, hits, and menu sounds")
+	addSlider(content, 6, "music", "🎵 Music", "Lobby and Gauntlet tracks")
+	local frame = row(content, 7, "🎟️ Codes", "Type a code and press Redeem")
 	codeBox = Kit.new("TextBox", {
 		Text = "",
 		PlaceholderText = "Enter code",

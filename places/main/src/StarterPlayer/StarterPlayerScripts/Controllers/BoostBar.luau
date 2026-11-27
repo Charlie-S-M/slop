@@ -234,6 +234,11 @@ function BoostBar:Start()
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Parent = bar,
 	})
+	local barScale = Kit.new("UIScale", { Parent = bar }) :: UIScale
+	-- Smaller on phones, where full-size icons would cover the Power counter.
+	Kit.onCompact(function(compact)
+		barScale.Scale = if compact then 0.55 else 1
+	end)
 	tooltip = Kit.new("Frame", {
 		Name = "Tip",
 		AnchorPoint = Vector2.new(1, 0),

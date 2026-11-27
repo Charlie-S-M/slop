@@ -70,6 +70,29 @@ function Kit.new(className: string, props: Props?, children: { Instance }?): any
 end
 
 function Kit.corner(radius: number?): UICorner
+	-- Screens shorter than this are phones, where the HUD takes its compact sizes.
+	const COMPACT_HEIGHT = 600
+
+	-- Calls `apply` now and whenever the screen changes between compact and full size.
+	function Kit.onCompact(apply: (compact: boolean) -> ())
+		const camera = workspace.CurrentCamera
+		if not camera then
+			apply(false)
+			return
+		end
+		local last: boolean? = nil
+		local function check()
+			-- The camera reports a tiny viewport for a moment before the first frame.
+			const compact = camera.ViewportSize.Y > 1 and camera.ViewportSize.Y < COMPACT_HEIGHT
+			if compact ~= last then
+				last = compact
+				apply(compact)
+			end
+		end
+		camera:GetPropertyChangedSignal("ViewportSize"):Connect(check)
+		check()
+	end
+
 	return Kit.new("UICorner", { CornerRadius = UDim.new(0, radius or 12) })
 end
 

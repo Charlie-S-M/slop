@@ -82,6 +82,8 @@ export type Settings = {
 	autoSkip: boolean,
 	-- With the Auto Rebirth pass: rebirth by itself as soon as the player can.
 	autoRebirth: boolean,
+	-- Whether the loadout bar is on screen.
+	showLoadout: boolean,
 	sfx: number,
 	music: number,
 }

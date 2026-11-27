@@ -3,6 +3,7 @@
 	The loadout hotbar: a dark rounded bar along the bottom of the screen showing what's equipped as
 	pixel-art icons. Slot 1 is the gun (lit, since it's in hand), 2-4 the helmet, chestplate, and
 	boots, and 5-7 the pets. It replaces Roblox's own backpack bar, which only ever held the gun.
+	Phones get it at half size, and a button beside it hides or shows it.
 ]]
 
 const Players = game:GetService("Players")
@@ -19,8 +20,21 @@ const Rarity = require("@game/ReplicatedStorage/Shared/Rarity")
 const Types = require("@game/ReplicatedStorage/Shared/Types")
 const ClientState = require("./ClientState")
 const Kit = require("./UI/Kit")
+const Net = require("@game/ReplicatedStorage/Shared/Net")
 
 local Hotbar = {}
+
+-- The bar's size on phones, as a share of its full size.
+const COMPACT_SCALE = 0.5
+-- Shows or hides the bar; set once it's built.
+local apply: ((boolean) -> ())? = nil
+
+-- The player's choice, from the bar's own button or the Settings menu.
+function Hotbar.show(shown: boolean)
+	if apply then
+		apply(shown)
+	end
+end
 
 type Palette = { b: Color3, a: Color3, t: Color3, k: Color3, w: Color3 }
 type Slot = { frame: Frame, icon: Frame, stroke: UIStroke, drawn: string }
@@ -141,34 +155,102 @@ local function build()
 		BackgroundTransparency = 0.12,
 		Parent = screen,
 	})
+	local scale = Kit.new("UIScale", { Scale = 1, Parent = bar }) :: UIScale
+	local compact = false
+	local wanted = true
+	local toggle: TextButton
 	local transition: Tween? = nil
-	local function fade()
+	-- Where the bar and its button sit for the screen's size and the player's choice.
+	local function place(instant: boolean?)
+		const size = if compact then COMPACT_SCALE else 1
+		-- On phones it rests just above the health bar.
+		const rest = if compact then UDim2.fromScale(0.5, 0.775) else UDim2.new(0.5, 0, 1, -150)
+		const hidden = Players.LocalPlayer:GetAttribute("ForgeCamera") == true
+		const visible = wanted and not hidden
+		scale.Scale = size
 		if transition then
 			transition:Cancel()
 		end
-		local hidden = Players.LocalPlayer:GetAttribute("ForgeCamera") == true
-		screen.Enabled = true
-		local tween = TweenService:Create(
-			bar,
-			TweenInfo.new(0.24),
-			{ GroupTransparency = if hidden then 1 else 0 }
-		)
+		if visible then
+			bar.Visible = true
+		end
+		const goal = {
+			GroupTransparency = if visible then 0 else 1,
+			-- It slides down a little as it goes.
+			Position = if visible then rest else rest + UDim2.fromOffset(0, 18),
+		}
+		const tween = TweenService:Create(bar, TweenInfo.new(if instant then 0 else 0.22), goal)
 		transition = tween
 		tween.Completed:Once(function(state)
-			if state == Enum.PlaybackState.Completed and hidden then
-				screen.Enabled = false
+			if state == Enum.PlaybackState.Completed and not visible then
+				bar.Visible = false
 			end
 		end)
 		tween:Play()
+		toggle.Visible = not hidden
+		toggle.Text = if wanted then "▼" else "▲ Loadout"
+		toggle.Size = if wanted then UDim2.fromOffset(28, 28) else UDim2.fromOffset(104, 28)
+		-- Beside the bar's right end while it's up; in its place, centered, once it's away.
+		const side = (SLOT_COUNT * 58 + 24) * size / 2 + 6
+		toggle.AnchorPoint = Vector2.new(if wanted then 0 else 0.5, 1)
+		-- On a big screen the lone button lifts clear of the damage readout.
+		const lone = if compact then rest else rest - UDim2.fromOffset(0, 28)
+		toggle.Position = if wanted then rest + UDim2.fromOffset(side, 0) else lone
 	end
-	Players.LocalPlayer:GetAttributeChangedSignal("ForgeCamera"):Connect(fade)
-	fade()
+	toggle = Kit.new("TextButton", {
+		Name = "LoadoutToggle",
+		FontFace = Kit.FONT,
+		TextSize = 15,
+		TextColor3 = Color3.fromRGB(190, 205, 225),
+		BackgroundColor3 = Color3.fromRGB(22, 26, 34),
+		BackgroundTransparency = 0.12,
+		AutoButtonColor = false,
+		Parent = screen,
+	}) :: TextButton
+	Kit.corner(10).Parent = toggle
+	Kit.new("UIStroke", {
+		Color = Color3.fromRGB(70, 150, 220),
+		Thickness = 2,
+		Transparency = 0.35,
+		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+		Parent = toggle,
+	})
+	toggle.Activated:Connect(function()
+		wanted = not wanted
+		Kit.sound(Kit.Sounds.Click, 0.3)
+		const profile = ClientState.profile
+		if profile then
+			profile.settings.showLoadout = wanted
+		end
+		Net.event("SaveSetting"):FireServer("showLoadout", wanted)
+		place()
+	end)
+	function apply(shown: boolean)
+		if shown ~= wanted then
+			wanted = shown
+			place()
+		end
+	end
+	local function follow()
+		const profile = ClientState.profile
+		if profile then
+			Hotbar.show(profile.settings.showLoadout)
+		end
+	end
+	ClientState.ProfileChanged:Connect(follow)
+	Players.LocalPlayer:GetAttributeChangedSignal("ForgeCamera"):Connect(function()
+		place()
+	end)
+	Kit.onCompact(function(small)
+		compact = small
+		place(true)
+	end)
+	follow()
 	Kit.new("UICorner", { CornerRadius = UDim.new(0, 22), Parent = bar })
 	Kit.new(
 		"UIStroke",
 		{ Color = Color3.fromRGB(70, 150, 220), Thickness = 2, Transparency = 0.35, Parent = bar }
 	)
-	Kit.new("UIScale", { Scale = 1, Parent = bar })
 	Kit.text({
 		Text = "LOADOUT",
 		Size = UDim2.fromOffset(120, 18),

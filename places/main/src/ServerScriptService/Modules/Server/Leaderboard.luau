@@ -1,8 +1,9 @@
 --!strict
 
 --[[
-	The lobby leaderboard, opened from the board's prompt. It has four boards:
+	The lobby leaderboard, opened from the board's prompt. Its boards are:
 	- Power: the strongest players in this server, by rebirths and then Power.
+	- PowerAll: the most Power anyone has ever held, in any server.
 	- Robux Spent, Playtime, and Forged: all-time boards kept in ordered data stores. When those
 	  can't be reached (a Studio place without API access), they show the players in the server.
 
@@ -13,20 +14,37 @@
 const DataStoreService = game:GetService("DataStoreService")
 const HttpService = game:GetService("HttpService")
 const Players = game:GetService("Players")
+const RunService = game:GetService("RunService")
 
 const Format = require("@game/ReplicatedStorage/Shared/Format")
+const PowerScore = require("@game/ReplicatedStorage/Shared/PowerScore")
 const Types = require("@game/ReplicatedStorage/Shared/Types")
 const PlayerData = require("./PlayerData")
 
 const REFRESH_SECONDS = 4
+-- The first all-time read comes soon after the server starts, then once a minute.
+const FIRST_GLOBAL_SECONDS = 8
 const GLOBAL_SECONDS = 60
 const ROWS = 10
 
 type Entry = { name: string, value: number, rebirths: number? }
-type GlobalBoard = { key: string, read: (Types.Profile) -> number }
+type GlobalBoard = {
+	key: string,
+	read: (Types.Profile) -> number,
+	-- Keeps each player's highest value instead of their latest.
+	best: boolean?,
+}
 
 -- The all-time boards, by the name the menu shows them under.
 const GLOBAL_BOARDS: { [string]: GlobalBoard } = {
+	PowerAll = {
+		key = "Power",
+		read = function(profile)
+			return PowerScore.encode(profile.power)
+		end,
+		-- A rebirth empties Power, but not the record.
+		best = true,
+	},
 	Robux = {
 		key = "RobuxSpent",
 		read = function(profile)
@@ -113,10 +131,20 @@ local function syncGlobal()
 			local profile = PlayerData.get(player)
 			if profile then
 				names[player.UserId] = player.DisplayName
-				local value = math.floor(spec.read(profile))
-				pcall(function()
-					store:SetAsync(tostring(player.UserId), value)
-				end)
+				const value = math.floor(spec.read(profile))
+				const key = tostring(player.UserId)
+				if not spec.best then
+					pcall(function()
+						store:SetAsync(key, value)
+					end)
+				elseif not RunService:IsStudio() then
+					-- Studio test profiles stay off the all-time Power record, which never falls.
+					pcall(function()
+						store:UpdateAsync(key, function(old)
+							return if typeof(old) == "number" then math.max(old, value) else value
+						end)
+					end)
+				end
 			end
 		end
 		local read, pages = pcall(function()
@@ -153,6 +181,28 @@ local function serverList(read: (Types.Profile) -> number): { Entry }
 	return list
 end
 
+-- The all-time Power record as shown: the stored scores, with anyone here who has since passed
+-- theirs (or isn't stored yet) counted at what they hold now.
+local function decodedRecord(stored: { Entry }, here: { Entry }): { Entry }
+	const scores: { [string]: number } = {}
+	for _, entries in { stored, here } do
+		for _, entry in entries do
+			scores[entry.name] = math.max(entry.value, scores[entry.name] or 0)
+		end
+	end
+	const list: { Entry } = {}
+	for name, score in scores do
+		table.insert(list, { name = name, value = PowerScore.decode(score) })
+	end
+	table.sort(list, function(a, b)
+		return a.value > b.value
+	end)
+	while #list > ROWS do
+		table.remove(list)
+	end
+	return list
+end
+
 local function refresh()
 	local power: { Entry } = {}
 	for _, player in Players:GetPlayers() do
@@ -179,7 +229,11 @@ local function refresh()
 	end
 	local boards: { [string]: { Entry } } = { Power = power }
 	for label, spec in GLOBAL_BOARDS do
-		boards[label] = globalLists[label] or serverList(spec.read)
+		local list = globalLists[label] or serverList(spec.read)
+		if label == "PowerAll" then
+			list = decodedRecord(list, serverList(spec.read))
+		end
+		boards[label] = list
 	end
 	local found = board()
 	if found then
@@ -213,9 +267,10 @@ function Leaderboard:Start()
 		end
 	end)
 	task.spawn(function()
+		task.wait(FIRST_GLOBAL_SECONDS)
 		while true do
-			task.wait(GLOBAL_SECONDS)
 			syncGlobal()
+			task.wait(GLOBAL_SECONDS)
 		end
 	end)
 end

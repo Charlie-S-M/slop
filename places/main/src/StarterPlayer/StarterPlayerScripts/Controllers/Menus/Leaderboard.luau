@@ -1,8 +1,8 @@
 --!strict
 
--- Top Shooters, opened from the lobby leaderboard's prompt: four boards behind tabs (Power in
--- this server; Robux spent, playtime, and items forged all-time). The server keeps every board as
--- JSON in the board part's "Entries" attribute.
+-- Top Shooters, opened from the lobby leaderboard's prompt: four boards behind tabs. Power shows
+-- this server or the all-time record; Robux spent, playtime, and items forged are all-time. The
+-- server keeps every board as JSON in the board part's "Entries" attribute.
 
 const HttpService = game:GetService("HttpService")
 
@@ -66,6 +66,10 @@ local empty: TextLabel
 local note: TextLabel
 local current = "Power"
 local built = false
+-- Which Power board is showing: "Power" (this server) or "PowerAll" (all-time).
+local powerBoard = "Power"
+local scopeButtons: { [string]: TextButton } = {}
+const SCOPES = { { "Power", "This Server" }, { "PowerAll", "All Time" } }
 
 local function board(): Instance?
 	local lobby = workspace:FindFirstChild("Lobby")
@@ -101,17 +105,30 @@ local function refresh()
 			Kit.setButtonColor(button, Kit.Colors.Grey, Kit.Colors.GreyDark)
 		end
 	end
-	local list = boards()[current] or {}
+	local onPower = current == "Power"
+	for key, button in scopeButtons do
+		button.Visible = onPower
+		if key == powerBoard then
+			Kit.setButtonColor(button, Kit.Colors.Gold, Kit.Colors.GoldDark)
+		else
+			Kit.setButtonColor(button, Kit.Colors.Grey, Kit.Colors.GreyDark)
+		end
+	end
+	local shownBoard = if onPower then powerBoard else current
+	local list = boards()[shownBoard] or {}
 	for index, row in rows do
 		local entry = list[index]
 		row.frame.Visible = entry ~= nil
 		if entry then
 			row.name.Text = entry.name
-			row.stats.Text = tab.show(entry)
+			-- The all-time record holds Power alone, with no rebirth count.
+			row.stats.Text = if shownBoard == "PowerAll"
+				then `⚡ {Format.abbreviate(entry.value)}`
+				else tab.show(entry)
 		end
 	end
 	empty.Visible = #list == 0
-	note.Text = if current == "Power" then "Players in this server" else "All-time, every server"
+	note.Visible = not onPower
 end
 
 local function build(content: Frame)
@@ -131,8 +148,23 @@ local function build(content: Frame)
 			end,
 		})
 	end
+	for index, scope in SCOPES do
+		scopeButtons[scope[1]] = Kit.button({
+			name = `Scope{scope[1]}`,
+			color = Kit.Colors.Grey,
+			dark = Kit.Colors.GreyDark,
+			size = UDim2.fromScale(0.22, 0.042),
+			position = UDim2.fromScale(0.27 + (index - 1) * 0.24, 0.102),
+			text = scope[2],
+			parent = content,
+			onClick = function()
+				powerBoard = scope[1]
+				refresh()
+			end,
+		})
+	end
 	note = Kit.text({
-		Text = "",
+		Text = "All-time, every server",
 		Size = UDim2.fromScale(0.6, 0.04),
 		Position = UDim2.fromScale(0.2, 0.1),
 		TextColor3 = Color3.fromRGB(190, 205, 225),
