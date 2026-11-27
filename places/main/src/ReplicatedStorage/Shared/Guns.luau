@@ -910,6 +910,37 @@ for _, def in LIMITED do
 	table.insert(collection, def)
 end
 
+-- The Index reads in rarity order, Common to Omega. Within a rarity the forge guns keep their
+-- catalog order with each evolution right after its base, and the limited guns come last.
+do
+	const position: { [string]: number } = {}
+	for index, def in collection do
+		position[def.id] = index
+	end
+	const limited: { [string]: boolean } = {}
+	for _, def in LIMITED do
+		limited[def.id] = true
+	end
+	local function key(def: GunDef): (number, number, number)
+		const base = def.evolvesFrom or def.id
+		return if limited[def.id] then 1 else 0, position[base], if def.evolvesFrom then 1 else 0
+	end
+	table.sort(collection, function(a, b)
+		if a.rarity ~= b.rarity then
+			return a.rarity < b.rarity
+		end
+		const aLimited, aBase, aEvolved = key(a)
+		const bLimited, bBase, bEvolved = key(b)
+		if aLimited ~= bLimited then
+			return aLimited < bLimited
+		end
+		if aBase ~= bBase then
+			return aBase < bBase
+		end
+		return aEvolved < bEvolved
+	end)
+end
+
 local Guns = {}
 
 Guns.List = collection
@@ -930,6 +961,16 @@ end
 -- The gun this one evolves into, or nil when it can't evolve (below Legendary, or already evolved).
 function Guns.evolutionOf(id: string): GunDef?
 	return EVOLUTION_OF[id]
+end
+
+-- Robux and wheel guns: kept through prestige, with their own damage floor (Balance).
+function Guns.isLimited(id: string): boolean
+	for _, def in LIMITED do
+		if def.id == id then
+			return true
+		end
+	end
+	return false
 end
 
 function Guns.pool(rarity: number): { GunDef }

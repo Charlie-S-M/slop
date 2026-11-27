@@ -19,6 +19,7 @@ const Net = require("@game/ReplicatedStorage/Shared/Net")
 const PetStats = require("@game/ReplicatedStorage/Shared/PetStats")
 const OreBuilder = require("@game/ReplicatedStorage/Shared/OreBuilder")
 const Ores = require("@game/ReplicatedStorage/Shared/Ores")
+const PrestigeShop = require("@game/ReplicatedStorage/Shared/PrestigeShop")
 const Rarity = require("@game/ReplicatedStorage/Shared/Rarity")
 const Strike = require("@game/ReplicatedStorage/Shared/Strike")
 const Types = require("@game/ReplicatedStorage/Shared/Types")
@@ -93,6 +94,8 @@ type Run = {
 	lastSpot: Vector3?,
 }
 
+-- With Auto Skip on, the beat between a cleared stage and the next one.
+const AUTO_SKIP_SECONDS = 0.8
 const MAX_SLOTS = 16
 const SLOT_SPACING = 420
 const ARENA_BASE = Vector3.new(4000, 0, 0)
@@ -441,6 +444,7 @@ end
 local function openChest(run: Run, enemy: Enemy, profile: Types.Profile)
 	if random:NextNumber() < Balance.CHEST_PART_CHANCE then
 		local luck = Upgrades.value("PartLuck", profile.upgrades.PartLuck or 0)
+			* PrestigeShop.multiplier(profile.prestigeShop, "PartLuck")
 		local rarity = Balance.reelRarity(random:NextNumber(), luck)
 		local pool = Attachments.ofRarity(rarity)
 		if #pool > 0 then
@@ -616,6 +620,7 @@ local function onStageCleared(run: Run)
 		end
 	elseif profile and run.stage > profile.bestStage then
 		profile.bestStage = run.stage
+		profile.peakStage = math.max(profile.peakStage, run.stage)
 		Loadout.refreshStats(run.player)
 		PlayerData.markState(run.player)
 	end
@@ -627,9 +632,14 @@ local function onStageCleared(run: Run)
 	end
 	run.breakToken += 1
 	local token = run.breakToken
-	run.nextAt = os.clock() + Balance.STAGE_BREAK_SECONDS
+	-- Auto Skip is honored here, not by a request from the client: stages cleared faster than the
+	-- skip request's rate limit used to sit through the whole break.
+	local wait = if profile and profile.settings.autoSkip
+		then AUTO_SKIP_SECONDS
+		else Balance.STAGE_BREAK_SECONDS
+	run.nextAt = os.clock() + wait
 	sendRunInfo(run, true)
-	task.delay(Balance.STAGE_BREAK_SECONDS, function()
+	task.delay(wait, function()
 		if run.state ~= "break" or run.breakToken ~= token then
 			return
 		end

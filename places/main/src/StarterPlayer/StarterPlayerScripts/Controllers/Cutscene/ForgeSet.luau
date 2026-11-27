@@ -209,7 +209,8 @@ end
 local function buildCrucible(root: Model): (Model, CFrame, BasePart, number, number, BasePart)
 	local crucible = Instance.new("Model")
 	crucible.Name = "Crucible"
-	local center = ORIGIN + Vector3.new(-13, 13, -4)
+	-- Tipped 70 degrees, the lip ends up straight over the mold's middle (z = 9).
+	local center = ORIGIN + Vector3.new(-13, 13, 3.4)
 	local steel = rgb(150, 155, 168)
 	local dark = rgb(95, 98, 110)
 	block(crucible, Vector3.new(8, 1, 8), CFrame.new(center + Vector3.new(0, -3, 0)), dark)
@@ -245,7 +246,9 @@ local function buildCrucible(root: Model): (Model, CFrame, BasePart, number, num
 		crucible,
 		Vector3.new(2.4, 0.6, 1.6),
 		CFrame.new(center + Vector3.new(0, 2.9, 4.4)),
-		steel
+		steel,
+		nil,
+		"Lip"
 	)
 	local metalBottom = center.Y - 2.3
 	local metalTop = center.Y + 2.4

@@ -9,6 +9,7 @@ const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const Biomes = require("@game/ReplicatedStorage/Shared/Biomes")
 const Format = require("@game/ReplicatedStorage/Shared/Format")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
+const PrestigeShop = require("@game/ReplicatedStorage/Shared/PrestigeShop")
 const ClientState = require("../ClientState")
 const Kit = require("../UI/Kit")
 const Menus = require("../Menus")
@@ -161,6 +162,8 @@ end
 ------------------------------------------------------------------------------------------------
 
 local warningGains: TextLabel
+local warningLose: TextLabel
+local warningKeep: TextLabel
 local confirmButton: TextButton
 -- Bumped each time the warning opens, so an older countdown stops when a newer one starts.
 local countdown = 0
@@ -172,10 +175,37 @@ local function openWarning()
 		return
 	end
 	local coming = profile.prestige + 1
+	const tokens = PrestigeShop.tokensPerPrestige(profile.prestigeShop)
 	warningGains.Text =
 		`✨ You gain for good: damage ×{Balance.prestigeDamage(coming)}, ore drops ×{Balance.prestigeOres(
 			coming
-		)}, forge luck +{math.floor(Balance.prestigeLuck(coming) * 200 + 0.5)}%`
+		)}, forge luck +{math.floor(Balance.prestigeLuck(coming) * 200 + 0.5)}%, and {tokens} prestige token{if tokens
+				== 1
+			then ""
+			else "s"}`
+	-- What goes and what stays depends on the prestige shop's Save items.
+	const shop = profile.prestigeShop
+	const lost = { "every ore, material, and armor piece" }
+	const kept = { "your parts, Robux guns, the Index, quests and their rank" }
+	if PrestigeShop.owns(shop, "SaveGuns") then
+		table.insert(kept, "all your guns")
+	else
+		table.insert(lost, "every forged gun")
+	end
+	if PrestigeShop.owns(shop, "SaveUpgrades") then
+		table.insert(kept, "your upgrades")
+	else
+		table.insert(lost, "every upgrade")
+	end
+	if PrestigeShop.owns(shop, "SavePets") then
+		table.insert(kept, "your pets")
+	else
+		table.insert(lost, "every pet")
+	end
+	warningLose.Text =
+		`❌ You lose: {table.concat(lost, ", ")}; your coins, Power, rebirths, level, best stage, and Tower progress.`
+	warningKeep.Text =
+		`✅ You keep: {table.concat(kept, ", ")}, everything bought with Robux, your settings, and your lifetime stats.`
 	countdown += 1
 	local mine = countdown
 	task.spawn(function()
@@ -212,18 +242,16 @@ local function buildWarning(content: Frame)
 		Stroke = 3,
 		Parent = content,
 	})
-	Kit.text({
-		Text = "❌ You lose: every gun, ore, material, armor piece, attachment, and upgrade; "
-			.. "your coins, Power, rebirths, level, best stage, and Tower progress.",
+	warningLose = Kit.text({
+		Text = "",
 		Size = UDim2.fromScale(0.9, 0.17),
 		Position = UDim2.fromScale(0.05, 0.29),
 		TextColor3 = Color3.fromRGB(255, 200, 200),
 		Stroke = 2,
 		Parent = content,
 	})
-	Kit.text({
-		Text = "✅ You keep: your pets, the Index, quests and their rank, everything bought "
-			.. "with Robux, your settings, and your lifetime stats.",
+	warningKeep = Kit.text({
+		Text = "",
 		Size = UDim2.fromScale(0.9, 0.14),
 		Position = UDim2.fromScale(0.05, 0.47),
 		TextColor3 = Color3.fromRGB(190, 255, 190),

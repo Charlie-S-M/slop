@@ -292,6 +292,9 @@ function Shop:Start()
 	if lobby and not lobby:FindFirstChild("Wheel") then
 		LobbyBuilder.wheelStand(lobby)
 	end
+	if lobby and not lobby:FindFirstChild("PrestigeShop") then
+		LobbyBuilder.prestigeStall(lobby)
+	end
 	MarketplaceService.ProcessReceipt = processReceipt
 	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passId, bought)
 		local def = Products.byId("pass", passId)

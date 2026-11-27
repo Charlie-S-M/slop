@@ -21,20 +21,38 @@ function TimingGame.strike(
 	panel.Size = UDim2.fromOffset(0, 0)
 	panel.Position = UDim2.fromOffset(at.X, at.Y)
 	panel.Parent = screen
-	local function ring(color: Color3): Frame
+	local function circle(parent: Instance, size: number, thickness: number, color: Color3): Frame
 		local f = Instance.new("Frame")
 		f.AnchorPoint = Vector2.new(0.5, 0.5)
-		f.Size = UDim2.fromOffset(64, 64)
+		f.Position = UDim2.fromScale(0.5, 0.5)
+		f.Size = UDim2.fromOffset(size, size)
 		f.BackgroundTransparency = 1
 		local corner = Instance.new("UICorner")
 		corner.CornerRadius = UDim.new(1, 0)
 		corner.Parent = f
 		local edge = Instance.new("UIStroke")
 		edge.Color = color
-		edge.Thickness = 4
+		edge.Thickness = thickness
 		edge.Parent = f
-		f.Parent = panel
+		f.Parent = parent
 		return f
+	end
+	-- A dark disc behind the rings and a dark outline on each, so a bright, glowing gun on the
+	-- anvil (Godly and up especially) can never wash them out.
+	local backdrop = Instance.new("Frame")
+	backdrop.AnchorPoint = Vector2.new(0.5, 0.5)
+	backdrop.Size = UDim2.fromOffset(190, 190)
+	backdrop.BackgroundColor3 = Color3.fromRGB(10, 8, 14)
+	backdrop.BackgroundTransparency = 0.45
+	backdrop.Parent = panel
+	local round = Instance.new("UICorner")
+	round.CornerRadius = UDim.new(1, 0)
+	round.Parent = backdrop
+	local function ring(color: Color3): Frame
+		local holder = circle(panel, 64, 8, Color3.fromRGB(10, 8, 14))
+		holder.Position = UDim2.new()
+		circle(holder, 64, 4, color).Size = UDim2.fromScale(1, 1)
+		return holder
 	end
 	ring(Color3.new(1, 1, 1))
 	local moving = ring(Color3.fromRGB(255, 172, 58))

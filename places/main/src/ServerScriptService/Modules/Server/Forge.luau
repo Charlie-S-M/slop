@@ -23,7 +23,6 @@ const Ores = require("@game/ReplicatedStorage/Shared/Ores")
 const Quests = require("@game/ReplicatedStorage/Shared/Quests")
 const Rarity = require("@game/ReplicatedStorage/Shared/Rarity")
 const Types = require("@game/ReplicatedStorage/Shared/Types")
-const Upgrades = require("@game/ReplicatedStorage/Shared/Upgrades")
 const Loadout = require("./Loadout")
 const Boosts = require("./Boosts")
 const PlayerData = require("./PlayerData")
@@ -231,15 +230,13 @@ local function startForge(player: Player, request: unknown, slot: Types.ArmorSlo
 		return
 	end
 
-	local luck = Upgrades.value("Luck", profile.upgrades.Luck or 0)
-		+ Balance.prestigeLuck(profile.prestige)
-		+ Boosts.luck(player, profile)
 	-- A Lucky Forge charge from the shop adds its luck to this one roll.
-	if profile.luckyForges > 0 then
+	const charge = profile.luckyForges > 0
+	if charge then
 		profile.luckyForges -= 1
-		luck += Boosts.LUCKY_FORGE_LUCK
 	end
-	local odds = Balance.forgeOdds(list, luck)
+	const luck, eternalBoost = Balance.forgeLuck(Boosts.luckSources(player, profile, charge))
+	local odds = Balance.forgeOdds(list, luck, eternalBoost)
 	local rarity = Balance.pickRarity(odds, random:NextNumber())
 	local itemId: string
 	if slot then

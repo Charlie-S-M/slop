@@ -106,6 +106,9 @@ local function defaultProfile(): Profile
 		equippedPets = {},
 		towerBest = 0,
 		prestige = 0,
+		prestigeTokens = 0,
+		prestigeShop = {},
+		peakStage = 0,
 		attachments = {},
 		robuxSpent = 0,
 		settings = {
@@ -171,6 +174,8 @@ local function reconcile(saved: any): Profile
 		end
 	end
 	profile.equippedPets = cleanEquipped
+	-- Saves from before peakStage existed start it at their best stage so far.
+	profile.peakStage = math.max(profile.peakStage, profile.bestStage)
 	-- Version 2 gave guns Speed, Training Power, and a grade; older guns get them filled in.
 	for index, item in profile.guns do
 		profile.guns[index] = GunStats.migrateGun(item)

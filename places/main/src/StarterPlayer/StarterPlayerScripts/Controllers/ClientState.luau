@@ -44,16 +44,12 @@ function ClientState.shotDamage(): number
 	if not profile or not item or not def then
 		return 0
 	end
-	return Balance.shotDamage(
-		profile.power,
+	return Balance.playerPelletDamage(
+		profile,
 		item.power,
-		def.kind,
-		profile.rebirths,
-		profile.level,
-		def.id
-	) * PetStats.multiplier(profile.pets, profile.equippedPets, "Damage") * Balance.prestigeDamage(
-		profile.prestige
-	)
+		def,
+		PetStats.multiplier(profile.pets, profile.equippedPets, "Damage")
+	) * Guns.kindStats(def.kind).pellets
 end
 
 function ClientState.bagCount(): number

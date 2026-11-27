@@ -14,6 +14,7 @@ const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const Format = require("@game/ReplicatedStorage/Shared/Format")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
 const Ores = require("@game/ReplicatedStorage/Shared/Ores")
+const PrestigeShop = require("@game/ReplicatedStorage/Shared/PrestigeShop")
 const Rarity = require("@game/ReplicatedStorage/Shared/Rarity")
 const Types = require("@game/ReplicatedStorage/Shared/Types")
 const Upgrades = require("@game/ReplicatedStorage/Shared/Upgrades")
@@ -70,28 +71,23 @@ end
 
 local function refreshOdds()
 	local profile = ClientState.profile
-	local luck = Upgrades.value("Luck", if profile then profile.upgrades.Luck or 0 else 0)
-		+ (if profile then Balance.prestigeLuck(profile.prestige) else 0)
 	local player = Players.LocalPlayer
 	local now = os.time()
-	local bonus = Balance.LUCK_BONUS
 	local serverLuck = game.ReplicatedStorage:GetAttribute("ServerLuckUntil")
-	if player:GetAttribute("Pass_ExtraLuck") then
-		luck += bonus.ExtraLuck
-	end
-	if player:GetAttribute("Pass_SuperLuck") then
-		luck += bonus.SuperLuck
-	end
-	if typeof(serverLuck) == "number" and serverLuck > now then
-		luck += bonus.Server
-	end
-	if profile and (profile.boosts.Luck or 0) > now then
-		luck += bonus.Potion
-	end
-	if profile and profile.luckyForges > 0 then
-		luck += bonus.Charge
-	end
-	local odds = Balance.forgeOdds(selectedDefs(), luck)
+	-- The same sources the server's roll reads (Boosts.luckSources).
+	const luck, eternalBoost = Balance.forgeLuck({
+		upgrade = Upgrades.value("Luck", if profile then profile.upgrades.Luck or 0 else 0),
+		prestige = if profile then Balance.prestigeLuck(profile.prestige) else 0,
+		extraLuck = player:GetAttribute("Pass_ExtraLuck") == true,
+		superLuck = player:GetAttribute("Pass_SuperLuck") == true,
+		potion = profile ~= nil and (profile.boosts.Luck or 0) > now,
+		server = typeof(serverLuck) == "number" and serverLuck > now,
+		charge = profile ~= nil and profile.luckyForges > 0,
+		forgeLuckLevel = if profile
+			then PrestigeShop.level(profile.prestigeShop, "ForgeLuck")
+			else 0,
+	})
+	local odds = Balance.forgeOdds(selectedDefs(), luck, eternalBoost)
 	local bestTier = 1
 	for tier, row in oddsRows do
 		local chance = odds.chances[tier] or 0

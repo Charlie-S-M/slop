@@ -626,8 +626,9 @@ local function automate(run: any, active: boolean)
 		setAuto(active)
 	end
 	wasActive = active
-	-- Run updates repeat the same countdown, so each countdown is skipped once.
-	if options.autoSkip and active and typeof(run.nextIn) == "number" then
+	-- Run updates repeat the same countdown, so each countdown is skipped once. Stage breaks are
+	-- skipped by the server itself; only Tower waves need asking.
+	if options.autoSkip and active and run.tower and typeof(run.nextIn) == "number" then
 		local deadline = os.clock() + run.nextIn
 		if math.abs(deadline - skippedDeadline) > 1 then
 			skippedDeadline = deadline

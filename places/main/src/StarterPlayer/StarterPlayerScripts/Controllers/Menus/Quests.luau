@@ -21,6 +21,8 @@ const Menus = require("../Menus")
 local QuestsMenu = {}
 
 const KNIGHT_NAME = "SIR PEW"
+-- The tutorial's first goal: train to this much Power before heading out.
+const TUTORIAL_POWER = 10
 const LINES = {
 	"Monsters won't beat themselves!",
 	"A true knight finishes every quest.",
@@ -564,10 +566,20 @@ function QuestsMenu:Start()
 			and profile.prestige == 0
 			and not player:GetAttribute("ForgeCamera")
 			and (not Menus.isOpen() or Menus.isOpen("Forge"))
-		if not guide.Enabled then
+		if not guide.Enabled or not profile then
 			return
 		end
-		if Menus.isOpen("Forge") then
+		-- The first step: training, so it's clear where Power comes from.
+		const training = profile.power < TUTORIAL_POWER
+			and profile.rebirths == 0
+			and profile.bestStage == 0
+			and not ClientState.run.active
+		if training and not Menus.isOpen() then
+			instruction.Text =
+				`Stand on the 1x training pad and shoot its target. Train to {TUTORIAL_POWER} Power! ({math.floor(
+					profile.power
+				)}/{TUTORIAL_POWER})`
+		elseif Menus.isOpen("Forge") then
 			instruction.Text =
 				"Select Gun, add ore, then hit Forge. Tap when the hammer rings line up."
 		elseif ClientState.bagCount() > 0 then
@@ -582,6 +594,8 @@ function QuestsMenu:Start()
 	end
 	Menus.Opened:Connect(refreshGuide)
 	ClientState.RunChanged:Connect(refreshGuide)
+	-- Power climbs through the stats updates, which the training step counts.
+	ClientState.StatsChanged:Connect(refreshGuide)
 	player:GetAttributeChangedSignal("ForgeCamera"):Connect(refreshGuide)
 	refreshGuide()
 	ClientState.ProfileChanged:Connect(function()

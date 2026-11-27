@@ -126,6 +126,11 @@ export type Profile = {
 	towerBest: number,
 	-- How many times the player has prestiged.
 	prestige: number,
+	-- Prestige tokens to spend, and the prestige shop's levels by item id (PrestigeShop).
+	prestigeTokens: number,
+	prestigeShop: { [string]: number },
+	-- The deepest stage ever cleared, kept through prestige; Robux guns' damage follows it.
+	peakStage: number,
 	-- Attachments not on a gun, by part id.
 	attachments: { [string]: number },
 	-- Robux the player has spent in this game, for the leaderboard.

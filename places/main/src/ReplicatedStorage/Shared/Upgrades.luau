@@ -9,6 +9,7 @@ export type UpgradeId =
 	| "CoinBoost"
 	| "Magnet"
 	| "PartLuck"
+	| "ReloadSpeed"
 
 export type UpgradeDef = {
 	id: UpgradeId,
@@ -177,6 +178,25 @@ const LIST: { UpgradeDef } = {
 		end,
 		describe = function(level)
 			return percent(0.1 * level)
+		end,
+	},
+	-- The reload's length as a share of the gun's own: 2% shorter a level, at most 40% shorter.
+	{
+		id = "ReloadSpeed",
+		name = "Quick Hands",
+		description = "Reload faster",
+		icon = "Reload",
+		color = Color3.fromRGB(255, 120, 200),
+		maxLevel = 20,
+		softCap = 20,
+		overflow = 1,
+		baseCost = 250,
+		costGrowth = 1.55,
+		effect = function(level)
+			return 1 - 0.02 * level
+		end,
+		describe = function(level)
+			return `{math.floor(2 * level + 0.5)}% faster`
 		end,
 	},
 }

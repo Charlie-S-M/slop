@@ -12,6 +12,7 @@ const Balance = require("./Balance")
 const Guns = require("./Guns")
 const Ores = require("./Ores")
 const Types = require("./Types")
+const Upgrades = require("./Upgrades")
 
 type Grade = Types.Grade
 
@@ -121,9 +122,14 @@ function GunStats.effective(item: Types.GunItem): Types.GunItem
 	return copy
 end
 
--- Shots per second for a gun kind at a Speed.
-function GunStats.fireRate(kind: Guns.GunKind, speed: number): number
-	return Guns.kindStats(kind).fireRate * speed
+-- Shots per second for a gun kind at a Speed, times the prestige shop's firing speed.
+function GunStats.fireRate(kind: Guns.GunKind, speed: number, multiplier: number?): number
+	return Guns.kindStats(kind).fireRate * speed * (multiplier or 1)
+end
+
+-- Seconds a reload takes with the Quick Hands upgrade.
+function GunStats.reloadTime(kind: Guns.GunKind, reloadLevel: number): number
+	return Guns.kindStats(kind).reloadTime * Upgrades.value("ReloadSpeed", reloadLevel)
 end
 
 --[[

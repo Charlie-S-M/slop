@@ -16,10 +16,12 @@ const GunBuilder = require("@game/ReplicatedStorage/Shared/GunBuilder")
 const GunStats = require("@game/ReplicatedStorage/Shared/GunStats")
 const Guns = require("@game/ReplicatedStorage/Shared/Guns")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
+const PrestigeShop = require("@game/ReplicatedStorage/Shared/PrestigeShop")
 const Rarity = require("@game/ReplicatedStorage/Shared/Rarity")
 const ShotStyles = require("@game/ReplicatedStorage/Shared/ShotStyles")
 const Birdseye = require("./Birdseye")
 const ClientState = require("./ClientState")
+const FarmAnimals = require("./FarmAnimals")
 const Hud = require("./Hud")
 const Kit = require("./UI/Kit")
 const Menus = require("./Menus")
@@ -467,15 +469,26 @@ local function setAmmoDisplay()
 	Hud.setAmmo(ammo, magazine, os.clock() < reloadUntil)
 end
 
+-- The prestige shop's firing speed.
+local function fireRateBoost(): number
+	const profile = ClientState.profile
+	return PrestigeShop.multiplier(if profile then profile.prestigeShop else nil, "FireRate")
+end
+
 local function startReload(stats: Guns.KindStats)
 	if os.clock() < reloadUntil or ammo >= stats.magazine then
 		return
 	end
-	reloadUntil = os.clock() + stats.reloadTime
+	const def = currentGun()
+	const profile = ClientState.profile
+	const seconds = if def
+		then GunStats.reloadTime(def.kind, if profile then profile.upgrades.ReloadSpeed or 0 else 0)
+		else stats.reloadTime
+	reloadUntil = os.clock() + seconds
 	reloadRemote:FireServer()
 	Kit.sound(if stats.pellets > 1 then Kit.Sounds.Pump else Kit.Sounds.Reload, 0.35)
 	setAmmoDisplay()
-	task.delay(stats.reloadTime, function()
+	task.delay(seconds, function()
 		if os.clock() >= reloadUntil - 0.01 then
 			ammo = stats.magazine
 			setAmmoDisplay()
@@ -551,6 +564,9 @@ local function fire(def: Guns.GunDef, stats: Guns.KindStats, autoPart: BasePart?
 				if isTrainingPart(part) then
 					styledImpact(style, result.Position, color, pelletScale)
 				end
+			elseif FarmAnimals.fromPart(part) then
+				styledImpact(style, result.Position, color, pelletScale)
+				FarmAnimals.shoot(FarmAnimals.fromPart(part) :: number)
 			elseif TrainingDummy.isDummy(part) then
 				styledImpact(style, result.Position, color, pelletScale)
 				TrainingDummy.hit(
@@ -608,9 +624,10 @@ local function step()
 	end
 	local wantsFire = triggerHeld and not Menus.isOpen()
 	local autoPart: BasePart? = nil
-	if not wantsFire and Hud.autoFire then
+	-- With Auto on, every shot goes to the auto target, even while the trigger is held too.
+	if Hud.autoFire then
 		autoPart = autoTarget()
-		wantsFire = autoPart ~= nil
+		wantsFire = wantsFire or autoPart ~= nil
 	end
 	if not wantsFire or now < nextShot then
 		return
@@ -621,7 +638,8 @@ local function step()
 	end
 	ammo -= 1
 	local item = ClientState.equipped()
-	nextShot = now + 1 / GunStats.fireRate(def.kind, if item then item.speed else 1)
+	nextShot = now
+		+ 1 / GunStats.fireRate(def.kind, if item then item.speed else 1, fireRateBoost())
 	if stats.burst > 1 then
 		burstCount += 1
 		if burstCount >= stats.burst then

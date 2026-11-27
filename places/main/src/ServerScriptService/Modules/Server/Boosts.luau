@@ -10,7 +10,9 @@
 const ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 const Balance = require("@game/ReplicatedStorage/Shared/Balance")
+const PrestigeShop = require("@game/ReplicatedStorage/Shared/PrestigeShop")
 const Types = require("@game/ReplicatedStorage/Shared/Types")
+const Upgrades = require("@game/ReplicatedStorage/Shared/Upgrades")
 
 local Boosts = {}
 
@@ -27,9 +29,9 @@ function Boosts.serverLuckActive(): boolean
 	return typeof(untilTime) == "number" and untilTime > os.time()
 end
 
--- Multiplies coins from monsters and chests.
+-- Multiplies coins from monsters, chests, ore sales, and animals.
 function Boosts.coins(player: Player, profile: Types.Profile): number
-	local multiplier = 1
+	local multiplier = PrestigeShop.multiplier(profile.prestigeShop, "Coins")
 	if Boosts.hasPass(player, "VIP") then
 		multiplier *= 1.25
 	end
@@ -54,26 +56,24 @@ function Boosts.power(player: Player, profile: Types.Profile): number
 	return multiplier
 end
 
--- Forge luck added on top of the Forge Luck upgrade.
-function Boosts.luck(player: Player, profile: Types.Profile): number
-	local bonus = 0
-	if Boosts.hasPass(player, "ExtraLuck") then
-		bonus += Balance.LUCK_BONUS.ExtraLuck
-	end
-	if Boosts.hasPass(player, "SuperLuck") then
-		bonus += Balance.LUCK_BONUS.SuperLuck
-	end
-	if Boosts.potionActive(profile, "Luck") then
-		bonus += Balance.LUCK_BONUS.Potion
-	end
-	if Boosts.serverLuckActive() then
-		bonus += Balance.LUCK_BONUS.Server
-	end
-	return bonus
+-- Everything that feeds a forge roll's luck (Balance.forgeLuck). `charge` says whether a Lucky
+-- Forge charge is being spent on this roll.
+function Boosts.luckSources(
+	player: Player,
+	profile: Types.Profile,
+	charge: boolean
+): Balance.LuckSources
+	return {
+		upgrade = Upgrades.value("Luck", profile.upgrades.Luck or 0),
+		prestige = Balance.prestigeLuck(profile.prestige),
+		extraLuck = Boosts.hasPass(player, "ExtraLuck"),
+		superLuck = Boosts.hasPass(player, "SuperLuck"),
+		potion = Boosts.potionActive(profile, "Luck"),
+		server = Boosts.serverLuckActive(),
+		charge = charge,
+		forgeLuckLevel = PrestigeShop.level(profile.prestigeShop, "ForgeLuck"),
+	}
 end
-
--- Extra luck for a Lucky Forge, used up one forge at a time.
-Boosts.LUCKY_FORGE_LUCK = Balance.LUCK_BONUS.Charge
 
 function Boosts.walkSpeed(player: Player): number
 	return if Boosts.hasPass(player, "SpeedBoost") then 1.5 else 1

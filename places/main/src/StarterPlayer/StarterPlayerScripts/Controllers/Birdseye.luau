@@ -17,6 +17,7 @@ local stations = {
 	Portal = "PortalIcon",
 	Leaderboard = "Trophy",
 	Wheel = "WheelIcon",
+	Prestige = "StarIcon",
 }
 -- Station icon colors (body, accent); the rest use Default.
 const STATION_COLORS: { [string]: { Color3 } } = {
@@ -24,6 +25,7 @@ const STATION_COLORS: { [string]: { Color3 } } = {
 	Leaderboard = { Color3.fromRGB(255, 196, 60), Color3.fromRGB(255, 240, 170) },
 	Wheel = { Color3.fromRGB(225, 50, 60), Color3.fromRGB(250, 235, 205) },
 	Shop = { Color3.fromRGB(230, 60, 60), Color3.fromRGB(255, 205, 60) },
+	Prestige = { Color3.fromRGB(150, 90, 230), Color3.fromRGB(255, 215, 80) },
 }
 type Target = { anchor: BasePart, key: string, size: number }
 local targets: { [Model]: Target } = {}

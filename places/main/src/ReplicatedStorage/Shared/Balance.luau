@@ -8,6 +8,7 @@
 const Biomes = require("./Biomes")
 const Guns = require("./Guns")
 const Ores = require("./Ores")
+const PrestigeShop = require("./PrestigeShop")
 const Rarity = require("./Rarity")
 const Types = require("./Types")
 const Upgrades = require("./Upgrades")
@@ -258,6 +259,39 @@ function Balance.pelletDamage(
 		* tuning
 		* Balance.baseShotDamage(power, gunPower, rebirths, level)
 		* Guns.kindStats(kind).damageScale
+end
+
+--[[
+	Robux guns (Guns.LIMITED) are kept through prestige, so their damage can't lean on Power and
+	rebirths, which reset. Instead each pellet hits at least hard enough that one shot drops a
+	normal enemy at the deepest stage the player has ever cleared. Returns 0 for other guns.
+]]
+function Balance.limitedPelletFloor(gunId: string, kind: Guns.GunKind, peakStage: number): number
+	if not Guns.isLimited(gunId) then
+		return 0
+	end
+	return Balance.enemyHealth(math.max(peakStage, 1)) / Guns.kindStats(kind).pellets
+end
+
+-- One pellet's damage for this player and gun, with every multiplier: pets, prestige, firing speed
+-- past its cap, and a Robux gun's floor. The server's hits and the HUD both use it.
+function Balance.playerPelletDamage(
+	profile: Types.Profile,
+	gunPower: number,
+	def: Guns.GunDef,
+	petMultiplier: number
+): number
+	const damage = Balance.pelletDamage(
+		profile.power,
+		gunPower,
+		def.kind,
+		profile.rebirths,
+		profile.level,
+		def.id
+	) * petMultiplier * Balance.prestigeDamage(profile.prestige) * PrestigeShop.fireRateDamage(
+		profile.prestigeShop
+	)
+	return math.max(damage, Balance.limitedPelletFloor(def.id, def.kind, profile.peakStage))
 end
 
 -- Damage a full trigger pull deals when every pellet lands, the number the HUD shows.
@@ -531,7 +565,51 @@ function Balance.unlocksTier(ores: { OreDef }, tier: number): boolean
 	return keys == nil
 end
 
-function Balance.forgeOdds(ores: { OreDef }, luck: number): ForgeOdds
+-- Eternal is its own roll, separate from the rarity curve: this chance per forge once the mix
+-- can reach it, times the player's Eternal boost (Balance.forgeLuck).
+Balance.ETERNAL_BASE_CHANCE = 1 / 40
+Balance.ETERNAL_MAX_CHANCE = 0.6
+
+export type LuckSources = {
+	-- The Forge Luck coin upgrade's value and the automatic prestige luck.
+	upgrade: number,
+	prestige: number,
+	extraLuck: boolean,
+	superLuck: boolean,
+	potion: boolean,
+	server: boolean,
+	-- A Lucky Forge charge spent on this roll.
+	charge: boolean,
+	-- Levels of the prestige shop's 2x Forging Luck.
+	forgeLuckLevel: number,
+}
+
+-- The forge luck a roll gets, and the multiplier on its Eternal chance. Each pass, potion, and
+-- charge multiplies the Eternal chance by 1 + its luck bonus; 2x Forging Luck doubles both numbers
+-- per level.
+function Balance.forgeLuck(sources: LuckSources): (number, number)
+	const bonus = Balance.LUCK_BONUS
+	local luck = sources.upgrade + sources.prestige
+	local eternal = 1
+	for key, active in
+		{
+			ExtraLuck = sources.extraLuck,
+			SuperLuck = sources.superLuck,
+			Potion = sources.potion,
+			Server = sources.server,
+			Charge = sources.charge,
+		}
+	do
+		if active then
+			luck += bonus[key]
+			eternal *= 1 + bonus[key]
+		end
+	end
+	const doubling = 2 ^ math.max(sources.forgeLuckLevel, 0)
+	return luck * doubling, eternal * doubling
+end
+
+function Balance.forgeOdds(ores: { OreDef }, luck: number, eternalBoost: number?): ForgeOdds
 	local count = #ores
 	local chances = table.create(Rarity.Count, 0)
 	if count == 0 then
@@ -539,12 +617,10 @@ function Balance.forgeOdds(ores: { OreDef }, luck: number): ForgeOdds
 		return { chances = chances, basePower = 0, oreCount = 0 }
 	end
 
-	local rankSum = 0
 	local raritySum = 0
 	local best = 1
 	local basePower = 0
 	for _, ore in ores do
-		rankSum += ore.index
 		raritySum += ore.rarity
 		best = math.max(best, ore.rarity)
 		basePower += ore.value
@@ -559,8 +635,9 @@ function Balance.forgeOdds(ores: { OreDef }, luck: number): ForgeOdds
 	-- Reserve a separate Eternal draw. Compare the rest in log space so even extreme luck
 	-- values leave a normalized distribution among the eligible tiers.
 	local eternal = Balance.ETERNAL_TIER
-	local strength = rankSum / (Balance.MAX_FORGE_ORES * #Ores.List)
-	local eternalChance = if ceiling >= eternal then 0.05 * math.clamp(strength, 0, 1) ^ 5 else 0
+	local eternalChance = if ceiling >= eternal
+		then math.min(Balance.ETERNAL_BASE_CHANCE * (eternalBoost or 1), Balance.ETERNAL_MAX_CHANCE)
+		else 0
 	local peak = math.clamp(math.round(center), 1, ceiling)
 	if peak == eternal then
 		peak = if ceiling > eternal and center > eternal then eternal + 1 else eternal - 1

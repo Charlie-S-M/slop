@@ -52,6 +52,7 @@ const STATION_MENUS = {
 	Leaderboard = { menu = "Leaderboard", text = "Leaderboard" },
 	Shop = { menu = "Shop", text = "Open Shop" },
 	Wheel = { menu = "Wheel", text = "Spin the Wheel" },
+	Prestige = { menu = "PrestigeShop", text = "Prestige Shop" },
 }
 
 ------------------------------------------------------------------------------------------------
@@ -429,6 +430,16 @@ end
 local function refreshPadLocks()
 	local profile = ClientState.profile
 	local lobby = workspace:FindFirstChild("Lobby")
+	-- The prestige stall's lock sign, gone once the player has prestiged.
+	local stall = lobby and lobby:FindFirstChild("PrestigeShop")
+	local counter = stall and stall:FindFirstChild("Counter")
+	if profile and counter then
+		for _, gui in counter:GetChildren() do
+			if gui:IsA("BillboardGui") and gui:FindFirstChild("PrestigeLock") then
+				gui.Enabled = profile.prestige < 1
+			end
+		end
+	end
 	local training = lobby and lobby:FindFirstChild("Training")
 	if not profile or not training then
 		return
@@ -597,6 +608,13 @@ function WorldFx:Start()
 		animatePickups()
 	end)
 	ClientState.StatsChanged:Connect(refreshPadLocks)
+	-- The lobby streams out during a run and back in after, with the server's lock signs showing
+	-- again; hide the unlocked ones as soon as they arrive.
+	workspace.DescendantAdded:Connect(function(added)
+		if added.Name == "LockLabel" or added.Name == "PrestigeLock" then
+			task.defer(refreshPadLocks)
+		end
+	end)
 	captureLobbyMood()
 	ClientState.RunChanged:Connect(onRun)
 end

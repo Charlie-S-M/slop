@@ -10,6 +10,7 @@ const Biomes = require("@game/ReplicatedStorage/Shared/Biomes")
 const Guns = require("@game/ReplicatedStorage/Shared/Guns")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
 const Ores = require("@game/ReplicatedStorage/Shared/Ores")
+const PrestigeShop = require("@game/ReplicatedStorage/Shared/PrestigeShop")
 const Types = require("@game/ReplicatedStorage/Shared/Types")
 const Upgrades = require("@game/ReplicatedStorage/Shared/Upgrades")
 const Loadout = require("./Loadout")
@@ -260,6 +261,7 @@ local function onSellOres(player: Player, oreId: unknown)
 	if sold == 0 then
 		return
 	end
+	total = math.floor(total * PrestigeShop.multiplier(profile.prestigeShop, "Coins"))
 	PlayerData.addCoins(player, total)
 	PlayerData.markState(player)
 	rewardRemote:FireClient(player, { kind = "coins", coins = total, sold = sold })
@@ -323,6 +325,39 @@ local function onRebirth(player: Player)
 	end
 end
 
+--[[
+	The guns a prestige leaves: a fresh starter plus every Robux gun. Parts on the guns that go
+	back to the pile, since parts always survive a prestige.
+]]
+local function keepPrestigeGuns(profile: Types.Profile, fresh: Types.Profile)
+	local kept: { Types.GunItem } = {}
+	for _, item in profile.guns do
+		if Guns.isLimited(item.id) then
+			table.insert(kept, item)
+		else
+			const parts: { [string]: string } = item.parts or {}
+			for _, partId in parts do
+				profile.attachments[partId] = (profile.attachments[partId] or 0) + 1
+			end
+		end
+	end
+	local starter = fresh.guns[1]
+	for _, item in kept do
+		if item.uid == starter.uid then
+			starter.uid = PlayerData.newGunUid(profile)
+		end
+	end
+	table.insert(kept, 1, starter)
+	local equippedKept = false
+	for _, item in kept do
+		equippedKept = equippedKept or item.uid == profile.equipped
+	end
+	profile.guns = kept
+	if not equippedKept then
+		profile.equipped = starter.uid
+	end
+end
+
 -- Prestige: at PRESTIGE_REBIRTHS rebirths, resets rebirths and Power for permanent bonuses (Balance).
 local function onPrestige(player: Player)
 	if not RateLimit.allow(player, "Rebirth", 0.5, 1) or not inLobby(player) then
@@ -332,43 +367,79 @@ local function onPrestige(player: Player)
 	if not profile or not Balance.canPrestige(profile.rebirths) then
 		return
 	end
-	-- A full restart: everything earned in play goes back to a new player's. Kept: pets, the
-	-- Index, quests and their rank, everything bought with Robux (passes, potions, Lucky Forges,
-	-- wheel spins), settings, codes, and lifetime stats (kills, forges, playtime, Robux spent).
+	-- A full restart: everything earned in play goes back to a new player's. Always kept: parts,
+	-- Robux guns, the Index, quests and their rank, everything bought with Robux (passes, potions,
+	-- Lucky Forges, wheel spins), settings, codes, lifetime stats, and the prestige shop. Pets,
+	-- coin upgrades, and the other guns are kept only with their Save item from the prestige shop.
+	local shop = profile.prestigeShop
 	local fresh = PlayerData.newProfile()
-	for _, key in
-		{
-			"power",
-			"coins",
-			"rebirths",
-			"level",
-			"xp",
-			"guns",
-			"equipped",
-			"bag",
-			"upgrades",
-			"bestStage",
-			"materials",
-			"bossesDefeated",
-			"armor",
-			"equippedArmor",
-			"towerBest",
-			"attachments",
-		}
-	do
+	local reset = {
+		"power",
+		"coins",
+		"rebirths",
+		"level",
+		"xp",
+		"bag",
+		"bestStage",
+		"materials",
+		"bossesDefeated",
+		"armor",
+		"equippedArmor",
+		"towerBest",
+	}
+	if not PrestigeShop.owns(shop, "SaveUpgrades") then
+		table.insert(reset, "upgrades")
+	end
+	if not PrestigeShop.owns(shop, "SavePets") then
+		table.insert(reset, "pets")
+		table.insert(reset, "equippedPets")
+	end
+	for _, key in reset do
 		(profile :: any)[key] = (fresh :: any)[key]
+	end
+	if not PrestigeShop.owns(shop, "SaveGuns") then
+		keepPrestigeGuns(profile, fresh)
 	end
 	profile.pendingForge = nil
 	profile.prestige += 1
+	local tokens = PrestigeShop.tokensPerPrestige(shop)
+	profile.prestigeTokens += tokens
 	PlayerData.markState(player)
 	PlayerData.LoadoutChanged:Fire(player)
+	Loadout.refreshGun(player)
 	notify(
 		player,
 		`Prestige {profile.prestige}! Damage and ore drops ×{Balance.prestigeDamage(
 			profile.prestige
-		)} for good.`,
+		)} for good, and +{tokens} prestige token{if tokens == 1 then "" else "s"}.`,
 		Color3.fromRGB(255, 210, 90)
 	)
+end
+
+-- Spends prestige tokens on the next level of a prestige shop item.
+local function onBuyPrestige(player: Player, id: unknown)
+	if not RateLimit.allow(player, "BuyPrestige", 4, 5) or typeof(id) ~= "string" then
+		return
+	end
+	local profile = PlayerData.get(player)
+	local def = PrestigeShop.get(id)
+	if not profile or not def or profile.prestige < 1 then
+		return
+	end
+	local level = PrestigeShop.level(profile.prestigeShop, def.id)
+	local cost = PrestigeShop.cost(def, level)
+	if not cost then
+		return
+	end
+	if profile.prestigeTokens < cost then
+		notify(player, "Not enough prestige tokens!", Color3.fromRGB(255, 120, 90))
+		return
+	end
+	profile.prestigeTokens -= cost
+	profile.prestigeShop[def.id] = level + 1
+	PlayerData.markState(player)
+	PlayerData.LoadoutChanged:Fire(player)
+	rewardRemote:FireClient(player, { kind = "prestigeShop", id = def.id, level = level + 1 })
 end
 
 local function onClaimDaily(player: Player)
@@ -431,6 +502,7 @@ function Economy:Start()
 	Net.event("BuyUpgrade").OnServerEvent:Connect(onBuyUpgrade)
 	Net.event("Rebirth").OnServerEvent:Connect(onRebirth)
 	Net.event("Prestige").OnServerEvent:Connect(onPrestige)
+	Net.event("BuyPrestige").OnServerEvent:Connect(onBuyPrestige)
 	Net.event("ClaimDaily").OnServerEvent:Connect(onClaimDaily)
 end
 

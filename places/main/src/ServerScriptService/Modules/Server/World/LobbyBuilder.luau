@@ -964,6 +964,92 @@ function LobbyBuilder.shopStall(parent: Instance): Model
 end
 
 --[[
+	The prestige shop's stall in the lobby's south-west corner: a violet canopy on gold posts over a
+	dark counter, with a big gold star turning above it. The counter is the "Prestige" station; the
+	menu stays locked until the player's first prestige. Public so the server can add it to a lobby
+	baked before it existed.
+]]
+function LobbyBuilder.prestigeStall(parent: Instance): Model
+	local model = Instance.new("Model")
+	model.Name = "PrestigeShop"
+	local origin = Vector3.new(-104, 0, 128)
+	-- Flowers baked into this corner would poke through the stall.
+	local decor = parent:FindFirstChild("Decor")
+	if decor then
+		for _, part in decor:GetChildren() do
+			if part:IsA("BasePart") and (part.Name == "Stem" or part.Name == "Petal") then
+				local offset = part.Position - origin
+				if math.abs(offset.X) < 14 and math.abs(offset.Z) < 11 then
+					part:Destroy()
+				end
+			end
+		end
+	end
+	local violet = rgb(120, 70, 200)
+	local dark = rgb(40, 30, 64)
+	Bricks.part(model, {
+		name = "Floor",
+		size = Vector3.new(24, 0.6, 18),
+		cframe = CFrame.new(origin + Vector3.new(0, 0.3, 0)),
+		color = dark,
+	})
+	local counter = Bricks.part(model, {
+		name = "Counter",
+		size = Vector3.new(18, 4, 5),
+		cframe = CFrame.new(origin + Vector3.new(0, 2.6, 3)),
+		color = violet,
+	})
+	counter:SetAttribute("Station", "Prestige")
+	Bricks.part(model, {
+		name = "CounterTop",
+		size = Vector3.new(19, 0.6, 6),
+		cframe = counter.CFrame * CFrame.new(0, 2.3, 0),
+		color = GOLD,
+	})
+	for side = -1, 1, 2 do
+		Bricks.part(model, {
+			name = "Post",
+			size = Vector3.new(1.2, 15, 1.2),
+			cframe = CFrame.new(origin + Vector3.new(side * 10, 7.5, 6.5)),
+			color = GOLD,
+		})
+	end
+	for stripe = 0, 7 do
+		Bricks.part(model, {
+			name = "Awning",
+			size = Vector3.new(2.75, 1, 12),
+			cframe = CFrame.new(origin + Vector3.new(-9.6 + stripe * 2.75, 15.6, 2))
+				* CFrame.Angles(math.rad(-12), 0, 0),
+			color = if stripe % 2 == 0 then violet else rgb(190, 150, 255),
+		})
+	end
+	-- The star: two crossed gold blocks, set spinning by the client (the Spin attribute).
+	for turn = 0, 1 do
+		local star = Bricks.part(model, {
+			name = "Star",
+			size = Vector3.new(4, 4, 0.8),
+			cframe = CFrame.new(origin + Vector3.new(0, 20, 2))
+				* CFrame.Angles(0, turn * math.pi / 2, math.rad(45)),
+			color = rgb(255, 215, 80),
+			material = Enum.Material.Neon,
+			collide = false,
+		})
+		star:SetAttribute("Spin", 1.2)
+	end
+	Props.label(counter, "⭐ Prestige Shop", rgb(255, 215, 80), Vector3.new(0, 22, 0), 14)
+	local lock = Props.label(
+		counter,
+		"🔒 Prestige once to unlock",
+		Color3.fromRGB(255, 255, 255),
+		Vector3.new(0, 8, 0),
+		10
+	)
+	lock.Name = "PrestigeLock"
+	model.Parent = parent
+	return model
+end
+
+--[[
 	Builds the full lobby under a new "Lobby" model in the parent and returns it. The plaza floor's
 	top sits at Y = 0.
 ]]
@@ -979,6 +1065,7 @@ function LobbyBuilder.build(parent: Instance): Model
 	LobbyBuilder.wheelStand(lobby)
 	portal(lobby)
 	carpetAndDecor(lobby)
+	LobbyBuilder.prestigeStall(lobby)
 	skyAndGround(lobby)
 	lobby.Parent = parent
 	return lobby

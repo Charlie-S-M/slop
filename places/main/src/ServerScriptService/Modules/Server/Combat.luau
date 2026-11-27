@@ -13,6 +13,7 @@ const GunStats = require("@game/ReplicatedStorage/Shared/GunStats")
 const Guns = require("@game/ReplicatedStorage/Shared/Guns")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
 const PetStats = require("@game/ReplicatedStorage/Shared/PetStats")
+const PrestigeShop = require("@game/ReplicatedStorage/Shared/PrestigeShop")
 const Types = require("@game/ReplicatedStorage/Shared/Types")
 const Arena = require("./Arena")
 const Boosts = require("./Boosts")
@@ -52,7 +53,19 @@ local function holdingGun(player: Player, uid: string): Tool?
 	return nil
 end
 
-local function spendAmmo(player: Player, uid: string, stats: Guns.KindStats): boolean
+-- How long this player's reload takes with Quick Hands, with the same slack as before.
+local function reloadSeconds(player: Player, kind: Guns.GunKind): number
+	local profile = PlayerData.get(player)
+	return GunStats.reloadTime(kind, if profile then profile.upgrades.ReloadSpeed or 0 else 0)
+		* 0.85
+end
+
+local function spendAmmo(
+	player: Player,
+	uid: string,
+	stats: Guns.KindStats,
+	reload: number
+): boolean
 	local now = os.clock()
 	local state = ammoStates[player]
 	if not state or state.uid ~= uid then
@@ -69,7 +82,7 @@ local function spendAmmo(player: Player, uid: string, stats: Guns.KindStats): bo
 	end
 	state.ammo -= 1
 	if state.ammo <= 0 then
-		state.reloadUntil = now + stats.reloadTime * 0.85
+		state.reloadUntil = now + reload
 	end
 	return true
 end
@@ -149,15 +162,15 @@ local function onEnemyHit(
 		return
 	end
 	local stats = Guns.kindStats(kind)
-	local perPellet = Balance.pelletDamage(
-		profile.power,
+	local def = Guns.get(gunId)
+	if not def then
+		return
+	end
+	local perPellet = Balance.playerPelletDamage(
+		profile,
 		gunPower,
-		kind,
-		profile.rebirths,
-		profile.level,
-		gunId
-	) * PetStats.multiplier(profile.pets, profile.equippedPets, "Damage") * Balance.prestigeDamage(
-		profile.prestige
+		def,
+		PetStats.multiplier(profile.pets, profile.equippedPets, "Damage")
 	)
 	local crit = math.random() < CRIT_CHANCE
 	local amount = perPellet * pelletsHit * (if crit then CRIT_MULTIPLIER else 1)
@@ -188,7 +201,12 @@ local function onShoot(player: Player, target: unknown, pellets: unknown, aim: u
 	local uid = item.uid
 	local stats = Guns.kindStats(def.kind)
 	-- Allow a quarter more than the gun's rate to absorb network jitter.
-	local fireRate = GunStats.fireRate(def.kind, item.speed)
+	local profile = PlayerData.get(player)
+	local fireRate = GunStats.fireRate(
+		def.kind,
+		item.speed,
+		PrestigeShop.multiplier(if profile then profile.prestigeShop else nil, "FireRate")
+	)
 	if not RateLimit.allow(player, "Shoot", fireRate * 1.25, math.max(3, stats.burst + 1)) then
 		return
 	end
@@ -201,7 +219,7 @@ local function onShoot(player: Player, target: unknown, pellets: unknown, aim: u
 	if not humanoid or humanoid.Health <= 0 or not root or not root:IsA("BasePart") then
 		return
 	end
-	if not spendAmmo(player, uid, stats) then
+	if not spendAmmo(player, uid, stats, reloadSeconds(player, def.kind)) then
 		return
 	end
 	if typeof(aim) ~= "Vector3" or aim ~= aim then
@@ -276,7 +294,7 @@ function Combat:Start()
 			local stats = Guns.kindStats(def.kind)
 			if state.ammo < stats.magazine and os.clock() >= state.reloadUntil then
 				state.ammo = stats.magazine
-				state.reloadUntil = os.clock() + stats.reloadTime * 0.85
+				state.reloadUntil = os.clock() + reloadSeconds(player, def.kind)
 			end
 		end
 	end)

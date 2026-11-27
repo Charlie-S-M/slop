@@ -186,6 +186,20 @@ local function paintMolten(paints: { Paint }, share: number)
 	end
 end
 
+-- The mold's cavity, less a margin: a piece laid flat must fit inside it, or the pour fills air.
+const MOLD_LENGTH = 11.8
+const MOLD_WIDTH = 5.8
+
+-- Shrinks a piece that wouldn't fit the mold laid flat. Its length (Z) runs along the cavity and
+-- its height (Y) across it, as layFlat turns it.
+local function fitMold(model: Model)
+	local _, size = model:GetBoundingBox()
+	local fit = math.min(1, MOLD_LENGTH / math.max(size.Z, size.X), MOLD_WIDTH / size.Y)
+	if fit < 1 then
+		model:ScaleTo(model:GetScale() * fit)
+	end
+end
+
 local function layFlat(model: Model, at: CFrame)
 	-- Barrels run along the gun's -Z; turning it makes the barrel point along +X, side up.
 	local boxCFrame = model:GetBoundingBox()
@@ -257,6 +271,7 @@ local function pour(set: ForgeSet.Set, gun: Model, paints: { Paint })
 	local mold = set.moldCenter.Position
 	shot(mold + Vector3.new(12, 8, 15), mold + Vector3.new(0, 5, -6))
 	glide(mold + Vector3.new(12, 7, 15), mold + Vector3.new(0, 4, -6), 1.6)
+	fitMold(gun)
 	layFlat(gun, set.moldCenter)
 	gun.Parent = stage
 	paintMolten(paints, 0)
@@ -270,11 +285,14 @@ local function pour(set: ForgeSet.Set, gun: Model, paints: { Paint })
 	if not hold(0.45, true) then
 		return
 	end
-	-- The stream falls from the lip's height straight into the middle of the mold.
-	local lip = set.crucibleHinge.Position + Vector3.new(0, 0.5, 1.5)
+	-- The stream falls from wherever the tipped lip is, down into the mold.
+	local lipPart = set.crucible:FindFirstChild("Lip")
+	local lip = if lipPart and lipPart:IsA("BasePart")
+		then lipPart.Position
+		else set.crucibleHinge.Position + Vector3.new(0, 0.5, 1.5)
 	local length = (lip.Y - mold.Y)
 	set.stream.Size = Vector3.new(1.1, length, 1.1)
-	set.stream.CFrame = CFrame.new(Vector3.new(mold.X, mold.Y + length / 2, mold.Z))
+	set.stream.CFrame = CFrame.new(Vector3.new(lip.X, mold.Y + length / 2, lip.Z))
 	set.stream.Transparency = 0.05
 	Kit.sound(Kit.Sounds.Whoosh, 0.3, 0.6)
 	-- The cavity fills: the glowing gun fades in from nothing.

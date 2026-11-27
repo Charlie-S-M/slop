@@ -55,13 +55,19 @@ describe("Balance.forgeOdds", function()
 end)
 
 describe("endgame balance", function()
-	it("reserves five percent for Eternal with five best ores at all luck levels", function()
+	it("reserves the Eternal chance for any mix that reaches it, at all luck levels", function()
 		for _, luck in { 0, 1, 10000 } do
-			local odds = Balance.forgeOdds(oresOf("Omegacore", 5), luck)
-			expect(odds.chances[8]).toBe(0.05)
-			expect(math.abs(sum(odds.chances) - 1) < 1e-9).toBe(true)
-			expect(Balance.forgeOdds(oresOf("Omegacore", 4), luck).chances[8] < 0.05).toBe(true)
+			for count = 1, 5 do
+				local odds = Balance.forgeOdds(oresOf("Omegacore", count), luck)
+				expect(odds.chances[8]).toBe(Balance.ETERNAL_BASE_CHANCE)
+				expect(math.abs(sum(odds.chances) - 1) < 1e-9).toBe(true)
+			end
 		end
+	end)
+	it("caps a boosted Eternal chance", function()
+		local odds = Balance.forgeOdds(oresOf("Omegacore", 5), 0, 1e6)
+		expect(odds.chances[8]).toBe(Balance.ETERNAL_MAX_CHANCE)
+		expect(math.abs(sum(odds.chances) - 1) < 1e-9).toBe(true)
 	end)
 	it("lets invested Toughness survive multiple late-stage hits", function()
 		for _, stage in { 80, 160, 250 } do
