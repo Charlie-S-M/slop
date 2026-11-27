@@ -25,7 +25,6 @@ const STATION_COLORS: { [string]: { Color3 } } = {
 	Wheel = { Color3.fromRGB(225, 50, 60), Color3.fromRGB(250, 235, 205) },
 	Shop = { Color3.fromRGB(230, 60, 60), Color3.fromRGB(255, 205, 60) },
 }
-local painted: { [Instance]: boolean } = setmetatable({}, { __mode = "k" }) :: any
 type Target = { anchor: BasePart, key: string, size: number }
 local targets: { [Model]: Target } = {}
 
@@ -135,6 +134,40 @@ local function wallMiddle(torch: Model): Vector3?
 	return (nearest.Position + outer.Position) / 2
 end
 
+-- A sprite painted flat on the floor, seen straight on from above. Its canvas has a fixed size, so
+-- unlike a billboard it isn't laid out again when the camera zooms.
+local function paintFlat(
+	anchor: BasePart,
+	key: string,
+	body: Color3,
+	accent: Color3,
+	size: number,
+	at: Vector3
+)
+	local pad = Instance.new("Part")
+	pad.Name = "PixelIcon"
+	pad.Anchored = true
+	pad.CanCollide = false
+	pad.CanQuery = false
+	pad.CanTouch = false
+	pad.CastShadow = false
+	pad.Transparency = 1
+	pad.Size = Vector3.new(size, 0.05, size)
+	-- A top face reads upright toward -X; a quarter turn points it up the screen (-Z).
+	pad.CFrame = CFrame.new(at) * CFrame.Angles(0, -math.pi / 2, 0)
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = "Art"
+	gui.Face = Enum.NormalId.Top
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.FixedSize
+	gui.CanvasSize = Vector2.new(160, 160)
+	gui.AlwaysOnTop = true
+	gui.LightInfluence = 0
+	gui.MaxDistance = math.huge
+	PixelSprites.draw(gui, key, body, accent)
+	gui.Parent = pad
+	pad.Parent = anchor
+end
+
 local function icon(
 	owner: Instance,
 	anchor: BasePart,
@@ -144,10 +177,34 @@ local function icon(
 	size: number,
 	at: Vector3?
 )
-	if painted[owner] then
+	-- Ask the part itself whether it has an icon. A weak table forgets instances the game still
+	-- holds, so every time the lobby streamed back in it would paint another copy on top.
+	if anchor:FindFirstChild("PixelIcon") then
 		return
 	end
-	painted[owner] = true
+	-- The camera is a perspective one, so an icon drawn up high (a castle's cap, a wall torch, a
+	-- floating crystal) slides against the floor as it moves. Anything that stays put is drawn on
+	-- the floor instead, under the middle of its model, so every icon keeps its place on the map.
+	local still = anchor.Anchored
+		and not owner:IsA("Tool")
+		and not owner:GetAttribute("EnemyId")
+		and not owner:GetAttribute("OrePickup")
+	local pinned: Vector3? = nil
+	if still then
+		local center = at
+			or if owner:IsA("Model") then owner:GetBoundingBox().Position else anchor.Position
+		local floor = floorBelow(center, owner)
+		if floor then
+			pinned = Vector3.new(center.X, floor + 0.5, center.Z)
+		end
+	end
+	-- Things the cursor aims at keep a billboard, which Birdseye.targetAt reads.
+	local aimed = owner:GetAttribute("TrainingTarget") or owner.Name == "TrainingDummy"
+	if still and not aimed then
+		-- Out on the open ground there's no floor part to pin to; the part's own spot will do.
+		paintFlat(anchor, key, body, accent, size, pinned or anchor.Position)
+		return
+	end
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "PixelIcon"
 	gui.Adornee = anchor
@@ -157,22 +214,8 @@ local function icon(
 	gui.MaxDistance = math.huge
 	PixelSprites.draw(gui, key, body, accent)
 	gui.Parent = anchor
-	-- The camera is a perspective one, so an icon drawn up high (a castle's cap, a wall torch, a
-	-- floating crystal) slides against the floor as it moves. Anything that stays put is drawn on
-	-- the floor instead, under the middle of its model, so every icon keeps its place on the map.
-	if
-		anchor.Anchored
-		and not owner:IsA("Tool")
-		and not owner:GetAttribute("EnemyId")
-		and not owner:GetAttribute("OrePickup")
-	then
-		local center = at
-			or if owner:IsA("Model") then owner:GetBoundingBox().Position else anchor.Position
-		local floor = floorBelow(center, owner)
-		if floor then
-			local offset = Vector3.new(center.X, floor + 0.5, center.Z) - anchor.Position
-			gui.StudsOffsetWorldSpace = offset
-		end
+	if pinned then
+		gui.StudsOffsetWorldSpace = pinned - anchor.Position
 	end
 end
 
@@ -205,9 +248,6 @@ local function conceal(model: Model)
 end
 
 local function style(model: Model)
-	if painted[model] then
-		return
-	end
 	local anchor = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart", true)
 	if not anchor then
 		return
@@ -263,6 +303,10 @@ local function style(model: Model)
 		body, accent = Color3.fromRGB(46, 134, 74), Color3.fromRGB(127, 214, 78)
 		size = 15
 	else
+		return
+	end
+	-- Already drawn: every part of a model asks for this as it arrives.
+	if anchor:FindFirstChild("PixelIcon") then
 		return
 	end
 	conceal(model)
@@ -520,7 +564,6 @@ local function drawGun(tool: Tool, root: BasePart)
 		if tool.Parent ~= root.Parent then
 			connection:Disconnect()
 			weapons[tool] = nil
-			painted[tool] = nil
 			gui:Destroy()
 		end
 	end)
@@ -569,7 +612,6 @@ local function walker(model: Model, root: BasePart)
 	end
 	layers.RangerR.Visible = true
 	gui.Parent = root
-	painted[model] = true
 	walkers[model] = { root = root, layers = layers, facing = "R", stride = 0, shown = "RangerR" }
 	model.Destroying:Once(function()
 		walkers[model] = nil
