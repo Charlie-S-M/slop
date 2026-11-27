@@ -622,6 +622,19 @@ local function step()
 	if now < reloadUntil then
 		return
 	end
+	-- A held mouse trigger must still be down; if a release went missing, let go now.
+	if
+		triggerHeld
+		and UserInputService.MouseEnabled
+		and not UserInputService.TouchEnabled
+		and not UserInputService:IsGamepadButtonDown(
+			Enum.UserInputType.Gamepad1,
+			Enum.KeyCode.ButtonR2
+		)
+		and not UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
+	then
+		triggerHeld = false
+	end
 	local wantsFire = triggerHeld and not Menus.isOpen()
 	local autoPart: BasePart? = nil
 	-- With Auto on, every shot goes to the auto target, even while the trigger is held too.
@@ -756,8 +769,14 @@ function GunController:Start()
 			aimScreen = Vector2.new(input.Position.X, input.Position.Y)
 		end
 	end)
+	-- Any release ends the trigger, even one a menu swallowed: a press held over a menu and let go
+	-- there never reaches the tool's Deactivated, and the gun would fire on its own afterwards.
 	UserInputService.InputEnded:Connect(function(input)
-		if input.KeyCode == Enum.KeyCode.ButtonR2 then
+		if
+			input.KeyCode == Enum.KeyCode.ButtonR2
+			or input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch
+		then
 			triggerHeld = false
 		end
 	end)
