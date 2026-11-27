@@ -122,7 +122,7 @@ end)
 
 describe("Quick Hands", function()
 	it("reloads 2% faster a level, 40% at most", function()
-		const kind = "Rifle"
+		const kind: Guns.GunKind = "Rifle"
 		const base = Guns.kindStats(kind).reloadTime
 		expect(GunStats.reloadTime(kind, 0)).toBe(base)
 		expect(GunStats.reloadTime(kind, 10)).toBeCloseTo(base * 0.8, 6)
