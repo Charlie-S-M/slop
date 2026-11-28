@@ -1,12 +1,29 @@
 # CLAUDE.md
 
-A Roblox game kept in Git and synced into Studio by Rojo. Each place in the experience is a folder
-under `places/`, holding its Rojo project (`default.project.json`) and its code (`src/`). A new
-game has one, `places/main`. pesde installs packages from `pesde.toml` into `roblox_packages/`
-(`ReplicatedStorage.Packages`) and Jest from `test_packages/pesde.toml` into
-`ServerScriptService.Tests.Packages`. The Module Loader runs every system: the two `Start` scripts
-turn on its tag discovery and start it, the `LOAD_MODULE` tag on `Modules/Systems` marks what it
-loads, and `ExampleSystem` shows the layout a system follows.
+Pew Incremental, a Roblox incremental shooter kept in Git and synced into Studio by Rojo. Each place
+in the experience is a folder under `places/`, holding its Rojo project (`default.project.json`)
+and its code (`src/`); the game is `places/main`. pesde installs packages from `pesde.toml` into
+`roblox_packages/` (`ReplicatedStorage.Packages`) and Jest from `test_packages/pesde.toml` into
+`ServerScriptService.Tests.Packages`. `README.md` describes the game loop and where each system
+lives.
+
+## Module layout
+
+- `ReplicatedStorage/Shared` holds plain modules both sides require directly: game data, formulas,
+  builders, and `Net` (the one list of remotes, created by the server). Every progression number
+  lives in `Balance.luau`.
+- The Module Loader runs systems with `Init` then `Start`. Each `Start` script passes its folder to
+  `ModuleLoader.Start` directly: `ServerScriptService/Modules/Server` on the server,
+  `StarterPlayerScripts/Controllers` on the client. Tag discovery stays off, because it would also
+  find the template copy of `Controllers` left in `StarterPlayerScripts` and load every controller
+  twice. A new system is a ModuleScript in one of those folders.
+- The loader reads `LoaderPriority` from an attribute, so set it in a sibling `<Module>.meta.json`
+  (`{ "attributes": { "LoaderPriority": 100 } }`). A `LoaderPriority` field on the module table
+  does nothing. Modules other systems need during `Init` (`PlayerData`, `ClientState`, `Menus`,
+  `WorldSetup`) carry one.
+- The world is built from code out of studded bricks (`Modules/Server/World`). The lobby is baked
+  into the place file as `Workspace.Lobby`; `WorldSetup` builds it at server start when it's
+  missing, and sets lighting and sky from code.
 
 The `roblox-dev` plugin's skills hold this project's conventions: Luau style, comments,
 architecture, Rojo, testing, performance, and UI. Load the matching skill before the first edit.
@@ -84,8 +101,12 @@ the staging experience**, and publishing a GitHub release publishes them to prod
   module. Check that `rojo serve` is still running after those changes, and restart it if not.
 - Write `IconTint` in a `.meta.json` with its type, `"IconTint": { "Color3": [1, 0, 0] }`. Every
   Rojo version accepts that form; 7.6.1 rejects the short one.
-- `Workspace` sets `$ignoreUnknownInstances`, so Rojo syncs `src/Workspace` but leaves anything
-  else in the place's Workspace alone. Things built in Studio stay out of Git until they're saved
-  as files.
+- `Workspace` sets `$ignoreUnknownInstances` and syncs no files, so Rojo leaves the baked lobby
+  and anything else built in Studio alone. Those stay out of Git; the builders are the source of
+  truth for the world.
 - Each place's `src/ServerScriptService/Tests/Packages/default.project.json` mounts
   `test_packages/roblox_packages` at `Tests.Packages`. Keep it in place.
+
+## Notes
+
+Project notes, decisions and plans live in `docs/` (an Obsidian vault). Use [[wikilinks]] when linking notes.

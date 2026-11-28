@@ -1,0 +1,100 @@
+--!strict
+-- Armor numbers both sides need: a forged piece's defense and how much of a hit the worn set blocks.
+
+const Armor = require("./Armor")
+const Balance = require("./Balance")
+const Types = require("./Types")
+
+local ArmorStats = {}
+
+-- The share of each hit a freshly forged piece blocks.
+function ArmorStats.roll(def: Armor.ArmorDef, grade: Types.Grade, roll: number): number
+	return Balance.ARMOR_SLOT_SHARE[def.slot]
+		* Balance.ARMOR_RARITY_DEFENSE[def.rarity]
+		* Balance.ARMOR_GRADE_MULTIPLIER[grade]
+		* roll
+end
+
+-- The owned piece a finished armor forge makes. Defense is kept to four decimals for saves and UI.
+function ArmorStats.makeItem(
+	uid: string,
+	def: Armor.ArmorDef,
+	grade: Types.Grade,
+	roll: number
+): Types.ArmorItem
+	local defense = math.floor(ArmorStats.roll(def, grade, roll) * 10000 + 0.5) / 10000
+	return { uid = uid, id = def.id, defense = defense, grade = grade, locked = false }
+end
+
+-- Whether a piece can still be tempered.
+function ArmorStats.canTemper(item: Types.ArmorItem): boolean
+	return item.tempered ~= true
+end
+
+-- A tempered copy of the piece: same uid, TEMPER_MULTIPLIER times the block.
+function ArmorStats.temper(item: Types.ArmorItem): Types.ArmorItem
+	local copy = table.clone(item)
+	copy.defense = math.floor(item.defense * Balance.TEMPER_MULTIPLIER * 10000 + 0.5) / 10000
+	copy.tempered = true
+	return copy
+end
+
+-- How much tempering `item` would raise the worn set's block, after the cap. A piece that isn't
+-- worn shows its own gain, since that is what it adds once worn.
+function ArmorStats.temperGain(
+	armor: { Types.ArmorItem },
+	equipped: { [string]: string },
+	item: Types.ArmorItem
+): number
+	local own = item.defense * (Balance.TEMPER_MULTIPLIER - 1)
+	local worn = false
+	for _, uid in equipped do
+		if uid == item.uid then
+			worn = true
+		end
+	end
+	if not worn then
+		return own
+	end
+	local before = ArmorStats.blocked(armor, equipped)
+	local tempered = table.clone(armor)
+	for index, piece in tempered do
+		if piece.uid == item.uid then
+			tempered[index] = ArmorStats.temper(piece)
+		end
+	end
+	return ArmorStats.blocked(tempered, equipped) - before
+end
+
+-- The equipped piece in `slot`, if the uid there names an owned piece made for that slot.
+function ArmorStats.equippedIn(
+	armor: { Types.ArmorItem },
+	equipped: { [string]: string },
+	slot: Types.ArmorSlot
+): Types.ArmorItem?
+	local uid = equipped[slot]
+	if not uid then
+		return nil
+	end
+	for _, item in armor do
+		if item.uid == uid then
+			local def = Armor.get(item.id)
+			return if def and def.slot == slot then item else nil
+		end
+	end
+	return nil
+end
+
+-- The share of each hit the worn pieces block together, capped at ARMOR_MAX_BLOCK.
+function ArmorStats.blocked(armor: { Types.ArmorItem }, equipped: { [string]: string }): number
+	local total = 0
+	for _, slot: Types.ArmorSlot in Armor.SLOTS do
+		local item = ArmorStats.equippedIn(armor, equipped, slot)
+		if item then
+			total += item.defense
+		end
+	end
+	return math.min(total, Balance.ARMOR_MAX_BLOCK)
+end
+
+return ArmorStats

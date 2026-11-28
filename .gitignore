@@ -14,3 +14,7 @@ globalTypes*.d.luau
 *.rbxlx
 *.rbxl.lock
 *.rbxlx.lock
+
+# Per-machine Obsidian state (the notes vault is docs/)
+**/.obsidian/workspace*.json
+**/.obsidian/cache
