@@ -360,7 +360,7 @@ end
 
 -- Prestige: at PRESTIGE_REBIRTHS rebirths, resets rebirths and Power for permanent bonuses (Balance).
 local function onPrestige(player: Player)
-	if not RateLimit.allow(player, "Rebirth", 0.5, 1) or not inLobby(player) then
+	if not RateLimit.allow(player, "Prestige", 0.5, 1) or not inLobby(player) then
 		return
 	end
 	local profile = PlayerData.get(player)
