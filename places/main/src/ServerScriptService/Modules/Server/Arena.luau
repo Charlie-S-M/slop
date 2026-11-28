@@ -497,6 +497,22 @@ local function killEnemy(run: Run, enemy: Enemy)
 		PlayerData.addCoins(player, coins)
 		PlayerData.addXp(player, xp)
 		profile.kills += 1
+		if
+			math.random()
+			< Balance.rubyChance(
+				profile.prestigeShop.RubyChance or 0,
+				profile.upgrades.RubyChance or 0
+			)
+		then
+			profile.rubies += 1
+		end
+		if enemy.isBoss then
+			Balance.rubyQuestProgress(profile, "bosses", 1)
+		end
+		if enemy.stage >= Balance.RUBY_VETERAN_STAGE then
+			Balance.rubyQuestProgress(profile, "veterans", 1)
+		end
+		PlayerData.markState(player)
 		QuestKeeper.record(player, "Kills", 1)
 		if enemy.isBoss then
 			QuestKeeper.record(player, "Bosses", 1)

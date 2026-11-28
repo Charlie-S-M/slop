@@ -282,6 +282,10 @@ local function onBuyUpgrade(player: Player, id: unknown, count: unknown)
 	if not def or not profile then
 		return
 	end
+	if id == "RubyChance" and math.max(profile.bestStage, profile.peakStage) < 200 then
+		notify(player, "Clear stage 200 to upgrade ruby drops.", Color3.fromRGB(240, 90, 125))
+		return
+	end
 	local level = profile.upgrades[id] or 0
 	if level >= def.maxLevel then
 		return

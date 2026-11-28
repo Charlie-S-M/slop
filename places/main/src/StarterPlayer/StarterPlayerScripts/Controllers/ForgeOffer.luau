@@ -30,19 +30,28 @@ local function build(content: Frame)
 	if not def then
 		return
 	end
-	const tile = Kit.iconTile(def.glyph, def.color, UDim2.fromScale(0.24, 0.42), content)
-	tile.AnchorPoint = Vector2.new(0.5, 0)
-	tile.Position = UDim2.fromScale(0.5, 0.01)
-	Kit.aspect(1).Parent = tile
+	local art = Kit.new("ImageLabel", {
+		Name = "HammerArt",
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.fromScale(0.5, 0.01),
+		Size = UDim2.fromScale(0.94, 0.46),
+		Image = "rbxassetid://121386565174730",
+		ScaleType = Enum.ScaleType.Crop,
+		BackgroundColor3 = Color3.fromRGB(53, 21, 79),
+		Parent = content,
+	})
+	Kit.aspect(1).Parent = art
+	Kit.corner(10).Parent = art
+	Kit.stroke(2, Kit.Colors.Gold).Parent = art
 	Kit.text({
-		Text = "Recommended: Auto Perfect gamepass?",
+		Text = "Auto Perfect Forge",
 		Position = UDim2.fromScale(0.03, 0.47),
 		Size = UDim2.fromScale(0.94, 0.15),
 		Stroke = 2.5,
 		Parent = content,
 	})
 	Kit.text({
-		Text = "Every forge lands all its strikes for you. Perfect grade, no timing.",
+		Text = "Automatically land a perfect strike on every forge.",
 		Position = UDim2.fromScale(0.06, 0.63),
 		Size = UDim2.fromScale(0.88, 0.1),
 		TextColor3 = Color3.fromRGB(190, 205, 225),
@@ -102,7 +111,7 @@ function ForgeOffer:Init()
 		name = MENU,
 		title = "\u{2B50} Forge Tip",
 		color = Kit.Colors.Gold,
-		size = Vector2.new(0.36, 0.52),
+		size = Vector2.new(0.42, 0.58),
 		build = build,
 	})
 end

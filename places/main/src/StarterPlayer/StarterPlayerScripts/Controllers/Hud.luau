@@ -30,6 +30,7 @@ Hud.autoFire = false
 local screen: ScreenGui
 local powerLabel: TextLabel
 local damageLabel: TextLabel
+local rubyLabel: TextLabel
 local coinsLabel: TextLabel
 local bagLabel: TextLabel
 local rebirthLabel: TextLabel
@@ -81,7 +82,7 @@ const MENU_BUTTONS: { MenuButton } = {
 local function pill(parent: Instance, glyph: string, color: Color3, order: number): TextLabel
 	local frame = Kit.new("Frame", {
 		Name = "Pill",
-		Size = UDim2.fromScale(1, 0.3),
+		Size = UDim2.fromScale(1, 0.225),
 		BackgroundColor3 = Kit.Colors.Ink,
 		BackgroundTransparency = 0.35,
 		LayoutOrder = order,
@@ -412,13 +413,13 @@ end
 local function buildPills()
 	local column = Kit.new("Frame", {
 		Name = "Pills",
-		Size = UDim2.fromScale(0.15, 0.17),
+		Size = UDim2.fromScale(0.15, 0.215),
 		Position = UDim2.fromScale(0.012, 0.985),
 		AnchorPoint = Vector2.new(0, 1),
 		BackgroundTransparency = 1,
 		Parent = screen,
 	})
-	Kit.new("UISizeConstraint", { MaxSize = Vector2.new(230, 150), Parent = column })
+	Kit.new("UISizeConstraint", { MaxSize = Vector2.new(230, 185), Parent = column })
 	Kit.new("UIListLayout", {
 		Padding = UDim.new(0.04, 0),
 		SortOrder = Enum.SortOrder.LayoutOrder,
@@ -427,6 +428,7 @@ local function buildPills()
 	})
 	bagLabel = pill(column, "🎒", Color3.fromRGB(230, 140, 60), 1)
 	coinsLabel = pill(column, "💰", Color3.fromRGB(255, 200, 40), 2)
+	rubyLabel = pill(column, "♦", Color3.fromRGB(225, 54, 97), 4)
 	rebirthLabel = pill(column, "🔄", Color3.fromRGB(170, 90, 255), 3)
 end
 
@@ -593,6 +595,7 @@ local function refreshStats()
 	end
 	Kit.countTo(powerLabel, profile.power, wholeNumber, 0.25)
 	Kit.countTo(coinsLabel, profile.coins, wholeNumber, 0.3)
+	rubyLabel.Text = Format.abbreviate(profile.rubies)
 	rebirthLabel.Text = Format.abbreviate(profile.rebirths)
 	bagLabel.Text = `{ClientState.bagCount()} / {ClientState.bagCapacity()}`
 	damageLabel.Text = `{Format.abbreviate(ClientState.shotDamage())} Damage`

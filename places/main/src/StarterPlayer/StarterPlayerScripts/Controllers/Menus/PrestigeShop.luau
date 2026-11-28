@@ -3,6 +3,7 @@
 -- The prestige shop, opened at the violet stall in the lobby's south-west corner. Locked until the
 -- first prestige; after that, each card spends prestige tokens on its next level.
 
+const Balance = require("@game/ReplicatedStorage/Shared/Balance")
 const Format = require("@game/ReplicatedStorage/Shared/Format")
 const Net = require("@game/ReplicatedStorage/Shared/Net")
 const PrestigeShop = require("@game/ReplicatedStorage/Shared/PrestigeShop")
@@ -25,6 +26,13 @@ local built = false
 
 -- What the card's effect line says at a level.
 local function effectAt(def: PrestigeShop.ItemDef, level: number): string
+	if def.id == "RubyChance" then
+		local profile = ClientState.profile
+		return string.format(
+			"%.2f%%",
+			100 * Balance.rubyChance(level, if profile then profile.upgrades.RubyChance or 0 else 0)
+		)
+	end
 	if def.once then
 		return if level >= 1 then "Owned" else "Not owned"
 	end

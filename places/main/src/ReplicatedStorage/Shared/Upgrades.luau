@@ -9,6 +9,7 @@ export type UpgradeId =
 	| "CoinBoost"
 	| "Magnet"
 	| "PartLuck"
+	| "RubyChance"
 	| "ReloadSpeed"
 
 export type UpgradeDef = {
@@ -36,6 +37,24 @@ local function percent(value: number): string
 end
 
 const LIST: { UpgradeDef } = {
+	{
+		id = "RubyChance",
+		name = "Ruby Drop Chance",
+		description = "Boost unlocked ruby drops after stage 200",
+		icon = "Star",
+		color = Color3.fromRGB(245, 62, 111),
+		maxLevel = 10,
+		softCap = 10,
+		overflow = 1,
+		baseCost = 7.864785842690704e+23,
+		costGrowth = 3.8099550602889956,
+		effect = function(n)
+			return 1 + n * 0.25
+		end,
+		describe = function(n)
+			return percent(n * 0.25)
+		end,
+	},
 	{
 		id = "BagSize",
 		name = "Ore Bag",

@@ -12,6 +12,7 @@ export type ItemId =
 	| "FireRate"
 	| "ForgeLuck"
 	| "Tokens"
+	| "RubyChance"
 	| "PartLuck"
 	| "SavePets"
 	| "SaveUpgrades"
@@ -29,6 +30,14 @@ export type ItemDef = {
 }
 
 const ITEMS: { ItemDef } = {
+	{
+		id = "RubyChance",
+		name = "Mobs Drop Rubies",
+		detail = "Gives mobs a .01% chance to drop 1 ruby! Each further level doubles the chance.",
+		glyph = "♦",
+		cost = 1,
+		once = false,
+	},
 	{
 		id = "Coins",
 		name = "2x Coins",
