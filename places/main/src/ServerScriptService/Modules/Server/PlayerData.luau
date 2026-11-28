@@ -70,6 +70,10 @@ local function defaultProfile(): Profile
 	return {
 		version = CURRENT_VERSION,
 		power = 0,
+		rubies = 0,
+		marketPosts = 0,
+		marketOrders = {},
+		rubyQuests = { day = -1 },
 		coins = 0,
 		rebirths = 0,
 		level = 1,
@@ -254,20 +258,26 @@ local function save(player: Player, session: Session, release: boolean)
 	if not activeStore or not session.persistent or session.released then
 		return
 	end
-	if session.saving and not release then
-		return
+	while session.saving do
+		task.wait()
+	end
+	if session.released then
+		return false
 	end
 	session.saving = true
 	local jobId = if game.JobId ~= "" then game.JobId else "studio"
 	local profile = session.profile
-	withRetry(if release then 5 else 3, function()
+	local wrote = false
+	local ok = withRetry(if release then 5 else 3, function()
 		activeStore:UpdateAsync(keyFor(player), function(old: Stored?)
 			local stored: Stored = old or {}
 			local lock = stored.lock
 			-- If another server took the lock, this one has stale data and must not write.
-			if lock and lock.job ~= jobId then
+			wrote = false
+			if not lock or lock.job ~= jobId then
 				return nil
 			end
+			wrote = true
 			return {
 				data = profile,
 				lock = if release then nil else { job = jobId, time = os.time() },
@@ -279,6 +289,28 @@ local function save(player: Player, session: Session, release: boolean)
 	if release then
 		session.released = true
 	end
+	return ok and wrote
+end
+
+function PlayerData.canTrade(player: Player): boolean
+	local session = sessions[player]
+	return session ~= nil
+		and not session.released
+		and (
+			session.persistent
+			or (RunService:IsStudio() and workspace:GetAttribute("RubyPlaytest") == true)
+		)
+end
+
+function PlayerData.marketCheckpoint(player: Player): boolean
+	local session = sessions[player]
+	if not session then
+		return false
+	end
+	if not session.persistent then
+		return RunService:IsStudio() and workspace:GetAttribute("RubyPlaytest") == true
+	end
+	return save(player, session, false) == true
 end
 
 local function onPlayerAdded(player: Player)
@@ -485,6 +517,9 @@ end
 ------------------------------------------------------------------------------------------------
 
 function PlayerData:Init()
+	if RunService:IsStudio() and workspace:GetAttribute("RubyPlaytest") == true then
+		return
+	end
 	local ok, result = pcall(function()
 		return DataStoreService:GetDataStore(STORE_NAME)
 	end)

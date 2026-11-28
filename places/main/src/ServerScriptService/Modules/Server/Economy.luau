@@ -282,6 +282,10 @@ local function onBuyUpgrade(player: Player, id: unknown, count: unknown)
 	if not def or not profile then
 		return
 	end
+	if id == "RubyChance" and math.max(profile.bestStage, profile.peakStage) < 200 then
+		notify(player, "Clear stage 200 to upgrade ruby drops.", Color3.fromRGB(240, 90, 125))
+		return
+	end
 	local level = profile.upgrades[id] or 0
 	if level >= def.maxLevel then
 		return
@@ -360,7 +364,7 @@ end
 
 -- Prestige: at PRESTIGE_REBIRTHS rebirths, resets rebirths and Power for permanent bonuses (Balance).
 local function onPrestige(player: Player)
-	if not RateLimit.allow(player, "Rebirth", 0.5, 1) or not inLobby(player) then
+	if not RateLimit.allow(player, "Prestige", 0.5, 1) or not inLobby(player) then
 		return
 	end
 	local profile = PlayerData.get(player)

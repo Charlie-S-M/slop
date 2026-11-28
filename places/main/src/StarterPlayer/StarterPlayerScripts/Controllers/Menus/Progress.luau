@@ -167,6 +167,7 @@ local warningKeep: TextLabel
 local confirmButton: TextButton
 -- Bumped each time the warning opens, so an older countdown stops when a newer one starts.
 local countdown = 0
+local confirmReady = false
 const CONFIRM_SECONDS = 3
 
 local function openWarning()
@@ -206,6 +207,7 @@ local function openWarning()
 		`❌ You lose: {table.concat(lost, ", ")}; your coins, Power, rebirths, level, best stage, and Tower progress.`
 	warningKeep.Text =
 		`✅ You keep: {table.concat(kept, ", ")}, everything bought with Robux, your settings, and your lifetime stats.`
+	confirmReady = false
 	countdown += 1
 	local mine = countdown
 	task.spawn(function()
@@ -218,6 +220,7 @@ local function openWarning()
 			task.wait(1)
 		end
 		if countdown == mine then
+			confirmReady = true
 			Kit.setButtonColor(confirmButton, Kit.Colors.Gold, Kit.Colors.GoldDark)
 			Kit.setButtonText(confirmButton, "⭐ Prestige!")
 		end
@@ -288,9 +291,10 @@ local function buildWarning(content: Frame)
 		parent = content,
 		onClick = function()
 			-- Unclickable until the countdown has run out.
-			if confirmButton.Text ~= "⭐ Prestige!" then
+			if not confirmReady then
 				return
 			end
+			confirmReady = false
 			Net.event("Prestige"):FireServer()
 			Menus.close()
 		end,

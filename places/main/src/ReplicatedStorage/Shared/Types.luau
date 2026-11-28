@@ -89,6 +89,10 @@ export type Settings = {
 }
 
 export type Profile = {
+	rubies: number,
+	marketPosts: number,
+	marketOrders: { [string]: any },
+	rubyQuests: any,
 	version: number,
 	power: number,
 	coins: number,

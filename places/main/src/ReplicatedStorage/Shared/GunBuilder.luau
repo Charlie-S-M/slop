@@ -253,6 +253,11 @@ local function buildCollection(def: Guns.GunDef, power: number?): Model?
 	}
 	for _, part in model:GetChildren() do
 		if part:IsA("BasePart") and part ~= handle then
+			part.Anchored = false
+			part.CanCollide = false
+			part.CanTouch = false
+			part.CanQuery = false
+			part.Massless = true
 			if def.id ~= "PrismCarbine" then
 				part.Color = palette[part.Name] or def.body
 				part.Material = if (part.Name == "Glow" and tier >= 2)

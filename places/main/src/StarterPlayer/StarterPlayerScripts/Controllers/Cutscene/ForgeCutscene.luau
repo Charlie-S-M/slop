@@ -186,32 +186,37 @@ local function paintMolten(paints: { Paint }, share: number)
 	end
 end
 
--- The mold's cavity, less a margin: a piece laid flat must fit inside it, or the pour fills air.
-const MOLD_LENGTH = 11.8
-const MOLD_WIDTH = 5.8
-
--- Shrinks a piece that wouldn't fit the mold laid flat. Its length (Z) runs along the cavity and
--- its height (Y) across it, as layFlat turns it.
-local function fitMold(model: Model)
-	local _, size = model:GetBoundingBox()
-	local fit = math.min(1, MOLD_LENGTH / math.max(size.Z, size.X), MOLD_WIDTH / size.Y)
-	if fit < 1 then
-		model:ScaleTo(model:GetScale() * fit)
+local function visibleBounds(model: Model): (Vector3, Vector3)
+	local pivot = model:GetPivot()
+	local low = Vector3.one * math.huge
+	local high = -low
+	for _, part in model:GetDescendants() do
+		if not part:IsA("BasePart") or part.Transparency >= 1 then
+			continue
+		end
+		for x = -1, 1, 2 do
+			for y = -1, 1, 2 do
+				for z = -1, 1, 2 do
+					local point = pivot:PointToObjectSpace(
+						part.CFrame * (part.Size * Vector3.new(x, y, z) * 0.5)
+					)
+					low = low:Min(point)
+					high = high:Max(point)
+				end
+			end
+		end
 	end
+	return (low + high) * 0.5, high - low
 end
 
 local function layFlat(model: Model, at: CFrame)
-	-- Barrels run along the gun's -Z; turning it makes the barrel point along +X, side up.
-	local boxCFrame = model:GetBoundingBox()
-	local offset = boxCFrame:ToObjectSpace(model:GetPivot())
-	model:PivotTo(
-		at * CFrame.Angles(0, math.rad(90), 0) * CFrame.Angles(0, 0, math.rad(90)) * offset
-	)
-	-- Turned on its side, a piece's bounds can sit off to one side (armor more than guns), so slide
-	-- it until its middle is over `at`.
-	local center = model:GetBoundingBox().Position
-	local shift = at.Position - center
-	model:PivotTo(model:GetPivot() + Vector3.new(shift.X, 0, shift.Z))
+	local center, size = visibleBounds(model)
+	local rotation = if size.Z >= size.X
+		then CFrame.Angles(0, math.pi / 2, 0) * CFrame.Angles(0, 0, math.pi / 2)
+		else CFrame.Angles(math.pi / 2, 0, 0)
+	local fit = math.min(1, 11.8 / math.max(size.Z, size.X), 5.8 / size.Y)
+	model:ScaleTo(model:GetScale() * fit)
+	model:PivotTo(at * rotation * CFrame.new(-center * fit))
 end
 
 ------------------------------------------------------------------------------------------------
@@ -219,13 +224,16 @@ end
 ------------------------------------------------------------------------------------------------
 
 local function melt(set: ForgeSet.Set, start: Start, rarityColor: Color3)
+	set.crucible:PivotTo(set.crucibleHinge)
+	local function setLevel(y: number)
+		set.metal.CFrame = set.crucible:GetPivot() * CFrame.new(0, y - set.crucibleHinge.Y, -3.5)
+	end
+	setLevel(set.metalBottom)
 	local top = Vector3.new(set.metal.Position.X, set.metalTop + 1, set.metal.Position.Z)
 	shot(top + Vector3.new(0, 15, 0.01), top)
 	glide(top + Vector3.new(0, 11, 2), top, 1.6)
-	set.crucible:PivotTo(set.crucibleHinge)
 	set.metal.Color = MOLTEN
 	set.metal.Size = Vector3.new(6, 0.4, 6)
-	set.metal.Position = Vector3.new(set.metal.Position.X, set.metalBottom, set.metal.Position.Z)
 	Kit.sound(Kit.Sounds.Charge, 0.4)
 	local drops = math.max(#start.oreIds, 1)
 	for index, oreId in start.oreIds do
@@ -250,9 +258,7 @@ local function melt(set: ForgeSet.Set, start: Start, rarityColor: Color3)
 		end)
 		-- Each ore raises the molten surface a little more.
 		local level = set.metalBottom + (set.metalTop - set.metalBottom) * (index / drops)
-		tweenNumber(set.metal.Position.Y, level, 0.3, function(y)
-			set.metal.Position = Vector3.new(set.metal.Position.X, y, set.metal.Position.Z)
-		end)
+		tweenNumber(set.metal.Position.Y, level, 0.22, setLevel)
 		if not hold(0.22, true) then
 			return
 		end
@@ -271,7 +277,6 @@ local function pour(set: ForgeSet.Set, gun: Model, paints: { Paint })
 	local mold = set.moldCenter.Position
 	shot(mold + Vector3.new(12, 8, 15), mold + Vector3.new(0, 5, -6))
 	glide(mold + Vector3.new(12, 7, 15), mold + Vector3.new(0, 4, -6), 1.6)
-	fitMold(gun)
 	layFlat(gun, set.moldCenter)
 	gun.Parent = stage
 	paintMolten(paints, 0)
@@ -282,24 +287,20 @@ local function pour(set: ForgeSet.Set, gun: Model, paints: { Paint })
 	tweenNumber(0, 1, 0.5, function(t)
 		set.crucible:PivotTo(set.crucibleHinge * CFrame.Angles(math.rad(70) * t, 0, 0))
 	end)
-	if not hold(0.45, true) then
+	if not hold(0.5, true) then
 		return
 	end
-	-- The stream falls from wherever the tipped lip is, down into the mold.
-	local lipPart = set.crucible:FindFirstChild("Lip")
-	local lip = if lipPart and lipPart:IsA("BasePart")
-		then lipPart.Position
-		else set.crucibleHinge.Position + Vector3.new(0, 0.5, 1.5)
-	local length = (lip.Y - mold.Y)
-	set.stream.Size = Vector3.new(1.1, length, 1.1)
-	set.stream.CFrame = CFrame.new(Vector3.new(lip.X, mold.Y + length / 2, lip.Z))
+	local lip = (set.crucible:FindFirstChild("Lip") :: BasePart).Position
+	local delta = lip - mold
+	set.stream.Size = Vector3.new(1.1, delta.Magnitude, 1.1)
+	set.stream.CFrame = CFrame.lookAt((lip + mold) * 0.5, lip) * CFrame.Angles(math.pi / 2, 0, 0)
 	set.stream.Transparency = 0.05
 	Kit.sound(Kit.Sounds.Whoosh, 0.3, 0.6)
 	-- The cavity fills: the glowing gun fades in from nothing.
 	for _, paint in paints do
 		TweenService:Create(paint.part, TweenInfo.new(0.9), { Transparency = 0 }):Play()
 	end
-	set.metal.Position -= Vector3.new(0, 1.5, 0)
+	set.metal.CFrame *= CFrame.new(0, -1.5, 0)
 	if not hold(1, true) then
 		return
 	end
@@ -338,24 +339,7 @@ end
 -- Measure the visible geometry in the builder's canonical coordinates. Imported grips
 -- may sit away from the mesh; the longest horizontal dimension runs down the bore.
 local function bucketPose(model: Model, isGun: boolean): CFrame
-	model:PivotTo(CFrame.identity)
-	local low = Vector3.one * math.huge
-	local high = -low
-	for _, part in model:GetDescendants() do
-		if not part:IsA("BasePart") or part.Transparency >= 1 then
-			continue
-		end
-		for x = -1, 1, 2 do
-			for y = -1, 1, 2 do
-				for z = -1, 1, 2 do
-					local point = part.CFrame * (part.Size * Vector3.new(x, y, z) * 0.5)
-					low = low:Min(point)
-					high = high:Max(point)
-				end
-			end
-		end
-	end
-	local size = high - low
+	local center, size = visibleBounds(model)
 	local rotation = CFrame.identity
 	local width = size.X
 	local depth = size.Z
@@ -372,7 +356,7 @@ local function bucketPose(model: Model, isGun: boolean): CFrame
 	local fit = math.min(1, 5.8 / math.sqrt(width * width + depth * depth), 9 / height)
 	local original = model:GetScale()
 	model:ScaleTo(original * fit)
-	return rotation * CFrame.new(-(low + high) * 0.5 * fit)
+	return rotation * CFrame.new(-center * fit)
 end
 
 local function quench(set: ForgeSet.Set, gun: Model, paints: { Paint }, isGun: boolean)

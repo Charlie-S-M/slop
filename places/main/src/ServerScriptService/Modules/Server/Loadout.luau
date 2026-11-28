@@ -72,8 +72,10 @@ function Loadout.refreshStats(player: Player)
 	humanoid.Health = math.clamp(maxHealth * share, 1, maxHealth)
 	humanoid.WalkSpeed = Upgrades.value("WalkSpeed", profile.upgrades.WalkSpeed or 0)
 		* Boosts.walkSpeed(player)
-	humanoid.JumpPower = 55
-	humanoid.UseJumpPower = true
+	humanoid.JumpPower = 0
+	humanoid.JumpHeight = 0
+	humanoid.AutoJumpEnabled = false
+	humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, false)
 end
 
 -- Armor no longer shows on the avatar (the hotbar shows it instead); this only clears pieces an

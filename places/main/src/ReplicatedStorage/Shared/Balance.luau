@@ -731,4 +731,46 @@ function Balance.recommendsAutoPerfect(forges: number, owned: boolean): boolean
 	return not owned and forges > 0 and forges % Balance.FORGES_PER_RECOMMENDATION == 0
 end
 
+Balance.TRADE_FREE_POSTS = 2
+Balance.TRADE_DAILY_FEE = 10
+Balance.TRADE_CANCEL_SHARE = 0.5
+
+function Balance.listingFee(previousPosts: number, rarity: number, days: number): number
+	if previousPosts < Balance.TRADE_FREE_POSTS then
+		return 0
+	end
+	return Balance.TRADE_DAILY_FEE * math.max(1, rarity - 4) * days
+end
+
+function Balance.listingRefund(paidFee: number): number
+	return math.floor(paidFee * Balance.TRADE_CANCEL_SHARE)
+end
+
+Balance.TRADE_MAX_DAYS = 7
+Balance.RUBY_BASE_CHANCE = 0.0001
+Balance.RUBY_QUEST_GOALS = { bosses = 12, forges = 8, veterans = 150 }
+Balance.RUBY_QUEST_REWARDS = { bosses = 12, forges = 10, veterans = 18 }
+Balance.RUBY_VETERAN_STAGE = 80
+
+function Balance.rubyChance(prestigeLevel: number, cashLevel: number): number
+	if prestigeLevel <= 0 then
+		return 0
+	end
+	return math.min(
+		1,
+		Balance.RUBY_BASE_CHANCE * 2 ^ (prestigeLevel - 1) * Upgrades.value("RubyChance", cashLevel)
+	)
+end
+
+function Balance.rubyQuestProgress(profile: any, kind: string, amount: number)
+	local day = math.floor(os.time() / 86400)
+	if profile.rubyQuests.day ~= day then
+		profile.rubyQuests = { day = day, claimed = {}, bosses = 0, forges = 0, veterans = 0 }
+	end
+	if amount > 0 then
+		profile.rubyQuests[kind] =
+			math.min(profile.rubyQuests[kind] + amount, Balance.RUBY_QUEST_GOALS[kind])
+	end
+end
+
 return Balance

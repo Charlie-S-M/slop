@@ -273,7 +273,6 @@ local function buildCrucible(root: Model): (Model, CFrame, BasePart, number, num
 	end
 	-- The hinge sits at the lip so tilting pours from there.
 	local hinge = CFrame.new(center + Vector3.new(0, 1, 3.5))
-	crucible.PrimaryPart = metal
 	crucible.WorldPivot = hinge
 	crucible.Parent = root
 

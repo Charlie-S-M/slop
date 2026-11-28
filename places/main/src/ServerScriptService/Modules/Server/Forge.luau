@@ -102,6 +102,7 @@ local function finishArmor(
 		end
 	end
 	table.insert(profile.armor, piece)
+	Balance.rubyQuestProgress(profile, "forges", 1)
 	profile.forges += 1
 	Quests.record(profile.quests, "Forges", 1)
 	return {
@@ -140,6 +141,7 @@ local function finishProfile(profile: Types.Profile, accuracies: { any }): Outco
 	table.insert(profile.guns, item)
 	local isNew = not profile.gunIndex[pending.gunId]
 	profile.gunIndex[pending.gunId] = true
+	Balance.rubyQuestProgress(profile, "forges", 1)
 	profile.forges += 1
 	Quests.record(profile.quests, "Forges", 1)
 	return { item = item, new = isNew, better = rawDps(item) > rawDps(current) }
